@@ -1,0 +1,761 @@
+classDiagram
+  class PIXI_Container["PIXI.Container"]
+
+  class Stage {
+    +initialize()
+    +destroy()
+  }
+  note for Stage "The root object of the display tree."
+
+  PIXI_Container <|-- Stage
+
+  class Scene_Base {
+    -_started: boolean
+    -_active: boolean
+    -_fadeSign: number
+    -_fadeDuration: number
+    -_fadeWhite: boolean
+    -_fadeOpacity: number
+    -_windowLayer: WindowLayer
+    -_colorFilter: ColorFilter
+
+    +initialize()
+    +create()*
+    +isActive() boolean
+    +isReady() boolean
+    +start()
+    +update()
+    +stop()
+    +isStarted() boolean
+    +isBusy() boolean
+    +isFading() boolean
+    +terminate()*
+    +createWindowLayer()
+    +addWindow(window)
+    +startFadeIn(duration, white)
+    +startFadeOut(duration, white)
+    +createColorFilter()
+    +updateColorFilter()
+    +updateFade()
+    +updateChildren()
+    +popScene()
+    +checkGameover()
+    +fadeOutAll()
+    +fadeSpeed() number
+    +slowFadeSpeed() number
+    +scaleSprite(sprite)
+    +centerSprite(sprite)
+    +isBottomHelpMode() boolean
+    +isBottomButtonMode() boolean
+    +isRightInputMode() boolean
+    +mainCommandWidth() number
+    +buttonAreaTop() number
+    +buttonAreaBottom() number
+    +buttonAreaHeight() number
+    +buttonY() number
+    +calcWindowHeight(numLines, selectable) number
+    +requestAutosave()
+    +isAutosaveEnabled() boolean
+    +executeAutosave()
+    +onAutosaveSuccess()*
+    +onAutosaveFailure()*
+  }
+  note for Scene_Base "The superclass of all scenes within the game."
+
+  Stage <|-- Scene_Base
+
+  class Scene_Boot {
+    -_databaseLoaded: boolean
+
+    +initialize()
+    +create()
+    +isReady() boolean
+    +onDatabaseLoaded()
+    +setEncryptionInfo()
+    +loadSystemImages()
+    +loadPlayerData()
+    +loadGameFonts()
+    +isPlayerDataLoaded() boolean
+    +start()
+    +startNormalGame()
+    +resizeScreen()
+    +adjustBoxSize()
+    +adjustWindow()
+    +screenScale() number
+    +updateDocumentTitle()
+    +checkPlayerLocation()
+  }
+  note for Scene_Boot "The scene class for initializing the entire game."
+
+  Scene_Base <|-- Scene_Boot
+
+  class Scene_Splash {
+    -_backSprite: Sprite
+    -_waitCount: number
+
+    +initialize()
+    +create()
+    +start()
+    +update()
+    +stop()
+    +createBackground()
+    +adjustBackground()
+    +isEnabled() boolean
+    +initWaitCount()
+    +updateWaitCount() boolean
+    +checkSkip()
+    +gotoTitle()
+  }
+  note for Scene_Splash "The scene class of the splash screen."
+
+  Scene_Base <|-- Scene_Splash
+
+  class Scene_Title {
+    -_commandWindow: Window_TitleCommand
+    -_gameTitleSprite: Sprite
+    -_backSprite1: Sprite
+    -_backSprite2: Sprite
+
+    +initialize()
+    +create()
+    +start()
+    +update()
+    +isBusy() boolean
+    +terminate()
+    +createBackground()
+    +createForeground()
+    +drawGameTitle()
+    +adjustBackground()
+    +createCommandWindow()
+    +commandWindowRect() Rectangle
+    +commandNewGame()
+    +commandContinue()
+    +commandOptions()
+    +playTitleMusic()
+  }
+  note for Scene_Title "The scene class of the title screen."
+
+  Scene_Base <|-- Scene_Title
+
+  class Scene_Message {
+    -_messageWindow: Window_Message
+    -_scrollTextWindow: Window_ScrollText
+    -_goldWindow: Window_Gold
+    -_nameBoxWindow: Window_NameBox
+    -_choiceListWindow: Window_ChoiceList
+    -_numberInputWindow: Window_NumberInput
+    -_eventItemWindow: Window_EventItem
+
+    +initialize()
+    +isMessageWindowClosing() boolean
+    +createAllWindows()
+    +createMessageWindow()
+    +messageWindowRect() Rectangle
+    +createScrollTextWindow()
+    +scrollTextWindowRect() Rectangle
+    +createGoldWindow()
+    +goldWindowRect() Rectangle
+    +createNameBoxWindow()
+    +createChoiceListWindow()
+    +createNumberInputWindow()
+    +createEventItemWindow()
+    +eventItemWindowRect() Rectangle
+    +associateWindows()
+    +cancelMessageWait()
+  }
+  note for Scene_Message "The superclass of Scene_Map and Scene_Battle."
+
+  Scene_Base <|-- Scene_Message
+
+  class Scene_Map {
+    -_waitCount: number
+    -_encounterEffectDuration: number
+    -_mapLoaded: boolean
+    -_touchCount: number
+    -_menuEnabled: boolean
+    -_transfer: boolean
+    -_lastMapWasNull: boolean
+    -_spriteset: Spriteset_Map
+    -_mapNameWindow: Window_MapName
+    -_menuButton: Sprite_Button
+    +menuCalling: boolean
+
+    +initialize()
+    +create()
+    +isReady() boolean
+    +onMapLoaded()
+    +onTransfer()
+    +start()
+    +onTransferEnd()
+    +shouldAutosave() boolean
+    +update()
+    +updateMainMultiply()
+    +updateMain()
+    +isPlayerActive() boolean
+    +isFastForward() boolean
+    +stop()
+    +isBusy() boolean
+    +terminate()
+    +needsFadeIn() boolean
+    +needsSlowFadeOut() boolean
+    +updateWaitCount() boolean
+    +updateDestination()
+    +updateMenuButton()
+    +hideMenuButton()
+    +updateMapNameWindow()
+    +isMenuEnabled() boolean
+    +isMapTouchOk() boolean
+    +processMapTouch()
+    +isAnyButtonPressed() boolean
+    +onMapTouch()
+    +isSceneChangeOk() boolean
+    +updateScene()
+    +createDisplayObjects()
+    +createSpriteset()
+    +createAllWindows()
+    +createMapNameWindow()
+    +mapNameWindowRect() Rectangle
+    +createButtons()
+    +createMenuButton()
+    +updateTransferPlayer()
+    +updateEncounter()
+    +updateCallMenu()
+    +isMenuCalled() boolean
+    +callMenu()
+    +updateCallDebug()
+    +isDebugCalled() boolean
+    +fadeInForTransfer()
+    +fadeOutForTransfer()
+    +launchBattle()
+    +stopAudioOnBattleStart()
+    +startEncounterEffect()
+    +updateEncounterEffect()
+    +snapForBattleBackground()
+    +startFlashForEncounter(duration)
+    +encounterEffectSpeed() number
+  }
+  note for Scene_Map "The scene class of the map screen."
+
+  Scene_Message <|-- Scene_Map
+
+  class Scene_MenuBase {
+    -_actor: Game_Actor
+    -_backgroundFilter: PIXI.filters.BlurFilter
+    -_backgroundSprite: Sprite
+    -_helpWindow: Window_Help
+    -_cancelButton: Sprite_Button
+    -_pageupButton: Sprite_Button
+    -_pagedownButton: Sprite_Button
+
+    +initialize()
+    +create()
+    +update()
+    +helpAreaTop() number
+    +helpAreaBottom() number
+    +helpAreaHeight() number
+    +mainAreaTop() number
+    +mainAreaBottom() number
+    +mainAreaHeight() number
+    +actor() Game_Actor
+    +updateActor()
+    +createBackground()
+    +setBackgroundOpacity(opacity)
+    +createHelpWindow()
+    +helpWindowRect() Rectangle
+    +createButtons()
+    +needsCancelButton() boolean
+    +createCancelButton()
+    +needsPageButtons() boolean
+    +createPageButtons()
+    +updatePageButtons()
+    +arePageButtonsEnabled() boolean
+    +nextActor()
+    +previousActor()
+    +onActorChange()
+  }
+  note for Scene_MenuBase "The superclass of all the menu-type scenes."
+
+  Scene_Base <|-- Scene_MenuBase
+
+  class Scene_Menu {
+    -_commandWindow: Window_MenuCommand
+    -_goldWindow: Window_Gold
+    -_statusWindow: Window_MenuStatus
+
+    +initialize()
+    +helpAreaHeight() number
+    +create()
+    +start()
+    +createCommandWindow()
+    +commandWindowRect() Rectangle
+    +createGoldWindow()
+    +goldWindowRect() Rectangle
+    +createStatusWindow()
+    +statusWindowRect() Rectangle
+    +commandItem()
+    +commandPersonal()
+    +commandFormation()
+    +commandOptions()
+    +commandSave()
+    +commandGameEnd()
+    +onPersonalOk()
+    +onPersonalCancel()
+    +onFormationOk()
+    +onFormationCancel()
+  }
+  note for Scene_Menu "The scene class of the menu screen."
+
+  Scene_MenuBase <|-- Scene_Menu
+
+  class Scene_ItemBase {
+
+    -_actorWindow: Window_MenuActor
+    -_itemWindow: Window_Selectable
+
+    +initialize()
+    +create()
+    +createActorWindow()
+    +actorWindowRect() Rectangle
+    +item()
+    +user()
+    +isCursorLeft() boolean
+    +showActorWindow()
+    +hideActorWindow()
+    +isActorWindowActive() boolean
+    +onActorOk()
+    +onActorCancel()
+    +determineItem()
+    +useItem()
+    +activateItemWindow()
+    +itemTargetActors() Game_Actor[]
+    +canUse() boolean
+    +isItemEffectsValid() boolean
+    +applyItem()
+    +checkCommonEvent()
+  }
+  note for Scene_ItemBase "The superclass of Scene_Item and Scene_Skill."
+
+  Scene_MenuBase <|-- Scene_ItemBase
+
+  class Scene_Item {
+    -_categoryWindow: Window_ItemCategory
+    -_itemWindow: Window_ItemList
+
+    +initialize()
+    +create()
+    +createCategoryWindow()
+    +categoryWindowRect() Rectangle
+    +createItemWindow()
+    +itemWindowRect() Rectangle
+    +user() Game_Battler
+    +onCategoryOk()
+    +onItemOk()
+    +onItemCancel()
+    +playSeForItem()
+    +useItem()
+  }
+  note for Scene_Item "The scene class of the item screen."
+
+  Scene_ItemBase <|-- Scene_Item
+
+  class Scene_Skill {
+    -_skillTypeWindow: Window_SkillType
+    -_statusWindow: Window_SkillStatus
+    -_itemWindow: Window_SkillList
+
+    +initialize()
+    +create()
+    +start()
+    +createSkillTypeWindow()
+    +skillTypeWindowRect() Rectangle
+    +createStatusWindow()
+    +statusWindowRect() Rectangle
+    +createItemWindow()
+    +itemWindowRect() Rectangle
+    +needsPageButtons() boolean
+    +arePageButtonsEnabled() boolean
+    +refreshActor()
+    +user() Game_Actor
+    +commandSkill()
+    +onItemOk()
+    +onItemCancel()
+    +playSeForItem()
+    +useItem()
+    +onActorChange()
+  }
+  note for Scene_Skill "The scene class of the skill screen."
+
+  Scene_ItemBase <|-- Scene_Skill
+
+  class Scene_Equip {
+
+    -_statusWindow: Window_EquipStatus
+    -_commandWindow: Window_EquipCommand
+    -_slotWindow: Window_EquipSlot
+    -_itemWindow: Window_EquipItem
+
+    +initialize()
+
+    +create()
+    +createStatusWindow()
+    +statusWindowRect() Rectangle
+    +createCommandWindow()
+    +commandWindowRect() Rectangle
+    +createSlotWindow()
+    +slotWindowRect() Rectangle
+    +createItemWindow()
+    +itemWindowRect() Rectangle
+    +statusWidth() number
+    +needsPageButtons() boolean
+    +arePageButtonsEnabled() boolean
+    +refreshActor()
+    +commandEquip()
+    +commandOptimize()
+    +commandClear()
+    +onSlotOk()
+    +onSlotCancel()
+    +onItemOk()
+    +executeEquipChange()
+    +onItemCancel()
+    +onActorChange()
+    +hideItemWindow()
+  }
+  note for Scene_Equip "The scene class of the equipment screen."
+
+  Scene_MenuBase <|-- Scene_Equip
+
+
+  class Scene_Status {
+    -_profileWindow: Window_Help
+    -_statusWindow: Window_Status
+    -_statusParamsWindow: Window_StatusParams
+    -_statusEquipWindow: Window_StatusEquip
+
+    +initialize()
+
+    +create()
+    +helpAreaHeight() number
+    +createProfileWindow()
+    +profileWindowRect() Rectangle
+    +createStatusWindow()
+    +statusWindowRect() Rectangle
+    +createStatusParamsWindow()
+    +statusParamsWindowRect() Rectangle
+    +createStatusEquipWindow()
+    +statusEquipWindowRect() Rectangle
+    +statusParamsWidth() number
+    +statusParamsHeight() number
+    +profileHeight() number
+    +start()
+    +needsPageButtons() boolean
+    +refreshActor()
+    +onActorChange()
+  }
+  note for Scene_Status "The scene class of the status screen."
+
+  Scene_MenuBase <|-- Scene_Status
+
+  class Scene_Options {
+    -_optionsWindow: Window_Options
+
+    +initialize()
+    +create()
+    +terminate()
+    +createOptionsWindow()
+    +optionsWindowRect() Rectangle
+    +maxCommands() number
+    +maxVisibleCommands() number
+  }
+  note for Scene_Options "The scene class of the options screen."
+
+  Scene_MenuBase <|-- Scene_Options
+
+  class Scene_File {
+    -_helpWindow: Window_Help
+    -_listWindow: Window_SavefileList
+
+    +initialize()
+    +create()
+    +helpAreaHeight() number
+    +start()
+    +savefileId() number
+    +isSavefileEnabled(savefileId) boolean
+    +createHelpWindow()
+    +helpWindowRect() Rectangle
+    +createListWindow()
+    +listWindowRect() Rectangle
+    +mode() string
+    +needsAutosave() boolean
+    +activateListWindow()
+    +helpWindowText() string
+    +firstSavefileId() number
+    +onSavefileOk()*
+  }
+  note for Scene_File "The superclass of Scene_Save and Scene_Load."
+
+  Scene_MenuBase <|-- Scene_File
+
+  class Scene_Save {
+    +initialize()
+    +mode() string
+    +helpWindowText() string
+    +firstSavefileId() number
+    +onSavefileOk()
+    +executeSave(savefileId)
+    +onSaveSuccess()
+    +onSaveFailure()
+  }
+  note for Scene_Save "The scene class of the save screen."
+
+  Scene_File <|-- Scene_Save
+
+  class Scene_Load {
+    -_loadSuccess: boolean
+
+    +initialize()
+    +terminate()
+    +mode() string
+    +helpWindowText() string
+    +firstSavefileId() number
+    +onSavefileOk()
+    +executeLoad(savefileId)
+    +onLoadSuccess()
+    +onLoadFailure()
+    +reloadMapIfUpdated()
+  }
+  note for Scene_Load "The scene class of the load screen."
+
+  Scene_File <|-- Scene_Load
+
+  class Scene_GameEnd {
+
+    -_commandWindow: Window_GameEnd
+
+    +initialize()
+
+    +create()
+    +stop()
+    +createBackground()
+    +createCommandWindow()
+    +commandWindowRect() Rectangle
+    +commandToTitle()
+  }
+  note for Scene_GameEnd "The scene class of the game end screen."
+
+  Scene_MenuBase <|-- Scene_GameEnd
+
+
+  class Scene_Shop {
+    -_goods: any[]
+    -_purchaseOnly: boolean
+    -_item: any
+    -_goldWindow: Window_Gold
+    -_commandWindow: Window_ShopCommand
+    -_dummyWindow: Window_Base
+    -_numberWindow: Window_ShopNumber
+    -_statusWindow: Window_ShopStatus
+    -_buyWindow: Window_ShopBuy
+    -_categoryWindow: Window_ItemCategory
+    -_sellWindow: Window_ShopSell
+
+    +initialize()
+
+    +prepare(goods, purchaseOnly)
+    +create()
+    +createGoldWindow()
+    +goldWindowRect() Rectangle
+    +createCommandWindow()
+    +commandWindowRect() Rectangle
+    +createDummyWindow()
+    +dummyWindowRect() Rectangle
+    +createNumberWindow()
+    +numberWindowRect() Rectangle
+    +createStatusWindow()
+    +statusWindowRect() Rectangle
+    +createBuyWindow()
+    +buyWindowRect() Rectangle
+    +createCategoryWindow()
+    +categoryWindowRect() Rectangle
+    +createSellWindow()
+    +sellWindowRect() Rectangle
+    +statusWidth() number
+    +activateBuyWindow()
+    +activateSellWindow()
+    +commandBuy()
+    +commandSell()
+    +onBuyOk()
+    +onBuyCancel()
+    +onCategoryOk()
+    +onCategoryCancel()
+    +onSellOk()
+    +onSellCancel()
+    +onNumberOk()
+    +onNumberCancel()
+    +doBuy(number)
+    +doSell(number)
+    +endNumberInput()
+    +maxBuy() number
+    +maxSell() number
+    +money() number
+    +currencyUnit() string
+    +buyingPrice() number
+    +sellingPrice() number
+  }
+  note for Scene_Shop "The scene class of the shop screen."
+
+  Scene_MenuBase <|-- Scene_Shop
+
+  class Scene_Name {
+    -_actorId: number
+    -_maxLength: number
+    -_actor: Game_Actor
+    -_editWindow: Window_NameEdit
+    -_inputWindow: Window_NameInput
+
+    +initialize()
+    +prepare(actorId, maxLength)
+    +create()
+    +start()
+    +createEditWindow()
+    +editWindowRect() Rectangle
+    +createInputWindow()
+    +inputWindowRect() Rectangle
+    +onInputOk()
+  }
+  note for Scene_Name "The scene class of the name input screen."
+
+  Scene_MenuBase <|-- Scene_Name
+
+  class Scene_Debug {
+    -_rangeWindow: Window_DebugRange
+    -_editWindow: Window_DebugEdit
+    -_debugHelpWindow: Window_Base
+
+    +initialize()
+    +create()
+    +needsCancelButton() boolean
+    +createRangeWindow()
+    +rangeWindowRect() Rectangle
+    +createEditWindow()
+    +editWindowRect() Rectangle
+    +createDebugHelpWindow()
+    +debugHelpWindowRect() Rectangle
+    +onRangeOk()
+    +onEditCancel()
+    +refreshHelpWindow()
+    +helpText() string
+  }
+  note for Scene_Debug "The scene class of the debug screen."
+
+  Scene_MenuBase <|-- Scene_Debug
+
+  class Scene_Battle {
+    -_spriteset: Spriteset_Battle
+    -_logWindow: Window_BattleLog
+    -_statusWindow: Window_BattleStatus
+    -_partyCommandWindow: Window_PartyCommand
+    -_actorCommandWindow: Window_ActorCommand
+    -_helpWindow: Window_Help
+    -_skillWindow: Window_BattleSkill
+    -_itemWindow: Window_BattleItem
+    -_actorWindow: Window_BattleActor
+    -_enemyWindow: Window_BattleEnemy
+    -_cancelButton: Sprite_Button
+
+    +initialize()
+    +create()
+    +start()
+    +update()
+    +updateVisibility()
+    +updateBattleProcess()
+    +isTimeActive() boolean
+    +isAnyInputWindowActive() boolean
+    +changeInputWindow()
+    +stop()
+    +terminate()
+    +shouldAutosave() boolean
+    +needsSlowFadeOut() boolean
+    +updateLogWindowVisibility()
+    +updateStatusWindowVisibility()
+    +shouldOpenStatusWindow() boolean
+    +updateStatusWindowPosition()
+    +statusWindowX() number
+    +updateInputWindowVisibility()
+    +needsInputWindowChange() boolean
+    +updateCancelButton()
+    +createDisplayObjects()
+    +createSpriteset()
+    +createAllWindows()
+    +createLogWindow()
+    +logWindowRect() Rectangle
+    +createStatusWindow()
+    +statusWindowRect() Rectangle
+    +createPartyCommandWindow()
+    +partyCommandWindowRect() Rectangle
+    +createActorCommandWindow()
+    +actorCommandWindowRect() Rectangle
+    +createHelpWindow()
+    +helpWindowRect() Rectangle
+    +createSkillWindow()
+    +skillWindowRect() Rectangle
+    +createItemWindow()
+    +itemWindowRect() Rectangle
+    +createActorWindow()
+    +actorWindowRect() Rectangle
+    +createEnemyWindow()
+    +enemyWindowRect() Rectangle
+    +helpAreaTop() number
+    +helpAreaBottom() number
+    +helpAreaHeight() number
+    +buttonAreaTop() number
+    +windowAreaHeight() number
+    +createButtons()
+    +createCancelButton()
+    +closeCommandWindows()
+    +hideSubInputWindows()
+    +startPartyCommandSelection()
+    +commandFight()
+    +commandEscape()
+    +startActorCommandSelection()
+    +commandAttack()
+    +commandSkill()
+    +commandGuard()
+    +commandItem()
+    +commandCancel()
+    +selectNextCommand()
+    +selectPreviousCommand()
+    +startActorSelection()
+    +onActorOk()
+    +onActorCancel()
+    +startEnemySelection()
+    +onEnemyOk()
+    +onEnemyCancel()
+    +onSkillOk()
+    +onSkillCancel()
+    +onItemOk()
+    +onItemCancel()
+    +onSelectAction()
+    +endCommandSelection()
+  }
+  note for Scene_Battle "The scene class of the battle screen."
+
+  Scene_Message <|-- Scene_Battle
+
+  class Scene_Gameover {
+    -_backSprite: Sprite
+
+    +initialize()
+    +create()
+    +start()
+    +update()
+    +stop()
+    +terminate()
+    +playGameoverMusic()
+    +createBackground()
+    +adjustBackground()
+    +isTriggered() boolean
+    +gotoTitle()
+  }
+  note for Scene_Gameover "The scene class of the game over screen."
+
+  Scene_Base <|-- Scene_Gameover

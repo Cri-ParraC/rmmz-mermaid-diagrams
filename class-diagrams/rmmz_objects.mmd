@@ -1,0 +1,1976 @@
+classDiagram
+  class Game_Temp {
+    -_isPlaytest: boolean
+    -_destinationX: number | null
+    -_destinationY: number | null
+    -_touchTarget: any
+    -_touchState: string
+    -_needsBattleRefresh: boolean
+    -_commonEventQueue: number[]
+    -_animationQueue: any[]
+    -_balloonQueue: any[]
+    -_lastActionData: number[]
+
+    +initialize()
+    +isPlaytest() boolean
+    +setDestination(x, y)
+    +clearDestination()
+    +isDestinationValid() boolean
+    +destinationX() number | null
+    +destinationY() number | null
+    +setTouchState(target, state)
+    +clearTouchState()
+    +touchTarget() any
+    +touchState() string
+    +requestBattleRefresh()
+    +clearBattleRefreshRequest()
+    +isBattleRefreshRequested() boolean
+    +reserveCommonEvent(commonEventId)
+    +retrieveCommonEvent() any
+    +clearCommonEventReservation()
+    +isCommonEventReserved() boolean
+    +requestAnimation(targets, animationId, mirror)
+    +retrieveAnimation() any
+    +requestBalloon(target, balloonId)
+    +retrieveBalloon() any
+    +lastActionData(type) number
+    +setLastActionData(type, value)
+    +setLastUsedSkillId(skillID)
+    +setLastUsedItemId(itemID)
+    +setLastSubjectActorId(actorID)
+    +setLastSubjectEnemyIndex(enemyIndex)
+    +setLastTargetActorId(actorID)
+    +setLastTargetEnemyIndex(enemyIndex)
+  }
+  note for Game_Temp "The game object class for temporary data that is not included in save data."
+
+  class Game_System {
+    -_saveEnabled: boolean
+    -_menuEnabled: boolean
+    -_encounterEnabled: boolean
+    -_formationEnabled: boolean
+    -_battleCount: number
+    -_winCount: number
+    -_escapeCount: number
+    -_saveCount: number
+    -_versionId: number
+    -_savefileId: number
+    -_framesOnSave: number
+    -_bgmOnSave: any
+    -_bgsOnSave: any
+    -_windowTone: any
+    -_battleBgm: any
+    -_victoryMe: any
+    -_defeatMe: any
+    -_savedBgm: any
+    -_walkingBgm: any
+
+    +initialize()
+    +isJapanese() boolean
+    +isChinese() boolean
+    +isKorean() boolean
+    +isCJK() boolean
+    +isRussian() boolean
+    +isSideView() boolean
+    +isAutosaveEnabled() boolean
+    +isMessageSkipEnabled() boolean
+    +isSaveEnabled() boolean
+    +disableSave()
+    +enableSave()
+    +isMenuEnabled() boolean
+    +disableMenu()
+    +enableMenu()
+    +isEncounterEnabled() boolean
+    +disableEncounter()
+    +enableEncounter()
+    +isFormationEnabled() boolean
+    +disableFormation()
+    +enableFormation()
+    +battleCount() number
+    +winCount() number
+    +escapeCount() number
+    +saveCount() number
+    +versionId() number
+    +savefileId() number
+    +setSavefileId(savefileId)
+    +windowTone() any
+    +setWindowTone(value)
+    +battleBgm() any
+    +setBattleBgm(value)
+    +victoryMe() any
+    +setVictoryMe(value)
+    +defeatMe() any
+    +setDefeatMe(value)
+    +onBattleStart()
+    +onBattleWin()
+    +onBattleEscape()
+    +onBeforeSave()
+    +onAfterLoad()
+    +playtime() number
+    +playtimeText() string
+    +saveBgm()
+    +replayBgm()
+    +saveWalkingBgm()
+    +replayWalkingBgm()
+    +saveWalkingBgm2()
+    +mainFontFace() string
+    +numberFontFace() string
+    +mainFontSize() number
+    +windowPadding() number
+    +windowOpacity() number
+  }
+  note for Game_System "The game object class for the system data."
+
+  class Game_Timer {
+    -_frames: number
+    -_working: boolean
+
+    +initialize()
+    +update(sceneActive)
+    +start(count)
+    +stop()
+    +isWorking() boolean
+    +seconds() number
+    +frames() number
+    +onExpire()
+  }
+  note for Game_Timer "The game object class for the timer."
+
+  class Game_Message {
+    -_texts: string[]
+    -_choices: any[]
+    -_speakerName: string
+    -_faceName: string
+    -_faceIndex: number
+    -_background: number
+    -_positionType: number
+    -_choiceDefaultType: number
+    -_choiceCancelType: number
+    -_choiceBackground: number
+    -_choicePositionType: number
+    -_numInputVariableId: number
+    -_numInputMaxDigits: number
+    -_itemChoiceVariableId: number
+    -_itemChoiceItypeId: number
+    -_scrollMode: boolean
+    -_scrollSpeed: number
+    -_scrollNoFast: boolean
+    -_choiceCallback: any
+
+    +initialize()
+    +clear()
+    +choices() any[]
+    +speakerName() string
+    +faceName() string
+    +faceIndex() number
+    +background() number
+    +positionType() number
+    +choiceDefaultType() number
+    +choiceCancelType() number
+    +choiceBackground() number
+    +choicePositionType() number
+    +numInputVariableId() number
+    +numInputMaxDigits() number
+    +itemChoiceVariableId() number
+    +itemChoiceItypeId() number
+    +scrollMode() boolean
+    +scrollSpeed() number
+    +scrollNoFast() boolean
+    +add(text)
+    +setSpeakerName(speakerName)
+    +setFaceImage(faceName, faceIndex)
+    +setBackground(background)
+    +setPositionType(positionType)
+    +setChoices(choices, defaultType, cancelType)
+    +setChoiceBackground(background)
+    +setChoicePositionType(positionType)
+    +setNumberInput(variableId, maxDigits)
+    +setItemChoice(variableId, itemType)
+    +setScroll(speed, noFast)
+    +setChoiceCallback(callback)
+    +onChoice(n)
+    +hasText() boolean
+    +isChoice() boolean
+    +isNumberInput() boolean
+    +isItemChoice() boolean
+    +isBusy() boolean
+    +newPage()
+    +allText() string
+    +isRTL() boolean
+  }
+  note for Game_Message "The game object class for the state of the message window that displays text or selections, etc."
+
+  class Game_Switches {
+    -_data: boolean[]
+
+    +initialize()
+    +clear()
+    +value(switchId) boolean
+    +setValue(switchId, value)
+    +onChange()
+  }
+  note for Game_Switches "The game object class for switches."
+
+  class Game_Variables {
+    -_data: any[]
+
+    +initialize()
+    +clear()
+    +value(variableId) any
+    +setValue(variableId, value)
+    +onChange()
+  }
+  note for Game_Variables "The game object class for variables."
+
+  class Game_SelfSwitches {
+    -_data: object
+
+    +initialize()
+    +clear()
+    +value(key) boolean
+    +setValue(key, value)
+    +onChange()
+  }
+  note for Game_SelfSwitches "The game object class for self switches."
+
+  class Game_Screen {
+    -_brightness: number
+    -_fadeOutDuration: number
+    -_fadeInDuration: number
+    -_tone: number[]
+    -_toneTarget: number[]
+    -_toneDuration: number
+    -_flashColor: number[]
+    -_flashDuration: number
+    -_shakePower: number
+    -_shakeSpeed: number
+    -_shakeDuration: number
+    -_shakeDirection: number
+    -_shake: number
+    -_zoomX: number
+    -_zoomY: number
+    -_zoomScale: number
+    -_zoomScaleTarget: number
+    -_zoomDuration: number
+    -_weatherType: string
+    -_weatherPower: number
+    -_weatherPowerTarget: number
+    -_weatherDuration: number
+    -_pictures: any[]
+
+    +initialize()
+    +clear()
+    +onBattleStart()
+    +brightness() number
+    +tone() number[]
+    +flashColor() number[]
+    +shake() number
+    +zoomX() number
+    +zoomY() number
+    +zoomScale() number
+    +weatherType() string
+    +weatherPower() number
+    +picture(pictureId) any
+    +realPictureId(pictureId) number
+    +clearFade()
+    +clearTone()
+    +clearFlash()
+    +clearShake()
+    +clearZoom()
+    +clearWeather()
+    +clearPictures()
+    +eraseBattlePictures()
+    +maxPictures() number
+    +startFadeOut(duration)
+    +startFadeIn(duration)
+    +startTint(tone, duration)
+    +startFlash(color, duration)
+    +startShake(power, speed, duration)
+    +startZoom(x, y, scale, duration)
+    +setZoom(x, y, scale)
+    +changeWeather(type, power, duration)
+    +update()
+    +updateFadeOut()
+    +updateFadeIn()
+    +updateTone()
+    +updateFlash()
+    +updateShake()
+    +updateZoom()
+    +updateWeather()
+    +updatePictures()
+    +startFlashForDamage()
+    +showPicture(pictureId, name, origin, x, y, scaleX, scaleY, opacity, blendMode)
+    +movePicture(pictureId, origin, x, y, scaleX, scaleY, opacity, blendMode, duration, easingType)
+    +rotatePicture(pictureId, speed)
+    +tintPicture(pictureId, tone, duration)
+    +erasePicture(pictureId)
+  }
+  note for Game_Screen "The game object class for screen effect data, such as changes in color tone and flashes."
+
+  class Game_Picture {
+    -_name: string
+    -_origin: number
+    -_x: number
+    -_y: number
+    -_scaleX: number
+    -_scaleY: number
+    -_opacity: number
+    -_blendMode: number
+    -_tone: number[] | null
+    -_toneTarget: number[] | null
+    -_toneDuration: number
+    -_angle: number
+    -_rotationSpeed: number
+    -_targetX: number
+    -_targetY: number
+    -_targetScaleX: number
+    -_targetScaleY: number
+    -_targetOpacity: number
+    -_duration: number
+    -_wholeDuration: number
+    -_easingType: number
+    -_easingExponent: number
+
+    +initialize()
+    +name() string
+    +origin() number
+    +x() number
+    +y() number
+    +scaleX() number
+    +scaleY() number
+    +opacity() number
+    +blendMode() number
+    +tone() number[] | null
+    +angle() number
+    +initBasic()
+    +initTarget()
+    +initTone()
+    +initRotation()
+    +show(name, origin, x, y, scaleX, scaleY, opacity, blendMode)
+    +move(origin, x, y, scaleX, scaleY, opacity, blendMode, duration, easingType)
+    +rotate(speed)
+    +tint(tone, duration)
+    +update()
+    +updateMove()
+    +updateTone()
+    +updateRotation()
+    +applyEasing(current, target) number
+    +calcEasing(t) number
+    +easeIn(t, exponent) number
+    +easeOut(t, exponent) number
+    +easeInOut(t, exponent) number
+  }
+  note for Game_Picture "The game object class for a picture."
+
+  class Game_Item {
+    -_dataClass: string
+    -_itemId: number
+
+    +initialize(item)
+    +isSkill() boolean
+    +isItem() boolean
+    +isUsableItem() boolean
+    +isWeapon() boolean
+    +isArmor() boolean
+    +isEquipItem() boolean
+    +isNull() boolean
+    +itemId() number
+    +object() any
+    +setObject(item)
+    +setEquip(isWeapon, itemId)
+  }
+  note for Game_Item "The game object class for handling skills, items, weapons, and armor. It is required because save data should not include the database object itself."
+
+  class Game_Action {
+    -_subjectActorId: number
+    -_subjectEnemyIndex: number
+    -_forcing: boolean
+    -_item: Game_Item
+    -_targetIndex: number
+    -_reflectionTarget: any
+
+    +initialize(subject, forcing)
+    +clear()
+    +setSubject(subject)
+    +subject() any
+    +friendsUnit() any
+    +opponentsUnit() any
+    +setEnemyAction(action)
+    +setAttack()
+    +setGuard()
+    +setSkill(skillId)
+    +setItem(itemId)
+    +setItemObject(object)
+    +setTarget(targetIndex)
+    +item() any
+    +isSkill() boolean
+    +isItem() boolean
+    +numRepeats() number
+    +checkItemScope(list) boolean
+    +isForOpponent() boolean
+    +isForFriend() boolean
+    +isForEveryone() boolean
+    +isForAliveFriend() boolean
+    +isForDeadFriend() boolean
+    +isForUser() boolean
+    +isForOne() boolean
+    +isForRandom() boolean
+    +isForAll() boolean
+    +needsSelection() boolean
+    +numTargets() number
+    +checkDamageType(list) boolean
+    +isHpEffect() boolean
+    +isMpEffect() boolean
+    +isDamage() boolean
+    +isRecover() boolean
+    +isDrain() boolean
+    +isHpRecover() boolean
+    +isMpRecover() boolean
+    +isCertainHit() boolean
+    +isPhysical() boolean
+    +isMagical() boolean
+    +isAttack() boolean
+    +isGuard() boolean
+    +isMagicSkill() boolean
+    +decideRandomTarget()
+    +setConfusion()
+    +prepare()
+    +isValid() boolean
+    +speed() number
+    +makeTargets() any[]
+    +repeatTargets(targets) any[]
+    +confusionTarget() any
+    +targetsForEveryone() any[]
+    +targetsForOpponents() any[]
+    +targetsForFriends() any[]
+    +randomTargets(unit) any[]
+    +targetsForDead(unit) any[]
+    +targetsForAlive(unit) any[]
+    +targetsForDeadAndAlive(unit) any[]
+    +evaluate() number
+    +itemTargetCandidates() any[]
+    +evaluateWithTarget(target) any
+    +testApply(target) boolean
+    +testLifeAndDeath(target) boolean
+    +hasItemAnyValidEffects(target) boolean
+    +testItemEffect(target, effect) boolean
+    +itemCnt(target) number
+    +itemMrf(target) number
+    +itemHit(target) number
+    +itemEva(target) number
+    +itemCri(target) number
+    +apply(target)
+    +makeDamageValue(target, critical) number
+    +evalDamageFormula(target) number
+    +calcElementRate(target) number
+    +elementsMaxRate(target, elements) number
+    +applyCritical(damage) number
+    +applyVariance(damage, variance) number
+    +applyGuard(damage, target) number
+    +executeDamage(target, value)
+    +executeHpDamage(target, value)
+    +executeMpDamage(target, value)
+    +gainDrainedHp(value)
+    +gainDrainedMp(value)
+    +applyItemEffect(target, effect)
+    +itemEffectRecoverHp(target, effect)
+    +itemEffectRecoverMp(target, effect)
+    +itemEffectGainTp(target, effect)
+    +itemEffectAddState(target, effect)
+    +itemEffectAddAttackState(target, effect)
+    +itemEffectAddNormalState(target, effect)
+    +itemEffectRemoveState(target, effect)
+    +itemEffectAddBuff(target, effect)
+    +itemEffectAddDebuff(target, effect)
+    +itemEffectRemoveBuff(target, effect)
+    +itemEffectRemoveDebuff(target, effect)
+    +itemEffectSpecial(target, effect)
+    +itemEffectGrow(target, effect)
+    +itemEffectLearnSkill(target, effect)
+    +itemEffectCommonEvent(target, effect)*
+    +makeSuccess(target)
+    +applyItemUserEffect(target)
+    +lukEffectRate(target) number
+    +applyGlobal()
+    +updateLastUsed()
+    +updateLastSubject()
+    +updateLastTarget(target)
+  }
+  note for Game_Action "The game object class for a battle action."
+
+  class Game_ActionResult {
+    +used: boolean
+    +missed: boolean
+    +evaded: boolean
+    +physical: boolean
+    +drain: boolean
+    +critical: boolean
+    +success: boolean
+    +hpAffected: boolean
+    +hpDamage: number
+    +mpDamage: number
+    +tpDamage: number
+    +addedStates: number[]
+    +removedStates: number[]
+    +addedBuffs: number[]
+    +addedDebuffs: number[]
+    +removedBuffs: number[]
+
+    +initialize()
+    +clear()
+    +addedStateObjects() any[]
+    +removedStateObjects() any[]
+    +isStatusAffected() boolean
+    +isHit() boolean
+    +isStateAdded(stateId) boolean
+    +pushAddedState(stateId)
+    +isStateRemoved(stateId) boolean
+    +pushRemovedState(stateId)
+    +isBuffAdded(paramId) boolean
+    +pushAddedBuff(paramId)
+    +isDebuffAdded(paramId) boolean
+    +pushAddedDebuff(paramId)
+    +isBuffRemoved(paramId) boolean
+    +pushRemovedBuff(paramId)
+  }
+  note for Game_ActionResult "The game object class for a result of a battle action. For convinience, all member variables in this class are public."
+
+  class Game_BattlerBase {
+    -_hp: number
+    -_mp: number
+    -_tp: number
+    -_hidden: boolean
+    -_paramPlus: number[]
+    -_states: number[]
+    -_stateTurns: object
+    -_buffs: number[]
+    -_buffTurns: number[]
+
+    +initialize()
+    +initMembers()
+    +clearParamPlus()
+    +clearStates()
+    +eraseState(stateId)
+    +isStateAffected(stateId) boolean
+    +isDeathStateAffected() boolean
+    +deathStateId() number
+    +resetStateCounts(stateId)
+    +isStateExpired(stateId) boolean
+    +updateStateTurns()
+    +clearBuffs()
+    +eraseBuff(paramId)
+    +buffLength() number
+    +buff(paramId) number
+    +isBuffAffected(paramId) boolean
+    +isDebuffAffected(paramId) boolean
+    +isBuffOrDebuffAffected(paramId) boolean
+    +isMaxBuffAffected(paramId) boolean
+    +isMaxDebuffAffected(paramId) boolean
+    +increaseBuff(paramId)
+    +decreaseBuff(paramId)
+    +overwriteBuffTurns(paramId, turns)
+    +isBuffExpired(paramId) boolean
+    +updateBuffTurns()
+    +die()
+    +revive()
+    +states() any[]
+    +stateIcons() number[]
+    +buffIcons() number[]
+    +buffIconIndex(buffLevel, paramId) number
+    +allIcons() number[]
+    +traitObjects() any[]
+    +allTraits() any[]
+    +traits(code) any[]
+    +traitsWithId(code, id) any[]
+    +traitsPi(code, id) number
+    +traitsSum(code, id) number
+    +traitsSumAll(code) number
+    +traitsSet(code) any[]
+    +paramBase(paramId) number
+    +paramPlus(paramId) number
+    +paramBasePlus(paramId) number
+    +paramMin(paramId) number
+    +paramMax(paramId) number
+    +paramRate(paramId) number
+    +paramBuffRate(paramId) number
+    +param(paramId) number
+    +xparam(xparamId) number
+    +sparam(sparamId) number
+    +elementRate(elementId) number
+    +debuffRate(paramId) number
+    +stateRate(stateId) number
+    +stateResistSet() any[]
+    +isStateResist(stateId) boolean
+    +attackElements() number[]
+    +attackStates() number[]
+    +attackStatesRate(stateId) number
+    +attackSpeed() number
+    +attackTimesAdd() number
+    +attackSkillId() number
+    +addedSkillTypes() number[]
+    +isSkillTypeSealed(stypeId) boolean
+    +addedSkills() number[]
+    +isSkillSealed(skillId) boolean
+    +isEquipWtypeOk(wtypeId) boolean
+    +isEquipAtypeOk(atypeId) boolean
+    +isEquipTypeLocked(etypeId) boolean
+    +isEquipTypeSealed(etypeId) boolean
+    +slotType() number
+    +isDualWield() boolean
+    +actionPlusSet() number[]
+    +specialFlag(flagId) boolean
+    +collapseType() number
+    +partyAbility(abilityId) boolean
+    +isAutoBattle() boolean
+    +isGuard() boolean
+    +isSubstitute() boolean
+    +isPreserveTp() boolean
+    +addParam(paramId, value)
+    +setHp(hp)
+    +setMp(mp)
+    +setTp(tp)
+    +maxTp() number
+    +refresh()
+    +recoverAll()
+    +hpRate() number
+    +mpRate() number
+    +tpRate() number
+    +hide()
+    +appear()
+    +isHidden() boolean
+    +isAppeared() boolean
+    +isDead() boolean
+    +isAlive() boolean
+    +isDying() boolean
+    +isRestricted() boolean
+    +canInput() boolean
+    +canMove() boolean
+    +isConfused() boolean
+    +confusionLevel() number
+    +isActor() boolean
+    +isEnemy() boolean
+    +sortStates()
+    +restriction() number
+    +addNewState(stateId)
+    +onRestrict()*
+    +mostImportantStateText() string
+    +stateMotionIndex() number
+    +stateOverlayIndex() number
+    +isSkillWtypeOk(skill) boolean
+    +skillMpCost(skill) number
+    +skillTpCost(skill) number
+    +canPaySkillCost(skill) boolean
+    +paySkillCost(skill)
+    +isOccasionOk(item) boolean
+    +meetsUsableItemConditions(item) boolean
+    +meetsSkillConditions(skill) boolean
+    +meetsItemConditions(item) boolean
+    +canUse(item) boolean
+    +canEquip(item) boolean
+    +canEquipWeapon(item) boolean
+    +canEquipArmor(item) boolean
+    +guardSkillId() number
+    +canAttack() boolean
+    +canGuard() boolean
+  }
+  note for Game_BattlerBase "The superclass of Game_Battler. It mainly contains parameters calculation."
+
+  class Game_Battler {
+    -_actions: any[]
+    -_speed: number
+    -_result: Game_ActionResult
+    -_actionState: string
+    -_lastTargetIndex: number
+    -_damagePopup: boolean
+    -_effectType: any
+    -_motionType: any
+    -_weaponImageId: number
+    -_motionRefresh: boolean
+    -_selected: boolean
+    -_tpbState: string
+    -_tpbChargeTime: number
+    -_tpbCastTime: number
+    -_tpbIdleTime: number
+    -_tpbTurnCount: number
+    -_tpbTurnEnd: boolean
+
+    +initialize()
+    +initMembers()
+    +clearDamagePopup()
+    +clearWeaponAnimation()
+    +clearEffect()
+    +clearMotion()
+    +requestEffect(effectType)
+    +requestMotion(motionType)
+    +requestMotionRefresh()
+    +cancelMotionRefresh()
+    +select()
+    +deselect()
+    +isDamagePopupRequested() boolean
+    +isEffectRequested() boolean
+    +isMotionRequested() boolean
+    +isWeaponAnimationRequested() boolean
+    +isMotionRefreshRequested() boolean
+    +isSelected() boolean
+    +effectType() any
+    +motionType() any
+    +weaponImageId() number
+    +startDamagePopup()
+    +shouldPopupDamage() boolean
+    +startWeaponAnimation(weaponImageId)
+    +action(index) any
+    +setAction(index, action)
+    +numActions() number
+    +clearActions()
+    +result() Game_ActionResult
+    +clearResult()
+    +clearTpbChargeTime()
+    +applyTpbPenalty()
+    +initTpbChargeTime(advantageous)
+    +tpbChargeTime() number
+    +startTpbCasting()
+    +startTpbAction()
+    +isTpbCharged() boolean
+    +isTpbReady() boolean
+    +isTpbTimeout() boolean
+    +updateTpb()
+    +updateTpbChargeTime()
+    +updateTpbCastTime()
+    +updateTpbAutoBattle()
+    +updateTpbIdleTime()
+    +tpbAcceleration() number
+    +tpbRelativeSpeed() number
+    +tpbSpeed() number
+    +tpbBaseSpeed() number
+    +tpbRequiredCastTime() number
+    +onTpbCharged()
+    +shouldDelayTpbCharge() boolean
+    +finishTpbCharge()
+    +isTpbTurnEnd() boolean
+    +initTpbTurn()
+    +startTpbTurn()
+    +makeTpbActions()
+    +onTpbTimeout()
+    +turnCount() number
+    +canInput() boolean
+    +refresh()
+    +addState(stateId)
+    +isStateAddable(stateId) boolean
+    +isStateRestrict(stateId) boolean
+    +onRestrict()
+    +removeState(stateId)
+    +escape()
+    +addBuff(paramId, turns)
+    +addDebuff(paramId, turns)
+    +removeBuff(paramId)
+    +removeBattleStates()
+    +removeAllBuffs()
+    +removeStatesAuto(timing)
+    +removeBuffsAuto()
+    +removeStatesByDamage()
+    +makeActionTimes() number
+    +makeActions()
+    +speed() number
+    +makeSpeed()
+    +currentAction() any
+    +removeCurrentAction()
+    +setLastTarget(target)
+    +forceAction(skillId, targetIndex)
+    +useItem(item)
+    +consumeItem(item)
+    +gainHp(value)
+    +gainMp(value)
+    +gainTp(value)
+    +gainSilentTp(value)
+    +initTp()
+    +clearTp()
+    +chargeTpByDamage(damageRate)
+    +regenerateHp()
+    +maxSlipDamage() number
+    +regenerateMp()
+    +regenerateTp()
+    +regenerateAll()
+    +onBattleStart(advantageous)
+    +onAllActionsEnd()
+    +onTurnEnd()
+    +onBattleEnd()
+    +onDamage(value)
+    +setActionState(actionState)
+    +isUndecided() boolean
+    +isInputting() boolean
+    +isWaiting() boolean
+    +isActing() boolean
+    +isChanting() boolean
+    +isGuardWaiting() boolean
+    +performActionStart(action)
+    +performAction(action)*
+    +performActionEnd()*
+    +performDamage()*
+    +performMiss()
+    +performRecovery()
+    +performEvasion()
+    +performMagicEvasion()
+    +performCounter()
+    +performReflection()
+    +performSubstitute(target)*
+    +performCollapse()*
+  }
+  note for Game_Battler "The superclass of Game_Actor and Game_Enemy. It contains methods for sprites and actions."
+
+  Game_BattlerBase <|-- Game_Battler
+
+  class Game_Actor {
+    -_actorId: number
+    -_name: string
+    -_nickname: string
+    -_profile: string
+    -_classId: number
+    -_level: number
+    -_characterName: string
+    -_characterIndex: number
+    -_faceName: string
+    -_faceIndex: number
+    -_battlerName: string
+    -_exp: object
+    -_skills: number[]
+    -_equips: Game_Item[]
+    -_actionInputIndex: number
+    -_lastMenuSkill: Game_Item
+    -_lastBattleSkill: Game_Item
+    -_lastCommandSymbol: string
+
+    +initialize(actorId)
+    +initMembers()
+    +setup(actorId)
+    +actorId() number
+    +actor() any
+    +name() string
+    +setName(name)
+    +nickname() string
+    +setNickname(nickname)
+    +profile() string
+    +setProfile(profile)
+    +characterName() string
+    +characterIndex() number
+    +faceName() string
+    +faceIndex() number
+    +battlerName() string
+    +clearStates()
+    +eraseState(stateId)
+    +resetStateCounts(stateId)
+    +initImages()
+    +expForLevel(level) number
+    +initExp()
+    +currentExp() number
+    +currentLevelExp() number
+    +nextLevelExp() number
+    +nextRequiredExp() number
+    +maxLevel() number
+    +isMaxLevel() boolean
+    +initSkills()
+    +initEquips(equips)
+    +equipSlots() number[]
+    +equips() any[]
+    +weapons() any[]
+    +armors() any[]
+    +hasWeapon(weapon) boolean
+    +hasArmor(armor) boolean
+    +isEquipChangeOk(slotId) boolean
+    +changeEquip(slotId, item)
+    +forceChangeEquip(slotId, item)
+    +tradeItemWithParty(newItem, oldItem) boolean
+    +changeEquipById(etypeId, itemId)
+    +isEquipped(item) boolean
+    +discardEquip(item)
+    +releaseUnequippableItems(forcing)
+    +clearEquipments()
+    +optimizeEquipments()
+    +bestEquipItem(slotId) any
+    +calcEquipItemPerformance(item) number
+    +isSkillWtypeOk(skill) boolean
+    +isWtypeEquipped(wtypeId) boolean
+    +refresh()
+    +hide()
+    +isActor() boolean
+    +friendsUnit() any
+    +opponentsUnit() any
+    +index() number
+    +isBattleMember() boolean
+    +isFormationChangeOk() boolean
+    +currentClass() any
+    +isClass(gameClass) boolean
+    +skillTypes() number[]
+    +skills() any[]
+    +usableSkills() any[]
+    +traitObjects() any[]
+    +attackElements() number[]
+    +hasNoWeapons() boolean
+    +bareHandsElementId() number
+    +paramBase(paramId) number
+    +paramPlus(paramId) number
+    +attackAnimationId1() number
+    +attackAnimationId2() number
+    +bareHandsAnimationId() number
+    +changeExp(exp, show)
+    +levelUp()
+    +levelDown()
+    +findNewSkills(lastSkills) number[]
+    +displayLevelUp(newSkills)
+    +gainExp(exp)
+    +finalExpRate() number
+    +benchMembersExpRate() number
+    +shouldDisplayLevelUp() boolean
+    +changeLevel(level, show)
+    +learnSkill(skillId)
+    +forgetSkill(skillId)
+    +isLearnedSkill(skillId) boolean
+    +hasSkill(skillId) boolean
+    +changeClass(classId, keepExp)
+    +setCharacterImage(characterName, characterIndex)
+    +setFaceImage(faceName, faceIndex)
+    +setBattlerImage(battlerName)
+    +isSpriteVisible() boolean
+    +performActionStart(action)
+    +performAction(action)
+    +performActionEnd()
+    +performAttack()
+    +performDamage()
+    +performEvasion()
+    +performMagicEvasion()
+    +performCounter()
+    +performCollapse()
+    +performVictory()
+    +performEscape()
+    +makeActionList() any[]
+    +makeAutoBattleActions()
+    +makeConfusionActions()
+    +makeActions()
+    +onPlayerWalk()
+    +updateStateSteps(state)
+    +showAddedStates()
+    +showRemovedStates()
+    +stepsForTurn() number
+    +turnEndOnMap()
+    +checkFloorEffect()
+    +executeFloorDamage()
+    +basicFloorDamage() number
+    +maxFloorDamage() number
+    +performMapDamage()
+    +clearActions()
+    +inputtingAction() any
+    +selectNextCommand()
+    +selectPreviousCommand()
+    +lastSkill() any
+    +lastMenuSkill() any
+    +setLastMenuSkill(skill)
+    +lastBattleSkill() any
+    +setLastBattleSkill(skill)
+    +lastCommandSymbol() string
+    +setLastCommandSymbol(symbol)
+    +testEscape(item) boolean
+    +meetsUsableItemConditions(item) boolean
+    +onEscapeFailure()
+  }
+  note for Game_Actor "The game object class for an actor."
+
+  Game_Battler <|-- Game_Actor
+
+  class Game_Enemy {
+    -_enemyId: number
+    -_letter: string
+    -_plural: boolean
+    -_screenX: number
+    -_screenY: number
+
+    +initialize(enemyId, x, y)
+    +initMembers()
+    +setup(enemyId, x, y)
+    +isEnemy() boolean
+    +friendsUnit() any
+    +opponentsUnit() any
+    +index() number
+    +isBattleMember() boolean
+    +enemyId() number
+    +enemy() any
+    +traitObjects() any[]
+    +paramBase(paramId) number
+    +exp() number
+    +gold() number
+    +makeDropItems() any[]
+    +dropItemRate() number
+    +itemObject(kind, dataId) any
+    +isSpriteVisible() boolean
+    +screenX() number
+    +screenY() number
+    +battlerName() string
+    +battlerHue() number
+    +originalName() string
+    +name() string
+    +isLetterEmpty() boolean
+    +setLetter(letter)
+    +setPlural(plural)
+    +performActionStart(action)
+    +performAction(action)
+    +performActionEnd()
+    +performDamage()
+    +performCollapse()
+    +transform(enemyId)
+    +meetsCondition(action) boolean
+    +meetsTurnCondition(param1, param2) boolean
+    +meetsHpCondition(param1, param2) boolean
+    +meetsMpCondition(param1, param2) boolean
+    +meetsStateCondition(param) boolean
+    +meetsPartyLevelCondition(param) boolean
+    +meetsSwitchCondition(param) boolean
+    +isActionValid(action) boolean
+    +selectAction(actionList, ratingZero) any
+    +selectAllActions(actionList)
+    +makeActions()
+  }
+  note for Game_Enemy "The game object class for an enemy."
+
+  Game_Battler <|-- Game_Enemy
+
+  class Game_Actors {
+    -_data: (Game_Actor | null)[]
+
+    +initialize()
+    +actor(actorId) Game_Actor | null
+  }
+  note for Game_Actors "The wrapper class for an actor array."
+
+  class Game_Unit {
+    -_inBattle: boolean
+
+    +initialize()
+    +inBattle() boolean
+    +members() any[]
+    +aliveMembers() any[]
+    +deadMembers() any[]
+    +movableMembers() any[]
+    +clearActions()
+    +agility() number
+    +tgrSum() number
+    +randomTarget() any | null
+    +randomDeadTarget() any | null
+    +smoothTarget(index) any | undefined
+    +smoothDeadTarget(index) any | undefined
+    +clearResults()
+    +onBattleStart(advantageous)
+    +onBattleEnd()
+    +makeActions()
+    +select(activeMember)
+    +isAllDead() boolean
+    +substituteBattler(target) any | null
+    +tpbBaseSpeed() number
+    +tpbReferenceTime() number
+    +updateTpb()
+  }
+  note for Game_Unit "The superclass of Game_Party and Game_Troop."
+
+  class Game_Party {
+    -_gold: number
+    -_steps: number
+    -_lastItem: Game_Item
+    -_menuActorId: number
+    -_targetActorId: number
+    -_actors: number[]
+    -_items: object
+    -_weapons: object
+    -_armors: object
+
+    +initialize()
+    +initAllItems()
+    +exists() boolean
+    +size() number
+    +isEmpty() boolean
+    +members() any[]
+    +allMembers() any[]
+    +battleMembers() any[]
+    +hiddenBattleMembers() any[]
+    +allBattleMembers() any[]
+    +maxBattleMembers() number
+    +leader() any
+    +removeInvalidMembers()
+    +reviveBattleMembers()
+    +items() any[]
+    +weapons() any[]
+    +armors() any[]
+    +equipItems() any[]
+    +allItems() any[]
+    +itemContainer(item) object | null
+    +setupStartingMembers()
+    +name() string
+    +setupBattleTest()
+    +setupBattleTestMembers()
+    +setupBattleTestItems()
+    +highestLevel() number
+    +addActor(actorId)
+    +removeActor(actorId)
+    +gold() number
+    +gainGold(amount)
+    +loseGold(amount)
+    +maxGold() number
+    +steps() number
+    +increaseSteps()
+    +numItems(item) number
+    +maxItems(item) number
+    +hasMaxItems(item) boolean
+    +hasItem(item, includeEquip) boolean
+    +isAnyMemberEquipped(item) boolean
+    +gainItem(item, amount, includeEquip)
+    +discardMembersEquip(item, amount)
+    +loseItem(item, amount, includeEquip)
+    +consumeItem(item)
+    +canUse(item) boolean
+    +canInput() boolean
+    +isAllDead() boolean
+    +isEscaped() boolean
+    +onPlayerWalk()
+    +menuActor() any
+    +setMenuActor(actor)
+    +makeMenuActorNext()
+    +makeMenuActorPrevious()
+    +targetActor() any
+    +setTargetActor(actor)
+    +lastItem() any
+    +setLastItem(item)
+    +swapOrder(index1, index2)
+    +charactersForSavefile() any[][]
+    +facesForSavefile() any[][]
+    +partyAbility(abilityId) boolean
+    +hasEncounterHalf() boolean
+    +hasEncounterNone() boolean
+    +hasCancelSurprise() boolean
+    +hasRaisePreemptive() boolean
+    +hasGoldDouble() boolean
+    +hasDropItemDouble() boolean
+    +ratePreemptive(troopAgi) number
+    +rateSurprise(troopAgi) number
+    +performVictory()
+    +performEscape()
+    +removeBattleStates()
+    +requestMotionRefresh()
+    +onEscapeFailure()
+  }
+  note for Game_Party "The game object class for the party. Information such as gold and items is included."
+
+  Game_Unit <|-- Game_Party
+
+  class Game_Troop {
+    -_interpreter: Game_Interpreter
+    -_troopId: number
+    -_eventFlags: object
+    -_enemies: any[]
+    -_turnCount: number
+    -_namesCount: object
+
+    +initialize()
+    +isEventRunning() boolean
+    +updateInterpreter()
+    +turnCount() number
+    +members() any[]
+    +clear()
+    +troop() any
+    +setup(troopId)
+    +makeUniqueNames()
+    +updatePluralFlags()
+    +letterTable() string[]
+    +enemyNames() string[]
+    +meetsConditions(page) boolean
+    +setupBattleEvent()
+    +increaseTurn()
+    +expTotal() number
+    +goldTotal() number
+    +goldRate() number
+    +makeDropItems() any[]
+    +isTpbTurnEnd() boolean
+  }
+  note for Game_Troop "The game object class for a troop and the battle-related data."
+
+  Game_Unit <|-- Game_Troop
+
+  class Game_Map {
+    -_interpreter: Game_Interpreter
+    -_mapId: number
+    -_tilesetId: number
+    -_events: any[]
+    -_commonEvents: any[]
+    -_vehicles: any[]
+    -_displayX: number
+    -_displayY: number
+    -_nameDisplay: boolean
+    -_scrollDirection: number
+    -_scrollRest: number
+    -_scrollSpeed: number
+    -_parallaxName: string
+    -_parallaxZero: boolean
+    -_parallaxLoopX: boolean
+    -_parallaxLoopY: boolean
+    -_parallaxSx: number
+    -_parallaxSy: number
+    -_parallaxX: number
+    -_parallaxY: number
+    -_battleback1Name: string | null
+    -_battleback2Name: string | null
+    -_needsRefresh: boolean
+    -_tileEvents: any[]
+
+    +initialize()
+    +setup(mapId)
+    +isEventRunning() boolean
+    +tileWidth() number
+    +tileHeight() number
+    +bushDepth() number
+    +mapId() number
+    +tilesetId() number
+    +displayX() number
+    +displayY() number
+    +parallaxName() string
+    +battleback1Name() string | null
+    +battleback2Name() string | null
+    +requestRefresh()
+    +isNameDisplayEnabled() boolean
+    +disableNameDisplay()
+    +enableNameDisplay()
+    +createVehicles()
+    +refereshVehicles()
+    +vehicles() any[]
+    +vehicle(type) any | null
+    +boat() any
+    +ship() any
+    +airship() any
+    +setupEvents()
+    +events() any[]
+    +event(eventId) any
+    +eraseEvent(eventId)
+    +autorunCommonEvents() any[]
+    +parallelCommonEvents() any[]
+    +setupScroll()
+    +setupParallax()
+    +setupBattleback()
+    +setDisplayPos(x, y)
+    +parallaxOx() number
+    +parallaxOy() number
+    +tileset() any
+    +tilesetFlags() any[]
+    +displayName() string
+    +width() number
+    +height() number
+    +data() any
+    +isLoopHorizontal() boolean
+    +isLoopVertical() boolean
+    +isDashDisabled() boolean
+    +encounterList() any[]
+    +encounterStep() number
+    +isOverworld() boolean
+    +screenTileX() number
+    +screenTileY() number
+    +adjustX(x) number
+    +adjustY(y) number
+    +roundX(x) number
+    +roundY(y) number
+    +xWithDirection(x, d) number
+    +yWithDirection(y, d) number
+    +roundXWithDirection(x, d) number
+    +roundYWithDirection(y, d) number
+    +deltaX(x1, x2) number
+    +deltaY(y1, y2) number
+    +distance(x1, y1, x2, y2) number
+    +canvasToMapX(x) number
+    +canvasToMapY(y) number
+    +autoplay()
+    +refreshIfNeeded()
+    +refresh()
+    +refreshTileEvents()
+    +eventsXy(x, y) any[]
+    +eventsXyNt(x, y) any[]
+    +tileEventsXy(x, y) any[]
+    +eventIdXy(x, y) number
+    +scrollDown(distance)
+    +scrollLeft(distance)
+    +scrollRight(distance)
+    +scrollUp(distance)
+    +isValid(x, y) boolean
+    +checkPassage(x, y, bit) boolean
+    +tileId(x, y, z) number
+    +layeredTiles(x, y) number[]
+    +allTiles(x, y) number[]
+    +autotileType(x, y, z) number
+    +isPassable(x, y, d) boolean
+    +isBoatPassable(x, y) boolean
+    +isShipPassable(x, y) boolean
+    +isAirshipLandOk(x, y) boolean
+    +checkLayeredTilesFlags(x, y, bit) boolean
+    +isLadder(x, y) boolean
+    +isBush(x, y) boolean
+    +isCounter(x, y) boolean
+    +isDamageFloor(x, y) boolean
+    +terrainTag(x, y) number
+    +regionId(x, y) number
+    +startScroll(direction, distance, speed)
+    +isScrolling() boolean
+    +update(sceneActive)
+    +updateScroll()
+    +scrollDistance() number
+    +doScroll(direction, distance)
+    +updateEvents()
+    +updateVehicles()
+    +updateParallax()
+    +changeTileset(tilesetId)
+    +changeBattleback(battleback1Name, battleback2Name)
+    +changeParallax(name, loopX, loopY, sx, sy)
+    +updateInterpreter()
+    +unlockEvent(eventId)
+    +setupStartingEvent() boolean
+    +setupTestEvent() boolean
+    +setupStartingMapEvent() boolean
+    +setupAutorunCommonEvent() boolean
+    +isAnyEventStarting() boolean
+  }
+  note for Game_Map "The game object class for a map. It contains scrolling and passage determination functions."
+
+  class Game_CommonEvent {
+    -_commonEventId: number
+    -_interpreter: Game_Interpreter | null
+
+    +initialize(commonEventId)
+    +event() any
+    +list() any
+    +refresh()
+    +isActive() boolean
+    +update()
+  }
+  note for Game_CommonEvent "The game object class for a common event. It contains functionality for running parallel process events."
+
+  class Game_CharacterBase {
+    +x: number
+    +y: number
+
+    -_x: number
+    -_y: number
+    -_realX: number
+    -_realY: number
+    -_moveSpeed: number
+    -_moveFrequency: number
+    -_opacity: number
+    -_blendMode: number
+    -_direction: number
+    -_pattern: number
+    -_priorityType: number
+    -_tileId: number
+    -_characterName: string
+    -_characterIndex: number
+    -_isObjectCharacter: boolean
+    -_walkAnime: boolean
+    -_stepAnime: boolean
+    -_directionFix: boolean
+    -_through: boolean
+    -_transparent: boolean
+    -_bushDepth: number
+    -_animationId: number
+    -_balloonId: number
+    -_animationPlaying: boolean
+    -_balloonPlaying: boolean
+    -_animationCount: number
+    -_stopCount: number
+    -_jumpCount: number
+    -_jumpPeak: number
+    -_movementSuccess: boolean
+
+    +initialize()
+    +initMembers()
+    +pos(x, y) boolean
+    +posNt(x, y) boolean
+    +moveSpeed() number
+    +setMoveSpeed(moveSpeed)
+    +moveFrequency() number
+    +setMoveFrequency(moveFrequency)
+    +opacity() number
+    +setOpacity(opacity)
+    +blendMode() number
+    +setBlendMode(blendMode)
+    +isNormalPriority() boolean
+    +setPriorityType(priorityType)
+    +isMoving() boolean
+    +isJumping() boolean
+    +jumpHeight() number
+    +isStopping() boolean
+    +checkStop(threshold) boolean
+    +resetStopCount()
+    +realMoveSpeed() number
+    +distancePerFrame() number
+    +isDashing() boolean
+    +isDebugThrough() boolean
+    +straighten()
+    +reverseDir(d) number
+    +canPass(x, y, d) boolean
+    +canPassDiagonally(x, y, horz, vert) boolean
+    +isMapPassable(x, y, d) boolean
+    +isCollidedWithCharacters(x, y) boolean
+    +isCollidedWithEvents(x, y) boolean
+    +isCollidedWithVehicles(x, y) boolean
+    +setPosition(x, y)
+    +copyPosition(character)
+    +locate(x, y)
+    +direction() number
+    +setDirection(d)
+    +isTile() boolean
+    +isObjectCharacter() boolean
+    +shiftY() number
+    +scrolledX() number
+    +scrolledY() number
+    +screenX() number
+    +screenY() number
+    +screenZ() number
+    +isNearTheScreen() boolean
+    +update()
+    +updateStop()
+    +updateJump()
+    +updateMove()
+    +updateAnimation()
+    +animationWait() number
+    +updateAnimationCount()
+    +updatePattern()
+    +maxPattern() number
+    +pattern() number
+    +setPattern(pattern)
+    +isOriginalPattern() boolean
+    +resetPattern()
+    +refreshBushDepth()
+    +isOnLadder() boolean
+    +isOnBush() boolean
+    +terrainTag() number
+    +regionId() number
+    +increaseSteps()
+    +tileId() number
+    +characterName() string
+    +characterIndex() number
+    +setImage(characterName, characterIndex)
+    +setTileImage(tileId)
+    +checkEventTriggerTouchFront(d)
+    +checkEventTriggerTouch(x, y) boolean
+    +isMovementSucceeded(x, y) boolean
+    +setMovementSuccess(success)
+    +moveStraight(d)
+    +moveDiagonally(horz, vert)
+    +jump(xPlus, yPlus)
+    +hasWalkAnime() boolean
+    +setWalkAnime(walkAnime)
+    +hasStepAnime() boolean
+    +setStepAnime(stepAnime)
+    +isDirectionFixed() boolean
+    +setDirectionFix(directionFix)
+    +isThrough() boolean
+    +setThrough(through)
+    +isTransparent() boolean
+    +bushDepth() number
+    +setTransparent(transparent)
+    +startAnimation()
+    +startBalloon()
+    +isAnimationPlaying() boolean
+    +isBalloonPlaying() boolean
+    +endAnimation()
+    +endBalloon()
+  }
+  note for Game_CharacterBase "The superclass of Game_Character. It handles basic information, such as coordinates and images, shared by all characters."
+
+  class Game_Character {
+    +ROUTE_END: number
+    +ROUTE_MOVE_DOWN: number
+    +ROUTE_MOVE_LEFT: number
+    +ROUTE_MOVE_RIGHT: number
+    +ROUTE_MOVE_UP: number
+    +ROUTE_MOVE_LOWER_L: number
+    +ROUTE_MOVE_LOWER_R: number
+    +ROUTE_MOVE_UPPER_L: number
+    +ROUTE_MOVE_UPPER_R: number
+    +ROUTE_MOVE_RANDOM: number
+    +ROUTE_MOVE_TOWARD: number
+    +ROUTE_MOVE_AWAY: number
+    +ROUTE_MOVE_FORWARD: number
+    +ROUTE_MOVE_BACKWARD: number
+    +ROUTE_JUMP: number
+    +ROUTE_WAIT: number
+    +ROUTE_TURN_DOWN: number
+    +ROUTE_TURN_LEFT: number
+    +ROUTE_TURN_RIGHT: number
+    +ROUTE_TURN_UP: number
+    +ROUTE_TURN_90D_R: number
+    +ROUTE_TURN_90D_L: number
+    +ROUTE_TURN_180D: number
+    +ROUTE_TURN_90D_R_L: number
+    +ROUTE_TURN_RANDOM: number
+    +ROUTE_TURN_TOWARD: number
+    +ROUTE_TURN_AWAY: number
+    +ROUTE_SWITCH_ON: number
+    +ROUTE_SWITCH_OFF: number
+    +ROUTE_CHANGE_SPEED: number
+    +ROUTE_CHANGE_FREQ: number
+    +ROUTE_WALK_ANIME_ON: number
+    +ROUTE_WALK_ANIME_OFF: number
+    +ROUTE_STEP_ANIME_ON: number
+    +ROUTE_STEP_ANIME_OFF: number
+    +ROUTE_DIR_FIX_ON: number
+    +ROUTE_DIR_FIX_OFF: number
+    +ROUTE_THROUGH_ON: number
+    +ROUTE_THROUGH_OFF: number
+    +ROUTE_TRANSPARENT_ON: number
+    +ROUTE_TRANSPARENT_OFF: number
+    +ROUTE_CHANGE_IMAGE: number
+    +ROUTE_CHANGE_OPACITY: number
+    +ROUTE_CHANGE_BLEND_MODE: number
+    +ROUTE_PLAY_SE: number
+    +ROUTE_SCRIPT: number
+
+    -_moveRouteForcing: boolean
+    -_moveRoute: any
+    -_moveRouteIndex: number
+    -_originalMoveRoute: any
+    -_originalMoveRouteIndex: number
+    -_waitCount: number
+
+    +initialize()
+    +initMembers()
+    +memorizeMoveRoute()
+    +restoreMoveRoute()
+    +isMoveRouteForcing() boolean
+    +setMoveRoute(moveRoute)
+    +forceMoveRoute(moveRoute)
+    +updateStop()
+    +updateRoutineMove()
+    +processMoveCommand(command)
+    +deltaXFrom(x) number
+    +deltaYFrom(y) number
+    +moveRandom()
+    +moveTowardCharacter(character)
+    +moveAwayFromCharacter(character)
+    +turnTowardCharacter(character)
+    +turnAwayFromCharacter(character)
+    +turnTowardPlayer()
+    +turnAwayFromPlayer()
+    +moveTowardPlayer()
+    +moveAwayFromPlayer()
+    +moveForward()
+    +moveBackward()
+    +processRouteEnd()
+    +advanceMoveRouteIndex()
+    +turnRight90()
+    +turnLeft90()
+    +turn180()
+    +turnRightOrLeft90()
+    +turnRandom()
+    +swap(character)
+    +findDirectionTo(goalX, goalY) number
+    +searchLimit() number
+  }
+  note for Game_Character "The superclass of Game_Player, Game_Follower, GameVehicle, and Game_Event."
+
+  Game_CharacterBase <|-- Game_Character
+
+  class Game_Player {
+    -_vehicleType: string
+    -_vehicleGettingOn: boolean
+    -_vehicleGettingOff: boolean
+    -_dashing: boolean
+    -_needsMapReload: boolean
+    -_transferring: boolean
+    -_newMapId: number
+    -_newX: number
+    -_newY: number
+    -_newDirection: number
+    -_fadeType: number
+    -_followers: Game_Followers
+    -_encounterCount: number
+
+    +initialize()
+    +initMembers()
+    +clearTransferInfo()
+    +followers() Game_Followers
+    +refresh()
+    +isStopping() boolean
+    +reserveTransfer(mapId, x, y, d, fadeType)
+    +setupForNewGame()
+    +requestMapReload()
+    +isTransferring() boolean
+    +newMapId() number
+    +fadeType() number
+    +performTransfer()
+    +isMapPassable(x, y, d) boolean
+    +vehicle() any
+    +isInBoat() boolean
+    +isInShip() boolean
+    +isInAirship() boolean
+    +isInVehicle() boolean
+    +isNormal() boolean
+    +isDashing() boolean
+    +isDebugThrough() boolean
+    +isCollided(x, y) boolean
+    +centerX() number
+    +centerY() number
+    +center(x, y)
+    +locate(x, y)
+    +increaseSteps()
+    +makeEncounterCount()
+    +makeEncounterTroopId() number
+    +meetsEncounterConditions(encounter) boolean
+    +executeEncounter() boolean
+    +startMapEvent(x, y, triggers, normal)
+    +moveByInput()
+    +canMove() boolean
+    +getInputDirection() number
+    +executeMove(direction)
+    +update(sceneActive)
+    +updateDashing()
+    +isDashButtonPressed() boolean
+    +updateScroll(lastScrolledX, lastScrolledY)
+    +updateVehicle()
+    +updateVehicleGetOn()
+    +updateVehicleGetOff()
+    +updateNonmoving(wasMoving, sceneActive)
+    +triggerAction() boolean
+    +triggerButtonAction() boolean
+    +triggerTouchAction() boolean
+    +triggerTouchActionD1(x1, y1) boolean
+    +triggerTouchActionD2(x2, y2) boolean
+    +triggerTouchActionD3(x2, y2) boolean
+    +updateEncounterCount()
+    +canEncounter() boolean
+    +encounterProgressValue() number
+    +checkEventTriggerHere(triggers)
+    +checkEventTriggerThere(triggers)
+    +checkEventTriggerTouch(x, y)
+    +canStartLocalEvents() boolean
+    +getOnOffVehicle() boolean
+    +getOnVehicle() boolean
+    +getOffVehicle() boolean
+    +forceMoveForward()
+    +isOnDamageFloor() boolean
+    +moveStraight(d)
+    +moveDiagonally(horz, vert)
+    +jump(xPlus, yPlus)
+    +showFollowers()
+    +hideFollowers()
+    +gatherFollowers()
+    +areFollowersGathering() boolean
+    +areFollowersGathered() boolean
+  }
+  note for Game_Player "The game object class for the player. It contains event starting determinants and map scrolling functions."
+
+  Game_Character <|-- Game_Player
+
+  class Game_Follower {
+    -_memberIndex: number
+
+    +initialize(memberIndex)
+    +refresh()
+    +actor() any
+    +isVisible() boolean
+    +isGathered() boolean
+    +update()
+    +chaseCharacter(character)
+  }
+  note for Game_Follower "The game object class for a follower. A follower is an allied character, other than the front character, displayed in the party."
+
+  Game_Character <|-- Game_Follower
+
+  class Game_Followers {
+    -_visible: boolean
+    -_gathering: boolean
+    -_data: Game_Follower[]
+
+    +initialize()
+    +setup()
+    +isVisible() boolean
+    +show()
+    +hide()
+    +data() Game_Follower[]
+    +reverseData() Game_Follower[]
+    +follower(index) Game_Follower
+    +refresh()
+    +update()
+    +updateMove()
+    +jumpAll()
+    +synchronize(x, y, d)
+    +gather()
+    +areGathering() boolean
+    +visibleFollowers() Game_Follower[]
+    +areMoving() boolean
+    +areGathered() boolean
+    +isSomeoneCollided(x, y) boolean
+  }
+  note for Game_Followers "The wrapper class for a follower array."
+
+  class Game_Vehicle {
+    -_type: string
+    -_mapId: number
+    -_altitude: number
+    -_driving: boolean
+    -_bgm: any | null
+
+    +initialize(type)
+    +initMembers()
+    +isBoat() boolean
+    +isShip() boolean
+    +isAirship() boolean
+    +resetDirection()
+    +initMoveSpeed()
+    +vehicle() any | null
+    +loadSystemSettings()
+    +refresh()
+    +setLocation(mapId, x, y)
+    +pos(x, y) boolean
+    +isMapPassable(x, y, d) boolean
+    +getOn()
+    +getOff()
+    +setBgm(bgm)
+    +playBgm()
+    +syncWithPlayer()
+    +screenY() number
+    +shadowX() number
+    +shadowY() number
+    +shadowOpacity() number
+    +canMove() boolean
+    +update()
+    +updateAirship()
+    +updateAirshipAltitude()
+    +maxAltitude() number
+    +isLowest() boolean
+    +isHighest() boolean
+    +isTakeoffOk() boolean
+    +isLandOk(x, y, d) boolean
+  }
+  note for Game_Vehicle "The game object class for a vehicle."
+
+  Game_Character <|-- Game_Vehicle
+
+  class Game_Event {
+    -_mapId: number
+    -_eventId: number
+    -_moveType: number
+    -_trigger: number | null
+    -_starting: boolean
+    -_erased: boolean
+    -_pageIndex: number
+    -_originalPattern: number
+    -_originalDirection: number
+    -_prelockDirection: number
+    -_locked: boolean
+    -_interpreter: Game_Interpreter | null
+
+    +initialize(mapId, eventId)
+    +initMembers()
+    +eventId() number
+    +event() any
+    +page() any
+    +list() any
+    +isCollidedWithCharacters(x, y) boolean
+    +isCollidedWithEvents(x, y) boolean
+    +isCollidedWithPlayerCharacters(x, y) boolean
+    +lock()
+    +unlock()
+    +updateStop()
+    +updateSelfMovement()
+    +stopCountThreshold() number
+    +moveTypeRandom()
+    +moveTypeTowardPlayer()
+    +isNearThePlayer() boolean
+    +moveTypeCustom()
+    +isStarting() boolean
+    +clearStartingFlag()
+    +isTriggerIn(triggers) boolean
+    +start()
+    +erase()
+    +refresh()
+    +findProperPageIndex() number
+    +meetsConditions(page) boolean
+    +setupPage()
+    +clearPageSettings()
+    +setupPageSettings()
+    +isOriginalPattern() boolean
+    +resetPattern()
+    +checkEventTriggerTouch(x, y)
+    +checkEventTriggerAuto()
+    +update()
+    +updateParallel()
+    +locate(x, y)
+    +forceMoveRoute(moveRoute)
+  }
+  note for Game_Event "The game object class for an event. It contains functionality for event page switching and running parallel process events."
+
+  Game_Character <|-- Game_Event
+
+  class Game_Interpreter {
+    -_depth: number
+    -_branch: object
+    -_indent: number
+    -_frameCount: number
+    -_freezeChecker: number
+    -_mapId: number
+    -_eventId: number
+    -_list: any[] | null
+    -_index: number
+    -_waitCount: number
+    -_waitMode: string
+    -_comments: any
+    -_characterId: number
+    -_childInterpreter: Game_Interpreter | null
+
+    +initialize(depth)
+    +checkOverflow()
+    +clear()
+    +setup(list, eventId)
+    +loadImages()
+    +eventId() number
+    +isOnCurrentMap() boolean
+    +setupReservedCommonEvent() boolean
+    +isRunning() boolean
+    +update()
+    +updateChild() boolean
+    +updateWait() boolean
+    +updateWaitCount() boolean
+    +updateWaitMode() boolean
+    +setWaitMode(waitMode)
+    +wait(duration)
+    +fadeSpeed() number
+    +executeCommand() boolean
+    +checkFreeze() boolean
+    +terminate()
+    +skipBranch()
+    +currentCommand() any
+    +nextEventCode() number
+    +iterateActorId(param, callback)
+    +iterateActorEx(param1, param2, callback)
+    +iterateActorIndex(param, callback)
+    +iterateEnemyIndex(param, callback)
+    +iterateBattler(param1, param2, callback)
+    +character(param) any | null
+    +operateValue(operation, operandType, operand) number
+    +changeHp(target, value, allowDeath)
+
+    +command101(params) boolean
+    +command102(params) boolean
+    +setupChoices(params)
+    +command402(params) boolean
+    +command403() boolean
+    +command103(params) boolean
+    +setupNumInput(params)
+    +command104(params) boolean
+    +setupItemChoice(params)
+    +command105(params) boolean
+    +command108(params) boolean
+    +command109() boolean
+    +command111(params) boolean
+    +command411() boolean
+    +command112() boolean
+    +command413() boolean
+    +command113() boolean
+    +command115() boolean
+    +command117(params) boolean
+    +setupChild(list, eventId)
+    +command118() boolean
+    +command119(params) boolean
+    +jumpTo(index)
+    +command121(params) boolean
+    +command122(params) boolean
+    +gameDataOperand(type, param1, param2) any
+    +operateVariable(variableId, operationType, value)
+    +command123(params) boolean
+    +command124(params) boolean
+    +command125(params) boolean
+    +command126(params) boolean
+    +command127(params) boolean
+    +command128(params) boolean
+    +command129(params) boolean
+    +command132(params) boolean
+    +command133(params) boolean
+    +command134(params) boolean
+    +command135(params) boolean
+    +command136(params) boolean
+    +command137(params) boolean
+    +command138(params) boolean
+    +command139(params) boolean
+    +command140(params) boolean
+    +command201(params) boolean
+    +command202(params) boolean
+    +command203(params) boolean
+    +command204(params) boolean
+    +command205(params) boolean
+    +command206() boolean
+    +command211(params) boolean
+    +command212(params) boolean
+    +command213(params) boolean
+    +command214() boolean
+    +command216(params) boolean
+    +command217() boolean
+    +command221() boolean
+    +command222() boolean
+    +command223(params) boolean
+    +command224(params) boolean
+    +command225(params) boolean
+    +command230(params) boolean
+    +command231(params) boolean
+    +command232(params) boolean
+    +picturePoint(params) any
+    +command233(params) boolean
+    +command234(params) boolean
+    +command235(params) boolean
+    +command236(params) boolean
+    +command241(params) boolean
+    +command242(params) boolean
+    +command243() boolean
+    +command244() boolean
+    +command245(params) boolean
+    +command246(params) boolean
+    +command249(params) boolean
+    +command250(params) boolean
+    +command251() boolean
+    +command261(params) boolean
+    +videoFileExt() string
+    +command281(params) boolean
+    +command282(params) boolean
+    +command283(params) boolean
+    +command284(params) boolean
+    +command285(params) boolean
+    +command301(params) boolean
+    +command601() boolean
+    +command602() boolean
+    +command603() boolean
+    +command302(params) boolean
+    +command303(params) boolean
+    +command311(params) boolean
+    +command312(params) boolean
+    +command326(params) boolean
+    +command313(params) boolean
+    +command314(params) boolean
+    +command315(params) boolean
+    +command316(params) boolean
+    +command317(params) boolean
+    +command318(params) boolean
+    +command319(params) boolean
+    +command320(params) boolean
+    +command321(params) boolean
+    +command322(params) boolean
+    +command323(params) boolean
+    +command324(params) boolean
+    +command325(params) boolean
+    +command331(params) boolean
+    +command332(params) boolean
+    +command342(params) boolean
+    +command333(params) boolean
+    +command334(params) boolean
+    +command335(params) boolean
+    +command336(params) boolean
+    +command337(params) boolean
+    +command339(params) boolean
+    +command340() boolean
+    +command351() boolean
+    +command352() boolean
+    +command353() boolean
+    +command354() boolean
+    +command355() boolean
+    +command356(params) boolean
+    +pluginCommand(command, args)*
+    +command357(params) boolean
+  }
+  note for Game_Interpreter "The interpreter for running event commands."

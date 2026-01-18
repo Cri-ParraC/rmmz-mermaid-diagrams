@@ -1,0 +1,791 @@
+classDiagram
+  class PIXI_Sprite["PIXI.Sprite"]
+
+  class PIXI_TilingSprite["PIXI.TilingSprite"]
+
+  class Sprite {
+    +_emptyBaseTexture: any | null
+    +_counter: number
+
+    +spriteId: number
+    -_bitmap: Bitmap | null
+    -_frame: Rectangle
+    -_hue: number
+    -_blendColor: number[]
+    -_colorTone: number[]
+    -_colorFilter: ColorFilter | null
+    -_blendMode: number
+    -_hidden: boolean
+    -_refreshFrame: boolean
+
+    +bitmap: Bitmap
+    +width: number
+    +height: number
+    +opacity: number
+    +blendMode: number
+
+    +initialize(bitmap)
+    +destroy()
+    +update()
+    +hide()
+    +show()
+    +updateVisibility()
+    +move(x, y)
+    +setFrame(x, y, width, height)
+    +setHue(hue)
+    +getBlendColor() array
+    +setBlendColor(color)
+    +getColorTone() array
+    +setColorTone(tone)
+    +_onBitmapChange()
+    +_onBitmapLoad(bitmapLoaded)
+    +_refresh()
+    +_createColorFilter()
+    +_updateColorFilter()
+  }
+  note for Sprite "The basic object that is rendered to the game screen."
+
+  PIXI_Sprite <|-- Sprite
+
+  class TilingSprite {
+    +_emptyBaseTexture: any | null
+
+    -_bitmap: Bitmap | null
+    -_width: number
+    -_height: number
+    -_frame: Rectangle
+    +origin: Point
+
+    +bitmap: Bitmap
+    +opacity: number
+
+    +initialize(bitmap)
+    +destroy()
+    +update()
+    +move(x, y, width, height)
+    +setFrame(x, y, width, height)
+    +updateTransform()
+    +_onBitmapChange()
+    +_onBitmapLoad()
+    +_refresh()
+  }
+  note for TilingSprite "The sprite object for a tiling image."
+
+  PIXI_TilingSprite <|-- TilingSprite
+
+  class Sprite_Clickable {
+    -_pressed: boolean
+    -_hovered: boolean
+
+    +initialize()
+    +update()
+    +processTouch()
+    +isPressed() boolean
+    +isClickEnabled() boolean
+    +isBeingTouched() boolean
+    +hitTest(x, y) boolean
+    +onMouseEnter()*
+    +onMouseExit()*
+    +onPress()*
+    +onClick()*
+  }
+  note for Sprite_Clickable "The sprite class with click handling functions."
+
+  Sprite <|-- Sprite_Clickable
+
+  class Sprite_Button {
+    -_buttonType: string
+    -_clickHandler: function | null
+    -_coldFrame: Rectangle | null
+    -_hotFrame: Rectangle | null
+
+    +initialize(buttonType)
+    +setupFrames()
+    +blockWidth() number
+    +blockHeight() number
+    +loadButtonImage()
+    +buttonData() any
+    +update()
+    +checkBitmap()
+    +updateFrame()
+    +updateOpacity()
+    +setColdFrame(x, y, width, height)
+    +setHotFrame(x, y, width, height)
+    +setClickHandler(method)
+    +onClick()
+  }
+  note for Sprite_Button "The sprite for displaying a button."
+
+  Sprite_Clickable <|-- Sprite_Button
+
+  class Sprite_Character {
+    -_character: any
+    -_balloonDuration: number
+    -_tilesetId: number
+    -_tileId: number
+    -_characterName: string
+    -_characterIndex: number
+    -_isBigCharacter: boolean
+    -_upperBody: Sprite | null
+    -_lowerBody: Sprite | null
+    -_bushDepth: number
+
+    +initialize(character)
+    +initMembers()
+    +setCharacter(character)
+    +checkCharacter(character) boolean
+    +update()
+    +updateVisibility()
+    +isTile() boolean
+    +isObjectCharacter() boolean
+    +isEmptyCharacter() boolean
+    +tilesetBitmap(tileId) Bitmap
+    +updateBitmap()
+    +isImageChanged() boolean
+    +setTileBitmap()
+    +setCharacterBitmap()
+    +updateFrame()
+    +updateTileFrame()
+    +updateCharacterFrame()
+    +characterBlockX() number
+    +characterBlockY() number
+    +characterPatternX() number
+    +characterPatternY() number
+    +patternWidth() number
+    +patternHeight() number
+    +updateHalfBodySprites()
+    +createHalfBodySprites()
+    +updatePosition()
+    +updateOther()
+  }
+  note for Sprite_Character "The sprite for displaying a character."
+
+  Sprite <|-- Sprite_Character
+
+  class Sprite_Battler {
+    -_battler: Game_Battler | null
+    -_damages: Sprite_Damage[]
+    -_homeX: number
+    -_homeY: number
+    -_offsetX: number
+    -_offsetY: number
+    -_targetOffsetX: number
+    -_targetOffsetY: number
+    -_movementDuration: number
+    -_selectionEffectCount: number
+
+    +initialize(battler)
+    +initMembers()
+    +setBattler(battler)
+    +checkBattler(battler) boolean
+    +mainSprite() Sprite
+    +setHome(x, y)
+    +update()
+    +updateVisibility()
+    +updateMain()
+    +updateBitmap()*
+    +updateFrame()*
+    +updateMove()
+    +updatePosition()
+    +updateDamagePopup()
+    +updateSelectionEffect()
+    +setupDamagePopup()
+    +createDamageSprite()
+    +destroyDamageSprite(sprite)
+    +damageOffsetX() number
+    +damageOffsetY() number
+    +startMove(x, y, duration)
+    +onMoveEnd()*
+    +isEffecting() boolean
+    +isMoving() boolean
+    +inHomePosition() boolean
+    +onMouseEnter()
+    +onPress()
+    +onClick()
+  }
+  note for Sprite_Battler "The superclass of Sprite_Actor and Sprite_Enemy."
+
+  Sprite_Clickable <|-- Sprite_Battler
+
+  class Sprite_Actor {
+    +MOTIONS: any
+
+    -_actor: Game_Actor | null
+    -_battlerName: string
+    -_motion: any
+    -_motionCount: number
+    -_pattern: number
+    -_mainSprite: Sprite
+    -_shadowSprite: Sprite
+    -_weaponSprite: Sprite_Weapon
+    -_stateSprite: Sprite_StateOverlay
+
+    +initialize(battler)
+    +initMembers()
+    +mainSprite() Sprite
+    +createMainSprite()
+    +createShadowSprite()
+    +createWeaponSprite()
+    +createStateSprite()
+    +setBattler(battler)
+    +moveToStartPosition()
+    +setActorHome(index)
+    +update()
+    +updateShadow()
+    +updateMain()
+    +setupMotion()
+    +setupWeaponAnimation()
+    +startMotion(motionType)
+    +updateTargetPosition()
+    +shouldStepForward() boolean
+    +updateBitmap()
+    +updateFrame()
+    +updateMove()
+    +updateMotion()
+    +updateMotionCount()
+    +motionSpeed() number
+    +refreshMotion()
+    +startEntryMotion()
+    +stepForward()
+    +stepBack()
+    +retreat()
+    +onMoveEnd()
+    +damageOffsetX() number
+    +damageOffsetY() number
+  }
+  note for Sprite_Actor "The sprite for displaying an actor."
+
+  Sprite_Battler <|-- Sprite_Actor
+
+  class Sprite_Enemy {
+    -_enemy: Game_Enemy | null
+    -_appeared: boolean
+    -_battlerName: string | null
+    -_battlerHue: number
+    -_effectType: string | null
+    -_effectDuration: number
+    -_shake: number
+    -_stateIconSprite: Sprite_StateIcon
+
+    +initialize(battler)
+    +initMembers()
+    +createStateIconSprite()
+    +setBattler(battler)
+    +update()
+    +updateBitmap()
+    +loadBitmap(name)
+    +setHue(hue)
+    +updateFrame()
+    +updatePosition()
+    +updateStateSprite()
+    +initVisibility()
+    +setupEffect()
+    +startEffect(effectType)
+    +startAppear()
+    +startDisappear()
+    +startWhiten()
+    +startBlink()
+    +startCollapse()
+    +startBossCollapse()
+    +startInstantCollapse()
+    +updateEffect()
+    +isEffecting() boolean
+    +revertToNormal()
+    +updateWhiten()
+    +updateBlink()
+    +updateAppear()
+    +updateDisappear()
+    +updateCollapse()
+    +updateBossCollapse()
+    +updateInstantCollapse()
+    +damageOffsetX() number
+    +damageOffsetY() number
+  }
+  note for Sprite_Enemy "The sprite for displaying an enemy."
+
+  Sprite_Battler <|-- Sprite_Enemy
+
+  class Sprite_Animation {
+    -_targets: any[]
+    -_animation: any
+    -_mirror: boolean
+    -_delay: number
+    -_previous: any
+    -_effect: any
+    -_handle: any
+    -_playing: boolean
+    -_started: boolean
+    -_frameIndex: number
+    -_maxTimingFrames: number
+    -_flashColor: any[]
+    -_flashDuration: number
+    -_viewportSize: number
+
+    +initialize()
+    +initMembers()
+    +destroy(options)
+    +setup(targets, animation, mirror, delay, previous)
+    +update()
+    +canStart() boolean
+    +shouldWaitForPrevious() boolean
+    +updateEffectGeometry()
+    +updateMain()
+    +processSoundTimings()
+    +processFlashTimings()
+    +checkEnd()
+    +updateFlash()
+    +isPlaying() boolean
+    +setRotation(x, y, z)
+    +_render(renderer)
+    +setProjectionMatrix(renderer)
+    +setCameraMatrix(renderer)
+    +setViewport(renderer)
+    +targetPosition(renderer) Point
+    +targetSpritePosition(sprite) Point
+    +resetViewport(renderer)
+    +onBeforeRender(renderer)
+    +onAfterRender(renderer)
+  }
+  note for Sprite_Animation "The sprite for displaying an animation."
+
+  Sprite <|-- Sprite_Animation
+
+  class Sprite_AnimationMV {
+    -_targets: any[]
+    -_animation: any
+    -_mirror: boolean
+    -_delay: number
+    -_rate: number
+    -_duration: number
+    -_flashColor: any[]
+    -_flashDuration: number
+    -_screenFlashDuration: number
+    -_hidingDuration: number
+    -_hue1: number
+    -_hue2: number
+    -_bitmap1: Bitmap | null
+    -_bitmap2: Bitmap | null
+    -_cellSprites: Sprite[]
+    -_screenFlashSprite: ScreenSprite | null
+
+    +initialize()
+    +initMembers()
+    +setup(targets, animation, mirror, delay)
+    +setupRate()
+    +setupDuration()
+    +update()
+    +updateFlash()
+    +updateScreenFlash()
+    +absoluteX() number
+    +absoluteY() number
+    +updateHiding()
+    +isPlaying() boolean
+    +loadBitmaps()
+    +isReady() boolean
+    +createCellSprites()
+    +createScreenFlashSprite()
+    +updateMain()
+    +updatePosition()
+    +updateFrame()
+    +currentFrameIndex() number
+    +updateAllCellSprites(frame)
+    +updateCellSprite(sprite, cell)
+    +processTimingData(timing)
+    +startFlash(color, duration)
+    +startScreenFlash(color, duration)
+    +startHiding(duration)
+    +onEnd()
+  }
+  note for Sprite_AnimationMV "The sprite for displaying an old format animation."
+
+  Sprite <|-- Sprite_AnimationMV
+
+  class Sprite_Battleback {
+    +initialize(type)
+    +adjustPosition()
+    +battleback1Bitmap() Bitmap
+    +battleback2Bitmap() Bitmap
+    +battleback1Name() string
+    +battleback2Name() string
+    +overworldBattleback1Name() string
+    +overworldBattleback2Name() string
+    +normalBattleback1Name() string
+    +normalBattleback2Name() string
+    +terrainBattleback1Name(type) string | null
+    +terrainBattleback2Name(type) string | null
+    +defaultBattleback1Name() string
+    +defaultBattleback2Name() string
+    +shipBattleback1Name() string
+    +shipBattleback2Name() string
+    +autotileType(z) number
+  }
+  note for Sprite_Battleback "The sprite for displaying a background image in battle."
+
+  TilingSprite <|-- Sprite_Battleback
+
+  class Sprite_Damage {
+    -_duration: number
+    -_flashColor: any[]
+    -_flashDuration: number
+    -_colorType: number
+
+    +initialize()
+    +destroy(options)
+    +setup(target)
+    +setupCriticalEffect()
+    +fontFace() string
+    +fontSize() number
+    +damageColor() string
+    +outlineColor() string
+    +outlineWidth() number
+    +createMiss()
+    +createDigits(value)
+    +createChildSprite(width, height) Sprite
+    +createBitmap(width, height) Bitmap
+    +update()
+    +updateChild(sprite)
+    +updateFlash()
+    +updateOpacity()
+    +isPlaying() boolean
+  }
+  note for Sprite_Damage "The sprite for displaying a popup damage."
+
+  Sprite <|-- Sprite_Damage
+
+  class Sprite_Gauge {
+    -_battler: Game_Battler | null
+    -_statusType: string
+    -_value: number
+    -_maxValue: number
+    -_targetValue: number
+    -_targetMaxValue: number
+    -_duration: number
+    -_flashingCount: number
+
+    +initialize()
+    +initMembers()
+    +destroy(options)
+    +createBitmap()
+    +bitmapWidth() number
+    +bitmapHeight() number
+    +textHeight() number
+    +gaugeHeight() number
+    +gaugeX() number
+    +labelY() number
+    +labelFontFace() string
+    +labelFontSize() number
+    +valueFontFace() string
+    +valueFontSize() number
+    +setup(battler, statusType)
+    +update()
+    +updateBitmap()
+    +updateTargetValue(value, maxValue)
+    +smoothness() number
+    +updateGaugeAnimation()
+    +updateFlashing()
+    +flashingColor1() any[]
+    +flashingColor2() any[]
+    +isValid() boolean
+    +currentValue() number
+    +currentMaxValue() number
+    +label() string
+    +gaugeBackColor() string
+    +gaugeColor1() string
+    +gaugeColor2() string
+    +labelColor() string
+    +labelOutlineColor() string
+    +labelOutlineWidth() number
+    +valueColor() string
+    +valueOutlineColor() string
+    +valueOutlineWidth() number
+    +redraw()
+    +drawGauge()
+    +drawGaugeRect(x, y, width, height)
+    +gaugeRate() number
+    +drawLabel()
+    +setupLabelFont()
+    +measureLabelWidth() number
+    +labelOpacity() number
+    +drawValue()
+    +setupValueFont()
+  }
+  note for Sprite_Gauge "The sprite for displaying a status gauge."
+
+  Sprite <|-- Sprite_Gauge
+
+  class Sprite_Name {
+    -_battler: Game_Battler | null
+    -_name: string
+    -_textColor: string
+
+    +initialize()
+    +initMembers()
+    +destroy(options)
+    +createBitmap()
+    +bitmapWidth() number
+    +bitmapHeight() number
+    +fontFace() string
+    +fontSize() number
+    +setup(battler)
+    +update()
+    +updateBitmap()
+    +name() string
+    +textColor() string
+    +outlineColor() string
+    +outlineWidth() number
+    +redraw()
+    +setupFont()
+  }
+  note for Sprite_Name "The sprite for displaying a status gauge."
+
+  Sprite <|-- Sprite_Name
+
+  class Sprite_StateIcon {
+    -_battler: Game_Battler | null
+    -_iconIndex: number
+    -_animationCount: number
+    -_animationIndex: number
+
+    +initialize()
+    +initMembers()
+    +loadBitmap()
+    +setup(battler)
+    +update()
+    +animationWait() number
+    +updateIcon()
+    +shouldDisplay() boolean
+    +updateFrame()
+  }
+  note for Sprite_StateIcon "The sprite for displaying state icons."
+
+  Sprite <|-- Sprite_StateIcon
+
+  class Sprite_StateOverlay {
+    -_battler: Game_Battler | null
+    -_overlayIndex: number
+    -_animationCount: number
+    -_pattern: number
+
+    +initialize()
+    +initMembers()
+    +loadBitmap()
+    +setup(battler)
+    +update()
+    +animationWait() number
+    +updatePattern()
+    +updateFrame()
+  }
+  note for Sprite_StateOverlay "The sprite for displaying an overlay image for a state."
+
+  Sprite <|-- Sprite_StateOverlay
+
+  class Sprite_Weapon {
+    -_weaponImageId: number
+    -_animationCount: number
+    -_pattern: number
+
+    +initialize()
+    +initMembers()
+    +setup(weaponImageId)
+    +update()
+    +animationWait() number
+    +updatePattern()
+    +loadBitmap()
+    +updateFrame()
+    +isPlaying() boolean
+  }
+  note for Sprite_Weapon "The sprite for displaying a weapon image for attacking."
+
+  Sprite <|-- Sprite_Weapon
+
+  class Sprite_Balloon {
+    -_target: Sprite | null
+    -_balloonId: number
+    -_duration: number
+
+    +initialize()
+    +initMembers()
+    +loadBitmap()
+    +setup(targetSprite, balloonId)
+    +update()
+    +updatePosition()
+    +updateFrame()
+    +speed() number
+    +waitTime() number
+    +frameIndex() number
+    +isPlaying() boolean
+  }
+  note for Sprite_Balloon "The sprite for displaying a balloon icon."
+
+  Sprite <|-- Sprite_Balloon
+
+  class Sprite_Picture {
+    -_pictureId: number
+    -_pictureName: string
+
+    +initialize(pictureId)
+    +picture() any
+    +update()
+    +updateBitmap()
+    +updateOrigin()
+    +updatePosition()
+    +updateScale()
+    +updateTone()
+    +updateOther()
+    +loadBitmap()
+  }
+  note for Sprite_Picture "The sprite for displaying a picture."
+
+  Sprite_Clickable <|-- Sprite_Picture
+
+  class Sprite_Timer {
+    -_seconds: number
+
+    +initialize()
+    +destroy(options)
+    +createBitmap()
+    +fontFace() string
+    +fontSize() number
+    +update()
+    +updateBitmap()
+    +redraw()
+    +timerText() string
+    +updatePosition()
+    +updateVisibility()
+  }
+  note for Sprite_Timer "The sprite for displaying the timer."
+
+  Sprite <|-- Sprite_Timer
+
+  class Sprite_Destination {
+    -_frameCount: number
+
+    +initialize()
+    +destroy(options)
+    +update()
+    +createBitmap()
+    +updatePosition()
+    +updateAnimation()
+  }
+  note for Sprite_Destination "The sprite for displaying the destination place of the touch input."
+
+  Sprite <|-- Sprite_Destination
+
+  class Spriteset_Base {
+    -_animationSprites: any[]
+    -_baseSprite: Sprite
+    -_blackScreen: ScreenSprite
+    -_baseColorFilter: ColorFilter
+    -_pictureContainer: Sprite
+    -_timerSprite: Sprite_Timer
+    -_overallColorFilter: ColorFilter
+    -_effectsContainer: any
+
+    +initialize()
+    +destroy(options)
+    +loadSystemImages()*
+    +createLowerLayer()
+    +createUpperLayer()
+    +update()
+    +createBaseSprite()
+    +createBaseFilters()
+    +createPictures()
+    +pictureContainerRect() Rectangle
+    +createTimer()
+    +createOverallFilters()
+    +updateBaseFilters()
+    +updateOverallFilters()
+    +updatePosition()
+    +findTargetSprite(target) any
+    +updateAnimations()
+    +processAnimationRequests()
+    +createAnimation(request)
+    +createAnimationSprite(targets, animation, mirror, delay)
+    +isMVAnimation(animation) boolean
+    +makeTargetSprites(targets) Sprite[]
+    +lastAnimationSprite() any
+    +isAnimationForEach(animation) boolean
+    +animationBaseDelay() number
+    +animationNextDelay() number
+    +animationShouldMirror(target) boolean
+    +removeAnimation(sprite)
+    +removeAllAnimations()
+    +isAnimationPlaying() boolean
+  }
+  note for Spriteset_Base "The superclass of Spriteset_Map and Spriteset_Battle."
+
+  Sprite <|-- Spriteset_Base
+
+  class Spriteset_Map {
+    -_balloonSprites: Sprite_Balloon[]
+    -_parallax: TilingSprite
+    -_parallaxName: string
+    -_tilemap: Tilemap
+    -_tileset: any
+    -_characterSprites: Sprite_Character[]
+    -_shadowSprite: Sprite
+    -_destinationSprite: Sprite_Destination
+    -_weather: Weather
+
+    +initialize()
+    +destroy(options)
+    +loadSystemImages()
+    +createLowerLayer()
+    +update()
+    +hideCharacters()
+    +createParallax()
+    +createTilemap()
+    +loadTileset()
+    +createCharacters()
+    +createShadow()
+    +createDestination()
+    +createWeather()
+    +updateTileset()
+    +updateParallax()
+    +updateTilemap()
+    +updateShadow()
+    +updateWeather()
+    +updateBalloons()
+    +processBalloonRequests()
+    +createBalloon(request)
+    +removeBalloon(sprite)
+    +removeAllBalloons()
+    +findTargetSprite(target) Sprite_Character | undefined
+    +animationBaseDelay() number
+  }
+  note for Spriteset_Map "The set of sprites on the map screen."
+
+  Spriteset_Base <|-- Spriteset_Map
+
+  class Spriteset_Battle {
+    -_battlebackLocated: boolean
+    -_backgroundFilter: PIXI.filters.BlurFilter
+    -_backgroundSprite: Sprite
+    -_back1Sprite: Sprite_Battleback
+    -_back2Sprite: Sprite_Battleback
+    -_battleField: Sprite
+    -_enemySprites: Sprite_Enemy[]
+    -_actorSprites: Sprite_Actor[]
+
+    +initialize()
+    +loadSystemImages()
+    +createLowerLayer()
+    +createBackground()
+    +createBattleback()
+    +createBattleField()
+    +battleFieldOffsetY() number
+    +update()
+    +updateBattleback()
+    +createEnemies()
+    +compareEnemySprite(a, b) number
+    +createActors()
+    +updateActors()
+    +findTargetSprite(target) Sprite_Battler | undefined
+    +battlerSprites() Sprite_Battler[]
+    +isEffecting() boolean
+    +isAnyoneMoving() boolean
+    +isBusy() boolean
+  }
+  note for Spriteset_Battle "The set of sprites on the battle screen."
+
+  Spriteset_Base <|-- Spriteset_Battle

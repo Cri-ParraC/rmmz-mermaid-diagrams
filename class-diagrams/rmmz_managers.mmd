@@ -1,0 +1,611 @@
+classDiagram
+  class DataManager {
+    -_globalInfo: any[] | null
+    -_errors: any[]
+    -_databaseFiles: { name: string, src: string }[]
+
+    +loadGlobalInfo()
+    +removeInvalidGlobalInfo()
+    +saveGlobalInfo()
+    +isGlobalInfoLoaded() boolean
+    +loadDatabase()
+    +loadDataFile(name, src)
+    +onXhrLoad(xhr, name, src, url)
+    +onXhrError(name, src, url)
+    +isDatabaseLoaded() boolean
+    +loadMapData(mapId)
+    +makeEmptyMap()
+    +isMapLoaded() boolean
+    +onLoad(object)
+    +isMapObject(object) boolean
+    +extractArrayMetadata(array)
+    +extractMetadata(data)
+    +checkError()
+    +isBattleTest() boolean
+    +isEventTest() boolean
+    +isTitleSkip() boolean
+    +isSkill(item) boolean
+    +isItem(item) boolean
+    +isWeapon(item) boolean
+    +isArmor(item) boolean
+    +createGameObjects()
+    +setupNewGame()
+    +setupBattleTest()
+    +setupEventTest()
+    +isAnySavefileExists() boolean
+    +latestSavefileId() number
+    +earliestSavefileId() number
+    +emptySavefileId() number
+    +loadAllSavefileImages()
+    +loadSavefileImages(info)
+    +maxSavefiles() number
+    +savefileInfo(savefileId) any | null
+    +savefileExists(savefileId) boolean
+    +saveGame(savefileId) Promise
+    +loadGame(savefileId) Promise
+    +makeSavename(savefileId) string
+    +selectSavefileForNewGame()
+    +makeSavefileInfo() any
+    +makeSaveContents() any
+    +extractSaveContents(contents)
+    +correctDataErrors()
+  }
+  note for DataManager "The static class that manages the database and game objects."
+
+  class ConfigManager {
+    +alwaysDash: boolean
+    +commandRemember: boolean
+    +touchUI: boolean
+    -_isLoaded: boolean
+    +bgmVolume: number
+    +bgsVolume: number
+    +meVolume: number
+    +seVolume: number
+
+    +load()
+    +save()
+    +isLoaded() boolean
+    +makeData() any
+    +applyData(config)
+    +readFlag(config, name, defaultValue) boolean
+    +readVolume(config, name) number
+  }
+  note for ConfigManager "The static class that manages the configuration data."
+
+  class StorageManager {
+    -_forageKeys: any[]
+    -_forageKeysUpdated: boolean
+
+    +isLocalMode() boolean
+    +saveObject(saveName, object) Promise
+    +loadObject(saveName) Promise
+    +objectToJson(object) Promise
+    +jsonToObject(json) Promise
+    +jsonToZip(json) Promise
+    +zipToJson(zip) Promise
+    +saveZip(saveName, zip) Promise
+    +loadZip(saveName) Promise
+    +exists(saveName) boolean
+    +remove(saveName)
+    +saveToLocalFile(saveName, zip) Promise
+    +loadFromLocalFile(saveName) Promise
+    +localFileExists(saveName) boolean
+    +removeLocalFile(saveName)
+    +saveToForage(saveName, zip) Promise
+    +loadFromForage(saveName) Promise
+    +forageExists(saveName) boolean
+    +removeForage(saveName) Promise
+    +updateForageKeys() Promise
+    +forageKeysUpdated() boolean
+    +fsMkdir(path)
+    +fsRename(oldPath, newPath)
+    +fsUnlink(path)
+    +fsReadFile(path) string | null
+    +fsWriteFile(path, data)
+    +fileDirectoryPath() string
+    +filePath(saveName) string
+    +forageKey(saveName) string
+    +forageTestKey() string
+  }
+  note for StorageManager "The static class that manages storage for saving game data."
+
+  class FontManager {
+    -_urls: object
+    -_states: object
+
+    +load(family, filename)
+    +isReady() boolean
+    +startLoading(family, url)
+    +throwLoadError(family)
+    +makeUrl(filename) string
+  }
+  note for FontManager "The static class that loads font files."
+
+  class ImageManager {
+    +standardIconWidth: number
+    +standardIconHeight: number
+    +standardFaceWidth: number
+    +standardFaceHeight: number
+    -_cache: object
+    -_system: object
+    -_emptyBitmap: Bitmap
+    +iconWidth: number
+    +iconHeight: number
+    +faceWidth: number
+    +faceHeight: number
+
+    +getIconSize() number
+    +getFaceSize() number
+    +loadAnimation(filename)
+    +loadBattleback1(filename)
+    +loadBattleback2(filename)
+    +loadEnemy(filename)
+    +loadCharacter(filename)
+    +loadFace(filename)
+    +loadParallax(filename)
+    +loadPicture(filename)
+    +loadSvActor(filename)
+    +loadSvEnemy(filename)
+    +loadSystem(filename)
+    +loadTileset(filename)
+    +loadTitle1(filename)
+    +loadTitle2(filename)
+    +loadBitmap(folder, filename)
+    +loadBitmapFromUrl(url)
+    +clear()
+    +isReady() boolean
+    +throwLoadError(bitmap)
+    +isObjectCharacter(filename) boolean
+    +isBigCharacter(filename) boolean
+    +isZeroParallax(filename) boolean
+  }
+  note for ImageManager "The static class that loads images, creates bitmap objects and retains them."
+
+  class EffectManager {
+    -_cache: object
+    -_errorUrls: string[]
+
+    +load(filename) any
+    +startLoading(url) any
+    +clear()
+    +onLoad(url)*
+    +onError(url)
+    +makeUrl(filename) string
+    +checkErrors()
+    +throwLoadError(url)
+    +isReady() boolean
+  }
+  note for EffectManager "The static class that loads Effekseer effects."
+
+  class AudioManager {
+    -_bgmVolume: number
+    -_bgsVolume: number
+    -_meVolume: number
+    -_seVolume: number
+    -_currentBgm: any | null
+    -_currentBgs: any | null
+    -_bgmBuffer: any | null
+    -_bgsBuffer: any | null
+    -_meBuffer: any | null
+    -_seBuffers: any[]
+    -_staticBuffers: any[]
+    -_replayFadeTime: number
+    -_path: string
+    +bgmVolume: number
+    +bgsVolume: number
+    +meVolume: number
+    +seVolume: number
+
+    +playBgm(bgm, pos)
+    +replayBgm(bgm)
+    +isCurrentBgm(bgm) boolean
+    +updateBgmParameters(bgm)
+    +updateCurrentBgm(bgm, pos)
+    +stopBgm()
+    +fadeOutBgm(duration)
+    +fadeInBgm(duration)
+    +playBgs(bgs, pos)
+    +replayBgs(bgs)
+    +isCurrentBgs(bgs) boolean
+    +updateBgsParameters(bgs)
+    +updateCurrentBgs(bgs, pos)
+    +stopBgs()
+    +fadeOutBgs(duration)
+    +fadeInBgs(duration)
+    +playMe(me)
+    +updateMeParameters(me)
+    +fadeOutMe(duration)
+    +stopMe()
+    +playSe(se)
+    +updateSeParameters(buffer, se)
+    +cleanupSe()
+    +stopSe()
+    +playStaticSe(se)
+    +loadStaticSe(se)
+    +isStaticSe(se) boolean
+    +stopAll()
+    +saveBgm() any
+    +saveBgs() any
+    +makeEmptyAudioObject() any
+    +createBuffer(folder, name) any
+    +updateBufferParameters(buffer, configVolume, audio)
+    +audioFileExt() string
+    +checkErrors()
+    +throwLoadError(webAudio)
+  }
+  note for AudioManager "The static class that handles BGM, BGS, ME and SE."
+
+  class SoundManager {
+    +preloadImportantSounds()
+    +loadSystemSound(n)
+    +playSystemSound(n)
+    +playCursor()
+    +playOk()
+    +playCancel()
+    +playBuzzer()
+    +playEquip()
+    +playSave()
+    +playLoad()
+    +playBattleStart()
+    +playEscape()
+    +playEnemyAttack()
+    +playEnemyDamage()
+    +playEnemyCollapse()
+    +playBossCollapse1()
+    +playBossCollapse2()
+    +playActorDamage()
+    +playActorCollapse()
+    +playRecovery()
+    +playMiss()
+    +playEvasion()
+    +playMagicEvasion()
+    +playReflection()
+    +playShop()
+    +playUseItem()
+    +playUseSkill()
+  }
+  note for SoundManager "The static class that plays sound effects defined in the database."
+
+  class TextManager {
+    +basic(basicId) string
+    +param(paramId) string
+    +command(commandId) string
+    +message(messageId) string
+    +getter(method, param) any
+    +currencyUnit: string
+    +level: string
+    +levelA: string
+    +hp: string
+    +hpA: string
+    +mp: string
+    +mpA: string
+    +tp: string
+    +tpA: string
+    +exp: string
+    +expA: string
+    +fight: string
+    +escape: string
+    +attack: string
+    +guard: string
+    +item: string
+    +skill: string
+    +equip: string
+    +status: string
+    +formation: string
+    +save: string
+    +gameEnd: string
+    +options: string
+    +weapon: string
+    +armor: string
+    +keyItem: string
+    +equip2: string
+    +optimize: string
+    +clear: string
+    +newGame: string
+    +continue_: string
+    +toTitle: string
+    +cancel: string
+    +buy: string
+    +sell: string
+    +alwaysDash: string
+    +commandRemember: string
+    +touchUI: string
+    +bgmVolume: string
+    +bgsVolume: string
+    +meVolume: string
+    +seVolume: string
+    +possession: string
+    +expTotal: string
+    +expNext: string
+    +saveMessage: string
+    +loadMessage: string
+    +file: string
+    +autosave: string
+    +partyName: string
+    +emerge: string
+    +preemptive: string
+    +surprise: string
+    +escapeStart: string
+    +escapeFailure: string
+    +victory: string
+    +defeat: string
+    +obtainExp: string
+    +obtainGold: string
+    +obtainItem: string
+    +levelUp: string
+    +obtainSkill: string
+    +useItem: string
+    +criticalToEnemy: string
+    +criticalToActor: string
+    +actorDamage: string
+    +actorRecovery: string
+    +actorGain: string
+    +actorLoss: string
+    +actorDrain: string
+    +actorNoDamage: string
+    +actorNoHit: string
+    +enemyDamage: string
+    +enemyRecovery: string
+    +enemyGain: string
+    +enemyLoss: string
+    +enemyDrain: string
+    +enemyNoDamage: string
+    +enemyNoHit: string
+    +evasion: string
+    +magicEvasion: string
+    +magicReflection: string
+    +counterAttack: string
+    +substitute: string
+    +buffAdd: string
+    +debuffAdd: string
+    +buffRemove: string
+    +actionFailure: string
+  }
+  note for TextManager "The static class that handles terms and messages."
+
+  class ColorManager {
+    -_windowskin: any
+
+    +loadWindowskin()
+    +textColor(n) string
+    +normalColor() string
+    +systemColor() string
+    +crisisColor() string
+    +deathColor() string
+    +gaugeBackColor() string
+    +hpGaugeColor1() string
+    +hpGaugeColor2() string
+    +mpGaugeColor1() string
+    +mpGaugeColor2() string
+    +mpCostColor() string
+    +powerUpColor() string
+    +powerDownColor() string
+    +ctGaugeColor1() string
+    +ctGaugeColor2() string
+    +tpGaugeColor1() string
+    +tpGaugeColor2() string
+    +tpCostColor() string
+    +pendingColor() string
+    +hpColor(actor) string
+    +mpColor(actor) string
+    +tpColor(actor) string
+    +paramchangeTextColor(change) string
+    +damageColor(colorType) string
+    +outlineColor() string
+    +dimColor1() string
+    +dimColor2() string
+    +itemBackColor1() string
+    +itemBackColor2() string
+  }
+  note for ColorManager "The static class that handles the window colors."
+
+  class SceneManager {
+    -_scene: any | null
+    -_nextScene: any | null
+    -_stack: any[]
+    -_exiting: boolean
+    -_previousScene: any | null
+    -_previousClass: any | null
+    -_backgroundBitmap: Bitmap | null
+    -_smoothDeltaTime: number
+    -_elapsedTime: number
+
+    +run(sceneClass)
+    +initialize()
+    +checkBrowser()
+    +checkPluginErrors()
+    +initGraphics()
+    +initAudio()
+    +initVideo()
+    +initInput()
+    +setupEventHandlers()
+    +update(deltaTime)
+    +determineRepeatNumber(deltaTime) number
+    +terminate()
+    +onError(event)
+    +onReject(event)
+    +onUnload()
+    +onKeyDown(event)
+    +reloadGame()
+    +showDevTools()
+    +catchException(e)
+    +catchNormalError(e)
+    +catchLoadError(e)
+    +catchUnknownError(e)
+    +updateMain()
+    +updateFrameCount()
+    +updateInputData()
+    +updateEffekseer()
+    +changeScene()
+    +updateScene()
+    +isGameActive() boolean
+    +onSceneTerminate()
+    +onSceneCreate()
+    +onBeforeSceneStart()
+    +onSceneStart()
+    +isSceneChanging() boolean
+    +isCurrentSceneBusy() boolean
+    +isNextScene(sceneClass) boolean
+    +isPreviousScene(sceneClass) boolean
+    +goto(sceneClass)
+    +push(sceneClass)
+    +pop()
+    +exit()
+    +clearStack()
+    +stop()
+    +prepareNextScene()
+    +snap() Bitmap
+    +snapForBackground()
+    +backgroundBitmap() Bitmap | null
+    +resume()
+  }
+  note for SceneManager "The static class that manages scene transitions."
+
+  class BattleManager {
+    +setup(troopId, canEscape, canLose)
+    +initMembers()
+    -_phase: string
+    -_inputting: boolean
+    -_canEscape: boolean
+    -_canLose: boolean
+    -_battleTest: boolean
+    -_eventCallback: any | null
+    -_preemptive: boolean
+    -_surprise: boolean
+    -_currentActor: any | null
+    -_actionForcedBattler: any | null
+    -_mapBgm: any | null
+    -_mapBgs: any | null
+    -_actionBattlers: any[]
+    -_subject: any | null
+    -_action: any | null
+    -_targets: any[]
+    -_logWindow: any | null
+    -_spriteset: any | null
+    -_escapeRatio: number
+    -_escaped: boolean
+    -_rewards: any
+    -_tpbNeedsPartyCommand: boolean
+
+    +isTpb() boolean
+    +isActiveTpb() boolean
+    +isBattleTest() boolean
+    +setBattleTest(battleTest)
+    +setEventCallback(callback)
+    +setLogWindow(logWindow)
+    +setSpriteset(spriteset)
+    +onEncounter()
+    +ratePreemptive() number
+    +rateSurprise() number
+    +saveBgmAndBgs()
+    +playBattleBgm()
+    +playVictoryMe()
+    +playDefeatMe()
+    +replayBgmAndBgs()
+    +makeEscapeRatio()
+    +update(timeActive)
+    +updatePhase(timeActive)
+    +updateEvent() boolean
+    +updateEventMain() boolean
+    +isBusy() boolean
+    +updateTpbInput()
+    +checkTpbInputClose()
+    +checkTpbInputOpen()
+    +isPartyTpbInputtable() boolean
+    +needsActorInputCancel() boolean
+    +isTpbMainPhase() boolean
+    +isInputting() boolean
+    +isInTurn() boolean
+    +isTurnEnd() boolean
+    +isAborting() boolean
+    +isBattleEnd() boolean
+    +canEscape() boolean
+    +canLose() boolean
+    +isEscaped() boolean
+    +actor() any
+    +startBattle()
+    +displayStartMessages()
+    +startInput()
+    +inputtingAction() any | null
+    +selectNextCommand()
+    +selectNextActor()
+    +selectPreviousCommand()
+    +selectPreviousActor()
+    +changeCurrentActor(forward)
+    +startActorInput()
+    +finishActorInput()
+    +cancelActorInput()
+    +updateStart()
+    +startTurn()
+    +updateTurn(timeActive)
+    +updateTpb()
+    +updateAllTpbBattlers()
+    +updateTpbBattler(battler)
+    +checkTpbTurnEnd()
+    +processTurn()
+    +endBattlerActions(battler)
+    +endTurn()
+    +updateTurnEnd()
+    +endAllBattlersTurn()
+    +displayBattlerStatus(battler, current)
+    +getNextSubject() any | null
+    +allBattleMembers() any[]
+    +makeActionOrders()
+    +startAction()
+    +updateAction()
+    +endAction()
+    +invokeAction(subject, target)
+    +invokeNormalAction(subject, target)
+    +invokeCounterAttack(subject, target)
+    +invokeMagicReflection(subject, target)
+    +applySubstitute(target) any
+    +checkSubstitute(target) boolean
+    +isActionForced() boolean
+    +forceAction(battler)
+    +processForcedAction()
+    +abort()
+    +checkBattleEnd() boolean
+    +checkAbort() boolean
+    +processVictory()
+    +processEscape() boolean
+    +onEscapeSuccess()
+    +onEscapeFailure()
+    +processPartyEscape()
+    +processAbort()
+    +processDefeat()
+    +endBattle(result)
+    +updateBattleEnd()
+    +makeRewards()
+    +displayVictoryMessage()
+    +displayDefeatMessage()
+    +displayEscapeSuccessMessage()
+    +displayEscapeFailureMessage()
+    +displayRewards()
+    +displayExp()
+    +displayGold()
+    +displayDropItems()
+    +gainRewards()
+    +gainExp()
+    +gainGold()
+    +gainDropItems()
+  }
+  note for BattleManager "The static class that manages battle progress."
+
+  class PluginManager {
+    -_scripts: string[]
+    -_errorUrls: string[]
+    -_parameters: object
+    -_commands: object
+
+    +setup(plugins)
+    +parameters(name) any
+    +setParameters(name, parameters)
+    +loadScript(filename)
+    +onError(e)
+    +makeUrl(filename) string
+    +checkErrors()
+    +throwLoadError(url)
+    +registerCommand(pluginName, commandName, func)
+    +callCommand(self, pluginName, commandName, args)
+  }
+  note for PluginManager "The static class that manages the plugins."

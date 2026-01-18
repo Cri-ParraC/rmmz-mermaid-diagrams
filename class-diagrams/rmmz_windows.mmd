@@ -1,0 +1,1424 @@
+classDiagram
+  direction TB
+
+  class PIXI_Container["PIXI.Container"]
+
+  class Window {
+    -_isWindow
+    -_windowskin
+    -_width
+    -_height
+    -_cursorRect
+    -_openness
+    -_animationCount
+    -_padding
+    -_margin
+    -_colorTone
+    -_innerChildren
+    -_container
+    -_backSprite
+    -_frameSprite
+    -_clientArea
+    -_contentsBackSprite
+    -_cursorSprite
+    -_contentsSprite
+    -_downArrowSprite
+    -_upArrowSprite
+    -_pauseSignSprite
+
+    +origin
+    +active
+    +frameVisible
+    +cursorVisible
+    +downArrowVisible
+    +upArrowVisible
+    +pause
+
+    +windowskin
+    +contents
+    +contentsBack
+    +width
+    +height
+    +padding
+    +margin
+    +opacity
+    +backOpacity
+    +contentsOpacity
+    +openness
+    +innerWidth
+    +innerHeight
+    +innerRect
+
+    +initialize()
+    +destroy()
+    +update()
+    +move(x, y, width, height)
+    +isOpen()
+    +isClosed()
+    +setCursorRect(x, y, width, height)
+    +moveCursorBy(x, y)
+    +moveInnerChildrenBy(x, y)
+    +setTone(r, g, b)
+    +addChildToBack(child)
+    +addInnerChild(child)
+    +updateTransform()
+    +drawShape(graphics)
+    +_createAllParts()
+    +_createContainer()
+    +_createBackSprite()
+    +_createFrameSprite()
+    +_createClientArea()
+    +_createContentsBackSprite()
+    +_createCursorSprite()
+    +_createContentsSprite()
+    +_createArrowSprites()
+    +_createPauseSignSprites()
+    +_onWindowskinLoad()
+    +_refreshAllParts()
+    +_refreshBack()
+    +_refreshFrame()
+    +_refreshCursor()
+    +_setRectPartsGeometry(sprite, srect, drect, m)
+    +_refreshArrows()
+    +_refreshPauseSign()
+    +_updateClientArea()
+    +_updateFrame()
+    +_updateContentsBack()
+    +_updateCursor()
+    +_makeCursorAlpha()
+    +_updateContents()
+    +_updateArrows()
+    +_updatePauseSign()
+    +_updateFilterArea()
+  }
+  note for Window "The window in the game."
+
+  PIXI_Container <|-- Window
+
+  class Window_Base {
+    -_opening
+    -_closing
+    -_dimmerSprite
+
+    +initialize(rect)
+    +destroy(options)
+    +checkRectObject(rect)
+    +lineHeight()
+    +itemWidth()
+    +itemHeight()
+    +itemPadding()
+    +baseTextRect()
+    +loadWindowskin()
+    +updatePadding()
+    +updateBackOpacity()
+    +fittingHeight(numLines)
+    +updateTone()
+    +createContents()
+    +destroyContents()
+    +contentsWidth()
+    +contentsHeight()
+    +resetFontSettings()
+    +resetTextColor()
+    +update()
+    +updateOpen()
+    +updateClose()
+    +open()
+    +close()
+    +isOpening()
+    +isClosing()
+    +show()
+    +hide()
+    +activate()
+    +deactivate()
+    +systemColor()
+    +translucentOpacity()
+    +changeTextColor(color)
+    +changeOutlineColor(color)
+    +changePaintOpacity(enabled)
+    +drawRect(x, y, width, height)
+    +drawText(text, x, y, maxWidth, align)
+    +textWidth(text)
+    +drawTextEx(text, x, y, width)
+    +textSizeEx(text)
+    +createTextState(text, x, y, width)
+    +processAllText(textState)
+    +flushTextState(textState)
+    +createTextBuffer(rtl)
+    +convertEscapeCharacters(text)
+    +actorName(n)
+    +partyMemberName(n)
+    +processCharacter(textState)
+    +processControlCharacter(textState, c)
+    +processNewLine(textState)
+    +obtainEscapeCode(textState)
+    +obtainEscapeParam(textState)
+    +processEscapeCharacter(code, textState)
+    +processColorChange(colorIndex)
+    +processDrawIcon(iconIndex, textState)
+    +makeFontBigger()
+    +makeFontSmaller()
+    +calcTextHeight(textState)
+    +maxFontSizeInLine(line)
+    +drawIcon(iconIndex, x, y)
+    +drawFace(faceName, faceIndex, x, y, width, height)
+    +drawCharacter(characterName, characterIndex, x, y)
+    +drawItemName(item, x, y, width)
+    +drawCurrencyValue(value, unit, x, y, width)
+    +setBackgroundType(type)
+    +showBackgroundDimmer()
+    +createDimmerSprite()
+    +hideBackgroundDimmer()
+    +updateBackgroundDimmer()
+    +refreshDimmerBitmap()
+    +playCursorSound()
+    +playOkSound()
+    +playBuzzerSound()
+  }
+  note for Window_Base "The superclass of all windows within the game."
+
+  Window <|-- Window_Base
+
+  class Window_Scrollable {
+    -_scrollX
+    -_scrollY
+    -_scrollBaseX
+    -_scrollBaseY
+    -_scrollTargetX
+    -_scrollTargetY
+    -_scrollDuration
+    -_scrollAccelX
+    -_scrollAccelY
+    -_scrollTouching
+    -_scrollLastTouchX
+    -_scrollLastTouchY
+    -_scrollLastCursorVisible
+
+    +initialize(rect)
+    +clearScrollStatus()
+    +scrollX()
+    +scrollY()
+    +scrollBaseX()
+    +scrollBaseY()
+    +scrollTo(x, y)
+    +scrollBy(x, y)
+    +smoothScrollTo(x, y)
+    +smoothScrollBy(x, y)
+    +setScrollAccel(x, y)
+    +overallWidth()
+    +overallHeight()
+    +maxScrollX()
+    +maxScrollY()
+    +scrollBlockWidth()
+    +scrollBlockHeight()
+    +smoothScrollDown(n)
+    +smoothScrollUp(n)
+    +update()
+    +processWheelScroll()
+    +processTouchScroll()
+    +isWheelScrollEnabled()
+    +isTouchScrollEnabled()
+    +isScrollEnabled()
+    +isTouchedInsideFrame()
+    +onTouchScrollStart()
+    +onTouchScroll()
+    +onTouchScrollEnd()
+    +updateSmoothScroll()
+    +updateScrollAccel()
+    +updateArrows()
+    +updateOrigin()
+    +updateScrollBase(baseX, baseY)
+    +paint()
+  }
+  note for Window_Scrollable "The window class with scroll functions."
+
+  Window_Base <|-- Window_Scrollable
+
+  class Window_Selectable {
+    -_index
+    -_cursorFixed
+    -_cursorAll
+    -_helpWindow
+    -_handlers
+    -_doubleTouch
+    -_canRepeat
+
+    +initialize(rect)
+    +index()
+    +cursorFixed()
+    +setCursorFixed(cursorFixed)
+    +cursorAll()
+    +setCursorAll(cursorAll)
+    +maxCols()
+    +maxItems()
+    +colSpacing()
+    +rowSpacing()
+    +itemWidth()
+    +itemHeight()
+    +contentsHeight()
+    +maxRows()
+    +overallHeight()
+    +activate()
+    +deactivate()
+    +select(index)
+    +forceSelect(index)
+    +smoothSelect(index)
+    +deselect()
+    +reselect()
+    +row()
+    +topRow()
+    +maxTopRow()
+    +setTopRow(row)
+    +maxPageRows()
+    +maxPageItems()
+    +maxVisibleItems()
+    +isHorizontal()
+    +topIndex()
+    +itemRect(index)
+    +itemRectWithPadding(index)
+    +itemLineRect(index)
+    +setHelpWindow(helpWindow)
+    +showHelpWindow()
+    +hideHelpWindow()
+    +setHandler(symbol, method)
+    +isHandled(symbol)
+    +callHandler(symbol)
+    +isOpenAndActive()
+    +isCursorMovable()
+    +cursorDown(wrap)
+    +cursorUp(wrap)
+    +cursorRight(wrap)
+    +cursorLeft(wrap)
+    +cursorPagedown()
+    +cursorPageup()
+    +isScrollEnabled()
+    +update()
+    +processCursorMove()
+    +processHandling()
+    +processTouch()
+    +isHoverEnabled()
+    +onTouchSelect(trigger)
+    +onTouchOk()
+    +onTouchCancel()
+    +hitIndex()
+    +hitTest(x, y)
+    +isTouchOkEnabled()
+    +isOkEnabled()
+    +isCancelEnabled()
+    +isOkTriggered()
+    +isCancelTriggered()
+    +processOk()
+    +callOkHandler()
+    +processCancel()
+    +callCancelHandler()
+    +processPageup()
+    +processPagedown()
+    +updateInputData()
+    +ensureCursorVisible(smooth)
+    +callUpdateHelp()
+    +updateHelp()
+    +setHelpWindowItem(item)
+    +isCurrentItemEnabled()
+    +drawAllItems()
+    +drawItem(index)*
+    +clearItem(index)
+    +drawItemBackground(index)
+    +drawBackgroundRect(rect)
+    +redrawItem(index)
+    +redrawCurrentItem()
+    +refresh()
+    +paint()
+    +refreshCursor()
+    +refreshCursorForAll()
+  }
+  note for Window_Selectable "The window class with cursor movement functions."
+
+  Window_Scrollable <|-- Window_Selectable
+
+  class Window_Command {
+    -_list
+
+    +initialize(rect)
+    +maxItems()
+    +clearCommandList()
+    +makeCommandList()*
+    +addCommand(name, symbol, enabled, ext)
+    +commandName(index)
+    +commandSymbol(index)
+    +isCommandEnabled(index)
+    +currentData()
+    +isCurrentItemEnabled()
+    +currentSymbol()
+    +currentExt()
+    +findSymbol(symbol)
+    +selectSymbol(symbol)
+    +findExt(ext)
+    +selectExt(ext)
+    +drawItem(index)
+    +itemTextAlign()
+    +isOkEnabled()
+    +callOkHandler()
+    +refresh()
+  }
+  note for Window_Command "The superclass of windows for selecting a command."
+
+  Window_Selectable <|-- Window_Command
+
+  class Window_HorzCommand {
+    +initialize(rect)
+    +maxCols()
+    +itemTextAlign()
+  }
+  note for Window_HorzCommand "The command window for the horizontal selection format."
+
+  Window_Command <|-- Window_HorzCommand
+
+  class Window_Help {
+    -_text
+
+    +initialize(rect)
+    +setText(text)
+    +clear()
+    +setItem(item)
+    +refresh()
+  }
+  note for Window_Help "The window for displaying the description of the selected item."
+
+  Window_Base <|-- Window_Help
+
+  class Window_NameBox {
+    -_name
+    -_messageWindow
+
+    +initialize()
+    +setMessageWindow(messageWindow)
+    +setName(name)
+    +clear()
+    +start()
+    +updatePlacement()
+    +updateBackground()
+    +windowWidth()
+    +windowHeight()
+    +refresh()
+  }
+  note for Window_NameBox "The window for displaying a speaker name above the message window."
+
+  Window_Base <|-- Window_NameBox
+
+  class Window_Message {
+    -_background
+    -_positionType
+    -_waitCount
+    -_faceBitmap
+    -_textState
+    -_goldWindow
+    -_nameBoxWindow
+    -_choiceListWindow
+    -_numberInputWindow
+    -_eventItemWindow
+    -_showFast
+    -_lineShowFast
+    -_pauseSkip
+
+    +initialize(rect)
+    +initMembers()
+    +setGoldWindow(goldWindow)
+    +setNameBoxWindow(nameBoxWindow)
+    +setChoiceListWindow(choiceListWindow)
+    +setNumberInputWindow(numberInputWindow)
+    +setEventItemWindow(eventItemWindow)
+    +clearFlags()
+    +update()
+    +checkToNotClose()
+    +synchronizeNameBox()
+    +canStart()
+    +startMessage()
+    +newLineX(textState)
+    +updatePlacement()
+    +updateBackground()
+    +terminateMessage()
+    +updateWait()
+    +cancelWait()
+    +updateLoading()
+    +updateInput()
+    +isAnySubWindowActive()
+    +updateMessage()
+    +shouldBreakHere(textState)
+    +canBreakHere(textState)
+    +onEndOfText()
+    +startInput()
+    +isTriggered()
+    +doesContinue()
+    +areSettingsChanged()
+    +updateShowFast()
+    +newPage(textState)
+    +updateSpeakerName()
+    +loadMessageFace()
+    +drawMessageFace()
+    +processControlCharacter(textState, c)
+    +processNewLine(textState)
+    +processNewPage(textState)
+    +isEndOfText(textState)
+    +needsNewPage(textState)
+    +processEscapeCharacter(code, textState)
+    +startWait(count)
+    +startPause()
+    +isWaiting()
+  }
+  note for Window_Message "The window for displaying text messages."
+
+  Window_Base <|-- Window_Message
+
+  class Window_ScrollText {
+    -_reservedRect
+    -_text
+    -_maxBitmapHeight
+    -_allTextHeight
+    -_blockHeight
+    -_blockIndex
+    -_scrollY
+
+    +initialize(rect)
+    +update()
+    +startMessage()
+    +refresh()
+    +updatePlacement()
+    +contentsHeight()
+    +updateMessage()
+    +scrollSpeed()
+    +isFastForward()
+    +fastForwardRate()
+    +terminateMessage()
+  }
+  note for Window_ScrollText "The window for displaying scrolling text. No frame is displayed, but it is handled as a window for convenience."
+
+  Window_Base <|-- Window_ScrollText
+
+  class Window_MapName {
+    -_showCount
+
+    +initialize(rect)
+    +update()
+    +updateFadeIn()
+    +updateFadeOut()
+    +open()
+    +close()
+    +refresh()
+    +drawBackground(x, y, width, height)
+  }
+  note for Window_MapName "The window for displaying the map name on the map screen."
+
+  Window_Base <|-- Window_MapName
+
+  class Window_BattleLog {
+    -_lines
+    -_methods
+    -_waitCount
+    -_waitMode
+    -_baseLineStack
+    -_spriteset
+
+    +initialize(rect)
+    +setSpriteset(spriteset)
+    +maxLines()
+    +numLines()
+    +messageSpeed()
+    +isBusy()
+    +update()
+    +updateWait()
+    +updateWaitCount()
+    +updateWaitMode()
+    +setWaitMode(waitMode)
+    +callNextMethod()
+    +isFastForward()
+    +push(methodName)
+    +clear()
+    +wait()
+    +waitForEffect()
+    +waitForMovement()
+    +addText(text)
+    +pushBaseLine()
+    +popBaseLine()
+    +waitForNewLine()
+    +popupDamage(target)
+    +performActionStart(subject, action)
+    +performAction(subject, action)
+    +performActionEnd(subject)
+    +performDamage(target)
+    +performMiss(target)
+    +performRecovery(target)
+    +performEvasion(target)
+    +performMagicEvasion(target)
+    +performCounter(target)
+    +performReflection(target)
+    +performSubstitute(substitute, target)
+    +performCollapse(target)
+    +showAnimation(subject, targets, animationId)
+    +showAttackAnimation(subject, targets)
+    +showActorAttackAnimation(subject, targets)
+    +showEnemyAttackAnimation()
+    +showNormalAnimation(targets, animationId, mirror)
+    +refresh()
+    +drawBackground()
+    +backRect()
+    +lineRect(index)
+    +backColor()
+    +backPaintOpacity()
+    +drawLineText(index)
+    +startTurn()
+    +startAction(subject, action, targets)
+    +endAction(subject)
+    +displayCurrentState(subject)
+    +displayRegeneration(subject)
+    +displayAction(subject, item)
+    +displayItemMessage(fmt, subject, item)
+    +displayCounter(target)
+    +displayReflection(target)
+    +displaySubstitute(substitute, target)
+    +displayActionResults(subject, target)
+    +displayFailure(target)
+    +displayCritical(target)
+    +displayDamage(target)
+    +displayMiss(target)
+    +displayEvasion(target)
+    +displayHpDamage(target)
+    +displayMpDamage(target)
+    +displayTpDamage(target)
+    +displayAffectedStatus(target)
+    +displayAutoAffectedStatus(target)
+    +displayChangedStates(target)
+    +displayAddedStates(target)
+    +displayRemovedStates(target)
+    +displayChangedBuffs(target)
+    +displayBuffs(target, buffs, fmt)
+    +makeHpDamageText(target)
+    +makeMpDamageText(target)
+    +makeTpDamageText(target)
+  }
+  note for Window_BattleLog "The window for displaying battle progress. No frame is displayed, but it is handled as a window for convenience."
+
+  Window_Base <|-- Window_BattleLog
+
+  class Window_Gold {
+    +initialize(rect)
+    +colSpacing()
+    +refresh()
+    +value()
+    +currencyUnit()
+    +open()
+  }
+  note for Window_Gold "The window for displaying the party's gold."
+
+  Window_Selectable <|-- Window_Gold
+
+  class Window_StatusBase {
+    -_additionalSprites
+
+    +initialize(rect)
+    +loadFaceImages()
+    +refresh()
+    +hideAdditionalSprites()
+    +placeActorName(actor, x, y)
+    +placeStateIcon(actor, x, y)
+    +placeGauge(actor, type, x, y)
+    +createInnerSprite(key, spriteClass)
+    +placeTimeGauge(actor, x, y)
+    +placeBasicGauges(actor, x, y)
+    +gaugeLineHeight()
+    +drawActorCharacter(actor, x, y)
+    +drawActorFace(actor, x, y, width, height)
+    +drawActorName(actor, x, y, width)
+    +drawActorClass(actor, x, y, width)
+    +drawActorNickname(actor, x, y, width)
+    +drawActorLevel(actor, x, y)
+    +drawActorIcons(actor, x, y, width)
+    +drawActorSimpleStatus(actor, x, y)
+    +actorSlotName(actor, index)
+  }
+  note for Window_StatusBase "The superclass of windows for displaying actor status."
+
+  Window_Selectable <|-- Window_StatusBase
+
+  class Window_MenuCommand {
+    +initialize(rect)
+    +makeCommandList()
+    +addMainCommands()
+    +addFormationCommand()
+    +addOriginalCommands()
+    +addOptionsCommand()
+    +addSaveCommand()
+    +addGameEndCommand()
+    +needsCommand(name)
+    +areMainCommandsEnabled()
+    +isFormationEnabled()
+    +isOptionsEnabled()
+    +isSaveEnabled()
+    +isGameEndEnabled()
+    +processOk()
+    +selectLast()
+    <<static>> _lastCommandSymbol
+    <<static>> initCommandPosition()
+  }
+  note for Window_MenuCommand "The window for selecting a command on the menu screen."
+
+  Window_Command <|-- Window_MenuCommand
+
+  class Window_MenuStatus {
+    -_formationMode
+    -_pendingIndex
+
+    +initialize(rect)
+    +maxItems()
+    +numVisibleRows()
+    +itemHeight()
+    +actor(index)
+    +drawItem(index)
+    +drawPendingItemBackground(index)
+    +drawItemImage(index)
+    +drawItemStatus(index)
+    +processOk()
+    +isCurrentItemEnabled()
+    +selectLast()
+    +formationMode()
+    +setFormationMode(formationMode)
+    +pendingIndex()
+    +setPendingIndex(index)
+  }
+  note for Window_MenuStatus "The window for displaying party member status on the menu screen."
+
+  Window_StatusBase <|-- Window_MenuStatus
+
+  class Window_MenuActor {
+    +initialize(rect)
+    +processOk()
+    +selectLast()
+    +selectForItem(item)
+  }
+  note for Window_MenuActor "The window for selecting a target actor on the item and skill screens."
+
+  Window_MenuStatus <|-- Window_MenuActor
+
+  class Window_ItemCategory {
+    -_itemWindow
+
+    +initialize(rect)
+    +maxCols()
+    +update()
+    +makeCommandList()
+    +needsCommand(name)
+    +setItemWindow(itemWindow)
+    +needsSelection()
+  }
+  note for Window_ItemCategory "The window for selecting a category of items on the item and shop screens."
+
+  Window_HorzCommand <|-- Window_ItemCategory
+
+  class Window_ItemList {
+    -_category
+    -_data
+
+    +initialize(rect)
+    +setCategory(category)
+    +maxCols()
+    +colSpacing()
+    +maxItems()
+    +item()
+    +itemAt(index)
+    +isCurrentItemEnabled()
+    +includes(item)
+    +needsNumber()
+    +isEnabled(item)
+    +makeItemList()
+    +selectLast()
+    +drawItem(index)
+    +numberWidth()
+    +drawItemNumber(item, x, y, width)
+    +updateHelp()
+    +refresh()
+  }
+  note for Window_ItemList "The window for selecting an item on the item screen."
+
+  Window_Selectable <|-- Window_ItemList
+
+  class Window_SkillType {
+    -_actor
+    -_skillWindow
+
+    +initialize(rect)
+    +setActor(actor)
+    +makeCommandList()
+    +update()
+    +setSkillWindow(skillWindow)
+    +selectLast()
+  }
+  note for Window_SkillType "The window for selecting a skill type on the skill screen."
+
+  Window_Command <|-- Window_SkillType
+
+  class Window_SkillStatus {
+    -_actor
+
+    +initialize(rect)
+    +setActor(actor)
+    +refresh()
+  }
+  note for Window_SkillStatus "The window for displaying the skill user's status on the skill screen."
+
+  Window_StatusBase <|-- Window_SkillStatus
+
+  class Window_SkillList {
+    -_actor
+    -_stypeId
+    -_data
+
+    +initialize(rect)
+    +setActor(actor)
+    +setStypeId(stypeId)
+    +maxCols()
+    +colSpacing()
+    +maxItems()
+    +item()
+    +itemAt(index)
+    +isCurrentItemEnabled()
+    +includes(item)
+    +isEnabled(item)
+    +makeItemList()
+    +selectLast()
+    +drawItem(index)
+    +costWidth()
+    +drawSkillCost(skill, x, y, width)
+    +updateHelp()
+    +refresh()
+  }
+  note for Window_SkillList "The window for selecting a skill on the skill screen."
+
+  Window_Selectable <|-- Window_SkillList
+
+  class Window_EquipStatus {
+    -_actor
+    -_tempActor
+
+    +initialize(rect)
+    +setActor(actor)
+    +colSpacing()
+    +refresh()
+    +setTempActor(tempActor)
+    +drawAllParams()
+    +drawItem(x, y, paramId)
+    +drawParamName(x, y, paramId)
+    +drawCurrentParam(x, y, paramId)
+    +drawRightArrow(x, y)
+    +drawNewParam(x, y, paramId)
+    +rightArrowWidth()
+    +paramWidth()
+    +paramX()
+    +paramY(index)
+  }
+  note for Window_EquipStatus "The window for displaying parameter changes on the equipment screen."
+
+  Window_StatusBase <|-- Window_EquipStatus
+
+  class Window_EquipCommand {
+    +initialize(rect)
+    +maxCols()
+    +makeCommandList()
+  }
+  note for Window_EquipCommand "The window for selecting a command on the equipment screen."
+
+  Window_HorzCommand <|-- Window_EquipCommand
+
+  class Window_EquipSlot {
+    -_actor
+    -_itemWindow
+    -_statusWindow
+
+    +initialize(rect)
+    +setActor(actor)
+    +update()
+    +maxItems()
+    +item()
+    +itemAt(index)
+    +drawItem(index)
+    +slotNameWidth()
+    +isEnabled(index)
+    +isCurrentItemEnabled()
+    +setStatusWindow(statusWindow)
+    +setItemWindow(itemWindow)
+    +updateHelp()
+  }
+  note for Window_EquipSlot "The window for selecting an equipment slot on the equipment screen."
+
+  Window_StatusBase <|-- Window_EquipSlot
+
+  class Window_EquipItem {
+    -_actor
+    -_slotId
+    -_statusWindow
+
+    +initialize(rect)
+    +maxCols()
+    +colSpacing()
+    +setActor(actor)
+    +setSlotId(slotId)
+    +includes(item)
+    +etypeId()
+    +isEnabled(item)
+    +selectLast()
+    +setStatusWindow(statusWindow)
+    +updateHelp()
+    +playOkSound()
+  }
+  note for Window_EquipItem "The window for selecting an equipment item on the equipment screen."
+
+  Window_ItemList <|-- Window_EquipItem
+
+  class Window_Status {
+    -_actor
+
+    +initialize(rect)
+    +setActor(actor)
+    +refresh()
+    +drawBlock1()
+    +block1Y()
+    +drawBlock2()
+    +block2Y()
+    +drawBasicInfo(x, y)
+    +drawExpInfo(x, y)
+    +expTotalValue()
+    +expNextValue()
+  }
+  note for Window_Status "The window for displaying full status on the status screen."
+
+  Window_StatusBase <|-- Window_Status
+
+  class Window_StatusParams {
+    -_actor
+
+    +initialize(rect)
+    +setActor(actor)
+    +maxItems()
+    +itemHeight()
+    +drawItem(index)
+    +drawItemBackground(index)
+  }
+  note for Window_StatusParams "The window for displaying parameters on the status screen."
+
+  Window_StatusBase <|-- Window_StatusParams
+
+  class Window_StatusEquip {
+    -_actor
+
+    +initialize(rect)
+    +setActor(actor)
+    +maxItems()
+    +itemHeight()
+    +drawItem(index)
+    +drawItemBackground(index)
+  }
+  note for Window_StatusEquip "The window for displaying equipment items on the status screen."
+
+  Window_StatusBase <|-- Window_StatusEquip
+
+  class Window_Options {
+    +initialize(rect)
+    +makeCommandList()
+    +addGeneralOptions()
+    +addVolumeOptions()
+    +drawItem(index)
+    +statusWidth()
+    +statusText(index)
+    +isVolumeSymbol(symbol)
+    +booleanStatusText(value)
+    +volumeStatusText(value)
+    +processOk()
+    +cursorRight()
+    +cursorLeft()
+    +changeVolume(symbol, forward, wrap)
+    +volumeOffset()
+    +changeValue(symbol, value)
+    +getConfigValue(symbol)
+    +setConfigValue(symbol, volume)
+  }
+  note for Window_Options "The window for changing various settings on the options screen."
+
+  Window_Command <|-- Window_Options
+
+  class Window_SavefileList {
+    -_mode
+    -_autosave
+
+    +initialize(rect)
+    +setMode(mode, autosave)
+    +maxItems()
+    +numVisibleRows()
+    +itemHeight()
+    +drawItem(index)
+    +indexToSavefileId(index)
+    +savefileIdToIndex(savefileId)
+    +isEnabled(savefileId)
+    +savefileId()
+    +selectSavefile(savefileId)
+    +drawTitle(savefileId, x, y)
+    +drawContents(info, rect)
+    +drawPartyCharacters(info, x, y)
+    +drawPlaytime(info, x, y, width)
+    +playOkSound()
+  }
+  note for Window_SavefileList "The window for selecting a save file on the save and load screens."
+
+  Window_Selectable <|-- Window_SavefileList
+
+  class Window_ShopCommand {
+    -_purchaseOnly
+
+    +initialize(rect)
+    +setPurchaseOnly(purchaseOnly)
+    +maxCols()
+    +makeCommandList()
+  }
+  note for Window_ShopCommand "The window for selecting buy/sell on the shop screen."
+
+  Window_HorzCommand <|-- Window_ShopCommand
+
+  class Window_ShopBuy {
+    -_money
+    -_shopGoods
+    -_data
+    -_price
+    -_statusWindow
+
+    +initialize(rect)
+    +setupGoods(shopGoods)
+    +maxItems()
+    +item()
+    +itemAt(index)
+    +setMoney(money)
+    +isCurrentItemEnabled()
+    +price(item)
+    +isEnabled(item)
+    +refresh()
+    +makeItemList()
+    +goodsToItem(goods)
+    +drawItem(index)
+    +priceWidth()
+    +setStatusWindow(statusWindow)
+    +updateHelp()
+  }
+  note for Window_ShopBuy "The window for selecting an item to buy on the shop screen."
+
+  Window_Selectable <|-- Window_ShopBuy
+
+  class Window_ShopSell {
+    +initialize(rect)
+    +isEnabled(item)
+  }
+  note for Window_ShopSell "The window for selecting an item to sell on the shop screen."
+
+  Window_ItemList <|-- Window_ShopSell
+
+  class Window_ShopNumber {
+    -_item
+    -_max
+    -_price
+    -_number
+    -_currencyUnit
+    -_buttons
+
+    +initialize(rect)
+    +isScrollEnabled()
+    +number()
+    +setup(item, max, price)
+    +setCurrencyUnit(currencyUnit)
+    +createButtons()
+    +placeButtons()
+    +totalButtonWidth()
+    +buttonSpacing()
+    +refresh()
+    +drawCurrentItemName()
+    +drawMultiplicationSign()
+    +multiplicationSign()
+    +multiplicationSignX()
+    +drawNumber()
+    +drawHorzLine()
+    +drawTotalPrice()
+    +itemNameY()
+    +totalPriceY()
+    +buttonY()
+    +cursorWidth()
+    +cursorX()
+    +maxDigits()
+    +update()
+    +playOkSound()
+    +processNumberChange()
+    +changeNumber(amount)
+    +itemRect()
+    +isTouchOkEnabled()
+    +onButtonUp()
+    +onButtonUp2()
+    +onButtonDown()
+    +onButtonDown2()
+    +onButtonOk()
+  }
+  note for Window_ShopNumber "The window for inputting quantity of items to buy or sell on the shop screen."
+
+  Window_Selectable <|-- Window_ShopNumber
+
+  class Window_ShopStatus {
+    -_item
+    -_pageIndex
+
+    +initialize(rect)
+    +refresh()
+    +setItem(item)
+    +isEquipItem()
+    +drawPossession(x, y)
+    +drawEquipInfo(x, y)
+    +statusMembers()
+    +pageSize()
+    +maxPages()
+    +drawActorEquipInfo(x, y, actor)
+    +drawActorParamChange(x, y, actor, item1)
+    +paramId()
+    +currentEquippedItem(actor, etypeId)
+    +update()
+    +updatePage()
+    +isPageChangeEnabled()
+    +isPageChangeRequested()
+    +changePage()
+  }
+  note for Window_ShopStatus "The window for displaying number of items in possession and the actor's equipment on the shop screen."
+
+  Window_StatusBase <|-- Window_ShopStatus
+
+  class Window_NameEdit {
+    -_actor
+    -_maxLength
+    -_name
+    -_defaultName
+
+    +initialize(rect)
+    +setup(actor, maxLength)
+    +name()
+    +restoreDefault()
+    +add(ch)
+    +back()
+    +faceWidth()
+    +charWidth()
+    +left()
+    +itemRect(index)
+    +underlineRect(index)
+    +underlineColor()
+    +drawUnderline(index)
+    +drawChar(index)
+    +refresh()
+  }
+  note for Window_NameEdit "The window for editing an actor's name on the name input screen."
+
+  Window_StatusBase <|-- Window_NameEdit
+
+  class Window_NameInput {
+    <<static>> LATIN1
+    <<static>> LATIN2
+    <<static>> RUSSIA
+    <<static>> JAPAN1
+    <<static>> JAPAN2
+    <<static>> JAPAN3
+    -_editWindow
+    -_page
+
+    +initialize(rect)
+    +setEditWindow(editWindow)
+    +table()
+    +maxCols()
+    +maxItems()
+    +itemWidth()
+    +groupSpacing()
+    +character()
+    +isPageChange()
+    +isOk()
+    +itemRect(index)
+    +drawItem(index)
+    +updateCursor()
+    +isCursorMovable()
+    +cursorDown(wrap)
+    +cursorUp(wrap)
+    +cursorRight(wrap)
+    +cursorLeft(wrap)
+    +cursorPagedown()
+    +cursorPageup()
+    +processCursorMove()
+    +processHandling()
+    +isCancelEnabled()
+    +processCancel()
+    +processJump()
+    +processBack()
+    +processOk()
+    +onNameAdd()
+    +onNameOk()
+  }
+  note for Window_NameInput "The window for selecting text characters on the name input screen."
+
+  Window_Selectable <|-- Window_NameInput
+
+  class Window_ChoiceList {
+    -_background
+    -_messageWindow
+    -_cancelButton
+
+    +initialize()
+    +setMessageWindow(messageWindow)
+    +createCancelButton()
+    +start()
+    +update()
+    +updateCancelButton()
+    +selectDefault()
+    +updatePlacement()
+    +updateBackground()
+    +placeCancelButton()
+    +windowX()
+    +windowY()
+    +windowWidth()
+    +windowHeight()
+    +numVisibleRows()
+    +maxLines()
+    +maxChoiceWidth()
+    +makeCommandList()
+    +drawItem(index)
+    +isCancelEnabled()
+    +needsCancelButton()
+    +callOkHandler()
+    +callCancelHandler()
+  }
+  note for Window_ChoiceList "The window used for the event command [Show Choices]."
+
+  Window_Command <|-- Window_ChoiceList
+
+  class Window_NumberInput {
+    -_number
+    -_maxDigits
+    -_messageWindow
+    -_buttons
+
+    +initialize()
+    +setMessageWindow(messageWindow)
+    +start()
+    +updatePlacement()
+    +windowWidth()
+    +windowHeight()
+    +maxCols()
+    +maxItems()
+    +itemWidth()
+    +itemRect(index)
+    +isScrollEnabled()
+    +isHoverEnabled()
+    +createButtons()
+    +placeButtons()
+    +totalButtonWidth()
+    +buttonSpacing()
+    +buttonY()
+    +update()
+    +processDigitChange()
+    +changeDigit(up)
+    +isTouchOkEnabled()
+    +isOkEnabled()
+    +isCancelEnabled()
+    +processOk()
+    +drawItem(index)
+    +onButtonUp()
+    +onButtonDown()
+    +onButtonOk()
+  }
+  note for Window_NumberInput "The window used for the event command [Input Number]."
+
+  Window_Selectable <|-- Window_NumberInput
+
+  class Window_EventItem {
+    -_messageWindow
+    -_cancelButton
+
+    +initialize(rect)
+    +setMessageWindow(messageWindow)
+    +createCancelButton()
+    +start()
+    +update()
+    +updateCancelButton()
+    +updatePlacement()
+    +placeCancelButton()
+    +includes(item)
+    +needsNumber()
+    +isEnabled(item)
+    +onOk()
+    +onCancel()
+  }
+  note for Window_EventItem "The window used for the event command [Select Item]."
+
+  Window_ItemList <|-- Window_EventItem
+
+  class Window_PartyCommand {
+    +initialize(rect)
+    +makeCommandList()
+    +setup()
+  }
+  note for Window_PartyCommand "The window for selecting whether to fight or escape on the battle screen."
+
+  Window_Command <|-- Window_PartyCommand
+
+  class Window_ActorCommand {
+    -_actor
+
+    +initialize(rect)
+    +makeCommandList()
+    +addAttackCommand()
+    +addSkillCommands()
+    +addGuardCommand()
+    +addItemCommand()
+    +setup(actor)
+    +actor()
+    +processOk()
+    +selectLast()
+  }
+  note for Window_ActorCommand "The window for selecting an actor's action on the battle screen."
+
+  Window_Command <|-- Window_ActorCommand
+
+  class Window_BattleStatus {
+    -_bitmapsReady
+
+    +initialize(rect)
+    +extraHeight()
+    +maxCols()
+    +itemHeight()
+    +maxItems()
+    +rowSpacing()
+    +updatePadding()
+    +actor(index)
+    +selectActor(actor)
+    +update()
+    +preparePartyRefresh()
+    +performPartyRefresh()
+    +drawItem(index)
+    +drawItemImage(index)
+    +drawItemStatus(index)
+    +faceRect(index)
+    +nameX(rect)
+    +nameY(rect)
+    +stateIconX(rect)
+    +stateIconY(rect)
+    +basicGaugesX(rect)
+    +basicGaugesY(rect)
+  }
+  note for Window_BattleStatus "The window for displaying the status of party members on the battle screen."
+
+  Window_StatusBase <|-- Window_BattleStatus
+
+  class Window_BattleActor {
+    +initialize(rect)
+    +show()
+    +hide()
+    +select(index)
+    +processTouch()
+  }
+  note for Window_BattleActor "The window for selecting a target actor on the battle screen."
+
+  Window_BattleStatus <|-- Window_BattleActor
+
+  class Window_BattleEnemy {
+    -_enemies
+
+    +initialize(rect)
+    +maxCols()
+    +maxItems()
+    +enemy()
+    +enemyIndex()
+    +drawItem(index)
+    +show()
+    +hide()
+    +refresh()
+    +select(index)
+    +processTouch()
+  }
+  note for Window_BattleEnemy "The window for selecting a target enemy on the battle screen."
+
+  Window_Selectable <|-- Window_BattleEnemy
+
+  class Window_BattleSkill {
+    +initialize(rect)
+    +show()
+    +hide()
+  }
+  note for Window_BattleSkill "The window for selecting a skill to use on the battle screen."
+
+  Window_SkillList <|-- Window_BattleSkill
+
+  class Window_BattleItem {
+    +initialize(rect)
+    +includes(item)
+    +show()
+    +hide()
+  }
+  note for Window_BattleItem "The window for selecting an item to use on the battle screen."
+
+  Window_ItemList <|-- Window_BattleItem
+
+  class Window_TitleCommand {
+    +initialize(rect)
+    <<static>> _lastCommandSymbol
+    <<static>> initCommandPosition()
+    +makeCommandList()
+    +isContinueEnabled()
+    +processOk()
+    +selectLast()
+  }
+  note for Window_TitleCommand "The window for selecting New Game/Continue on the title screen."
+
+  Window_Command <|-- Window_TitleCommand
+
+  class Window_GameEnd {
+    +initialize(rect)
+    +makeCommandList()
+  }
+  note for Window_GameEnd "The window for selecting 'Go to Title' on the game end screen."
+
+  Window_Command <|-- Window_GameEnd
+
+  class Window_DebugRange {
+    <<static>> lastTopRow
+    <<static>> lastIndex
+    -_maxSwitches
+    -_maxVariables
+    -_editWindow
+
+    +initialize(rect)
+    +maxItems()
+    +update()
+    +mode(index)
+    +topId(index)
+    +isSwitchMode(index)
+    +drawItem(index)
+    +isCancelTriggered()
+    +processCancel()
+    +setEditWindow(editWindow)
+  }
+  note for Window_DebugRange "The window for selecting a block of switches/variables on the debug screen."
+
+  Window_Selectable <|-- Window_DebugRange
+
+  class Window_DebugEdit {
+    -_mode
+    -_topId
+
+    +initialize(rect)
+    +maxItems()
+    +drawItem(index)
+    +itemName(dataId)
+    +itemStatus(dataId)
+    +setMode(mode)
+    +setTopId(id)
+    +currentId()
+    +update()
+    +updateSwitch()
+    +updateVariable()
+    +deltaForVariable()
+  }
+  note for Window_DebugEdit "The window for displaying switches and variables on the debug screen."
+
+  Window_Selectable <|-- Window_DebugEdit
