@@ -1,0 +1,51 @@
+classDiagram
+  class PIXI_Sprite["PIXI.Sprite"]
+  class PIXI_TilingSprite["PIXI.TilingSprite"]
+  class Sprite
+    PIXI_Sprite <|-- Sprite
+  class TilingSprite
+    PIXI_TilingSprite <|-- TilingSprite
+  class Sprite_Clickable
+    Sprite <|-- Sprite_Clickable
+  class Sprite_Button
+    Sprite_Clickable <|-- Sprite_Button
+  class Sprite_Character
+    Sprite <|-- Sprite_Character
+  class Sprite_Battler
+    Sprite_Clickable <|-- Sprite_Battler
+  class Sprite_Actor
+    Sprite_Battler <|-- Sprite_Actor
+  class Sprite_Enemy
+    Sprite_Battler <|-- Sprite_Enemy
+  class Sprite_Animation
+    Sprite <|-- Sprite_Animation
+  class Sprite_AnimationMV
+    Sprite <|-- Sprite_AnimationMV
+  class Sprite_Battleback
+    TilingSprite <|-- Sprite_Battleback
+  class Sprite_Damage
+    Sprite <|-- Sprite_Damage
+  class Sprite_Gauge
+    Sprite <|-- Sprite_Gauge
+  class Sprite_Name
+    Sprite <|-- Sprite_Name
+  class Sprite_StateIcon
+    Sprite <|-- Sprite_StateIcon
+  class Sprite_StateOverlay
+    Sprite <|-- Sprite_StateOverlay
+  class Sprite_Weapon
+    Sprite <|-- Sprite_Weapon
+  class Sprite_Balloon
+    Sprite <|-- Sprite_Balloon
+  class Sprite_Picture
+    Sprite_Clickable <|-- Sprite_Picture
+  class Sprite_Timer
+    Sprite <|-- Sprite_Timer
+  class Sprite_Destination
+    Sprite <|-- Sprite_Destination
+  class Spriteset_Base
+    Sprite <|-- Spriteset_Base
+  class Spriteset_Map
+    Spriteset_Base <|-- Spriteset_Map
+  class Spriteset_Battle
+    Spriteset_Base <|-- Spriteset_Battle

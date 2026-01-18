@@ -1,0 +1,50 @@
+classDiagram
+  class PIXI_Container["PIXI.Container"]
+  class Stage
+    PIXI_Container <|-- Stage
+  class Scene_Base
+    Stage <|-- Scene_Base
+  class Scene_Boot
+    Scene_Base <|-- Scene_Boot
+  class Scene_Splash
+    Scene_Base <|-- Scene_Splash
+  class Scene_Title
+    Scene_Base <|-- Scene_Title
+  class Scene_Message
+    Scene_Base <|-- Scene_Message
+  class Scene_Map
+    Scene_Message <|-- Scene_Map
+  class Scene_MenuBase
+    Scene_Base <|-- Scene_MenuBase
+  class Scene_Menu
+    Scene_MenuBase <|-- Scene_Menu
+  class Scene_ItemBase
+    Scene_MenuBase <|-- Scene_ItemBase
+  class Scene_Item
+    Scene_ItemBase <|-- Scene_Item
+  class Scene_Skill
+    Scene_ItemBase <|-- Scene_Skill
+  class Scene_Equip
+    Scene_MenuBase <|-- Scene_Equip
+  class Scene_Status
+    Scene_MenuBase <|-- Scene_Status
+  class Scene_Options
+    Scene_MenuBase <|-- Scene_Options
+  class Scene_File
+    Scene_MenuBase <|-- Scene_File
+  class Scene_Save
+    Scene_File <|-- Scene_Save
+  class Scene_Load
+    Scene_File <|-- Scene_Load
+  class Scene_GameEnd
+    Scene_MenuBase <|-- Scene_GameEnd
+  class Scene_Shop
+    Scene_MenuBase <|-- Scene_Shop
+  class Scene_Name
+    Scene_MenuBase <|-- Scene_Name
+  class Scene_Debug
+    Scene_MenuBase <|-- Scene_Debug
+  class Scene_Battle
+    Scene_Message <|-- Scene_Battle
+  class Scene_Gameover
+    Scene_Base <|-- Scene_Gameover

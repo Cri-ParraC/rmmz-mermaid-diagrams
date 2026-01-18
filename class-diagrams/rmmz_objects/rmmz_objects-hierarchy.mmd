@@ -1,0 +1,41 @@
+classDiagram
+  class Game_Temp
+  class Game_System
+  class Game_Timer
+  class Game_Message
+  class Game_Switches
+  class Game_Variables
+  class Game_SelfSwitches
+  class Game_Screen
+  class Game_Picture
+  class Game_Item
+  class Game_Action
+  class Game_ActionResult
+  class Game_BattlerBase
+  class Game_Battler
+    Game_BattlerBase <|-- Game_Battler
+  class Game_Actor
+    Game_Battler <|-- Game_Actor
+  class Game_Enemy
+    Game_Battler <|-- Game_Enemy
+  class Game_Actors
+  class Game_Unit
+  class Game_Party
+    Game_Unit <|-- Game_Party
+  class Game_Troop
+    Game_Unit <|-- Game_Troop
+  class Game_Map
+  class Game_CommonEvent
+  class Game_CharacterBase
+  class Game_Character
+    Game_CharacterBase <|-- Game_Character
+  class Game_Player
+    Game_Character <|-- Game_Player
+  class Game_Follower
+    Game_Character <|-- Game_Follower
+  class Game_Followers
+  class Game_Vehicle
+    Game_Character <|-- Game_Vehicle
+  class Game_Event
+    Game_Character <|-- Game_Event
+  class Game_Interpreter

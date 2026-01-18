@@ -1,0 +1,106 @@
+classDiagram
+  class PIXI_Container["PIXI.Container"]
+  class Window
+    PIXI_Container <|-- Window
+  class Window_Base
+    Window <|-- Window_Base
+  class Window_Scrollable
+    Window_Base <|-- Window_Scrollable
+  class Window_Selectable
+    Window_Scrollable <|-- Window_Selectable
+  class Window_Command
+    Window_Selectable <|-- Window_Command
+  class Window_HorzCommand
+    Window_Command <|-- Window_HorzCommand
+  class Window_Help
+    Window_Base <|-- Window_Help
+  class Window_NameBox
+    Window_Base <|-- Window_NameBox
+  class Window_Message
+    Window_Base <|-- Window_Message
+  class Window_ScrollText
+    Window_Base <|-- Window_ScrollText
+  class Window_MapName
+    Window_Base <|-- Window_MapName
+  class Window_BattleLog
+    Window_Base <|-- Window_BattleLog
+  class Window_Gold
+    Window_Selectable <|-- Window_Gold
+  class Window_StatusBase
+    Window_Selectable <|-- Window_StatusBase
+  class Window_MenuCommand
+    Window_Command <|-- Window_MenuCommand
+  class Window_MenuStatus
+    Window_StatusBase <|-- Window_MenuStatus
+  class Window_MenuActor
+    Window_MenuStatus <|-- Window_MenuActor
+  class Window_ItemCategory
+    Window_HorzCommand <|-- Window_ItemCategory
+  class Window_ItemList
+    Window_Selectable <|-- Window_ItemList
+  class Window_SkillType
+    Window_Command <|-- Window_SkillType
+  class Window_SkillStatus
+    Window_StatusBase <|-- Window_SkillStatus
+  class Window_SkillList
+    Window_Selectable <|-- Window_SkillList
+  class Window_EquipStatus
+    Window_StatusBase <|-- Window_EquipStatus
+  class Window_EquipCommand
+    Window_HorzCommand <|-- Window_EquipCommand
+  class Window_EquipSlot
+    Window_StatusBase <|-- Window_EquipSlot
+  class Window_EquipItem
+    Window_ItemList <|-- Window_EquipItem
+  class Window_Status
+    Window_StatusBase <|-- Window_Status
+  class Window_StatusParams
+    Window_StatusBase <|-- Window_StatusParams
+  class Window_StatusEquip
+    Window_StatusBase <|-- Window_StatusEquip
+  class Window_Options
+    Window_Command <|-- Window_Options
+  class Window_SavefileList
+    Window_Selectable <|-- Window_SavefileList
+  class Window_ShopCommand
+    Window_HorzCommand <|-- Window_ShopCommand
+  class Window_ShopBuy
+    Window_Selectable <|-- Window_ShopBuy
+  class Window_ShopSell
+    Window_ItemList <|-- Window_ShopSell
+  class Window_ShopNumber
+    Window_Selectable <|-- Window_ShopNumber
+  class Window_ShopStatus
+    Window_StatusBase <|-- Window_ShopStatus
+  class Window_NameEdit
+    Window_StatusBase <|-- Window_NameEdit
+  class Window_NameInput
+    Window_Selectable <|-- Window_NameInput
+  class Window_ChoiceList
+    Window_Command <|-- Window_ChoiceList
+  class Window_NumberInput
+    Window_Selectable <|-- Window_NumberInput
+  class Window_EventItem
+    Window_ItemList <|-- Window_EventItem
+  class Window_PartyCommand
+    Window_Command <|-- Window_PartyCommand
+  class Window_ActorCommand
+    Window_Command <|-- Window_ActorCommand
+  class Window_BattleStatus
+    Window_StatusBase <|-- Window_BattleStatus
+  class Window_BattleActor
+    Window_BattleStatus <|-- Window_BattleActor
+  class Window_BattleEnemy
+    Window_Selectable <|-- Window_BattleEnemy
+  class Window_BattleSkill
+    Window_SkillList <|-- Window_BattleSkill
+  class Window_BattleItem
+    Window_ItemList <|-- Window_BattleItem
+  class Window_TitleCommand
+    Window_Command <|-- Window_TitleCommand
+  class Window_GameEnd
+    Window_Command <|-- Window_GameEnd
+  class Window_DebugRange
+    Window_Selectable <|-- Window_DebugRange
+  class Window_DebugEdit
+    Window_Selectable <|-- Window_DebugEdit
