@@ -1,0 +1,86 @@
+sequenceDiagram
+    title RPG Maker MZ — Game Loop
+
+    actor User as Usuario
+    participant PIXIApp as PIXI.Application
+    participant Graphics
+    participant SceneManager
+    participant AudioManager
+    participant Window as window
+
+    loop app.ticker.started
+        PIXIApp->>Graphics: _onTick(deltaTime)
+        activate Graphics
+        Graphics->>SceneManager: update(deltaTime)
+        activate SceneManager
+        deactivate SceneManager
+        opt _canRender()
+            Graphics->>PIXIApp: render()
+            activate PIXIApp
+            deactivate PIXIApp
+        end
+        deactivate Graphics
+
+        break excepción en update()
+            SceneManager->>SceneManager: catchException(e)
+            activate SceneManager
+            SceneManager->>Graphics: printError(name, message, e)
+            alt !retry
+                SceneManager->>AudioManager: stopAll()
+                SceneManager->>SceneManager: stop()
+                activate SceneManager
+                SceneManager->>Graphics: stopGameLoop()
+                activate Graphics
+                Graphics->>PIXIApp: stop()
+                deactivate Graphics
+                deactivate SceneManager
+            else retry
+                SceneManager->>Graphics: showRetryButton(callback)
+                User-)Graphics: click
+                Graphics->>SceneManager: callback()
+                SceneManager->>SceneManager: retry()
+                SceneManager->>Graphics: startGameLoop()
+                activate Graphics
+                Graphics->>PIXIApp: start()
+                deactivate Graphics
+            end
+            deactivate SceneManager
+        end
+    end
+
+    par eventos asíncronos
+        Window-)SceneManager: error
+        activate SceneManager
+        SceneManager->>SceneManager: onError(event)
+        activate SceneManager
+        SceneManager->>SceneManager: stop()
+        activate SceneManager
+        SceneManager->>Graphics: stopGameLoop()
+        activate Graphics
+        Graphics->>PIXIApp: stop()
+        deactivate Graphics
+        deactivate SceneManager
+        SceneManager->>Graphics: printError("Error", message, event)
+        SceneManager->>AudioManager: stopAll()
+        deactivate SceneManager
+        deactivate SceneManager
+    and
+        Window-)SceneManager: unhandledrejection
+        activate SceneManager
+        SceneManager->>SceneManager: onReject(event)
+        activate SceneManager
+        SceneManager->>SceneManager: onError(event)
+        activate SceneManager
+        SceneManager->>SceneManager: stop()
+        activate SceneManager
+        SceneManager->>Graphics: stopGameLoop()
+        activate Graphics
+        Graphics->>PIXIApp: stop()
+        deactivate Graphics
+        deactivate SceneManager
+        SceneManager->>Graphics: printError("Error", message, event)
+        SceneManager->>AudioManager: stopAll()
+        deactivate SceneManager
+        deactivate SceneManager
+        deactivate SceneManager
+    end
