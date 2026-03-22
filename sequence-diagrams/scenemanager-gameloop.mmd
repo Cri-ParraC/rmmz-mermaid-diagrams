@@ -31,16 +31,7 @@ sequenceDiagram
             SceneManager->>SceneManager: updateScene()
             deactivate SceneManager
         end
-        deactivate SceneManager
-        opt _canRender()
-            Graphics->>PIXIApp: render()
-            activate PIXIApp
-            deactivate PIXIApp
-        end
-        Graphics->>Graphics: _fpsCounter.endTick()
-        deactivate Graphics
-
-        break excepción en update()
+        break excepción en updateMain() — capturada en update()
             SceneManager->>SceneManager: catchException(e)
             activate SceneManager
             alt e instanceof Error
@@ -51,7 +42,7 @@ sequenceDiagram
                 SceneManager->>SceneManager: console.error(e.stack)
                 deactivate SceneManager
             else e instanceof Array && e[0] === "LoadError"
-                note over SceneManager: LoadError puede venir de: ImageManager / FontManager / AudioManager / EffectManager
+                note over SceneManager: LoadError de: ImageManager / FontManager / AudioManager / EffectManager
                 SceneManager->>SceneManager: catchLoadError(e)
                 activate SceneManager
                 SceneManager->>Graphics: printError("Failed to load", url)
@@ -92,6 +83,14 @@ sequenceDiagram
             end
             deactivate SceneManager
         end
+        deactivate SceneManager
+        opt _canRender()
+            Graphics->>PIXIApp: render()
+            activate PIXIApp
+            deactivate PIXIApp
+        end
+        Graphics->>Graphics: _fpsCounter.endTick()
+        deactivate Graphics
     end
 
     par eventos asíncronos
