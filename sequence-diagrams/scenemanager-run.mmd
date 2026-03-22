@@ -1,0 +1,97 @@
+sequenceDiagram
+    title RPG Maker MZ — SceneManager.run() — Arranque del Game Loop
+
+    participant Main
+    participant SceneManager
+    participant Graphics
+    participant PIXIApp as PIXI.Application
+    participant WebAudio
+    participant Video
+    participant Input
+    participant TouchInput
+    participant PluginManager
+
+    Main->>SceneManager: run(Scene_Boot)
+
+    activate SceneManager
+
+    SceneManager->>SceneManager: initialize()
+    SceneManager->>SceneManager: checkBrowser()
+    SceneManager->>SceneManager: checkPluginErrors()
+    activate SceneManager
+    SceneManager->>PluginManager: checkErrors()
+    activate PluginManager
+    deactivate PluginManager
+    deactivate SceneManager
+    SceneManager->>SceneManager: initGraphics()
+    activate SceneManager
+    SceneManager->>Graphics: initialize()
+    
+    activate Graphics
+    
+    Graphics->>Graphics: _createAllElements()
+    Graphics->>Graphics: _disableContextMenu()
+    Graphics->>Graphics: _setupEventHandlers()
+    Graphics->>Graphics: _createPixiApp()
+    activate Graphics
+    Graphics->>PIXIApp: <<create>>(autoStart: false)
+    activate PIXIApp
+    deactivate PIXIApp
+    Graphics->>PIXIApp: ticker.remove(render, app)
+    activate PIXIApp
+    deactivate PIXIApp
+    Graphics->>PIXIApp: ticker.add(_onTick, Graphics)
+    activate PIXIApp
+    note right of PIXIApp: _onTick queda registrado<br/>pero aún no se ejecuta
+    deactivate PIXIApp
+    deactivate Graphics
+    deactivate Graphics
+    SceneManager->>Graphics: setTickHandler(update)
+    activate Graphics
+    note right of Graphics: _tickHandler = SceneManager.update
+    deactivate Graphics
+    deactivate SceneManager
+
+    SceneManager->>SceneManager: initAudio()
+    activate SceneManager
+    SceneManager->>WebAudio: initialize()
+    activate WebAudio
+    deactivate WebAudio
+    deactivate SceneManager
+    SceneManager->>SceneManager: initVideo()
+    activate SceneManager
+    SceneManager->>Video: initialize(Graphics.width, Graphics.height)
+    activate Video
+    deactivate Video
+    deactivate SceneManager
+    SceneManager->>SceneManager: initInput()
+    activate SceneManager
+    SceneManager->>Input: initialize()
+    activate Input
+    deactivate Input
+    SceneManager->>TouchInput: initialize()
+    activate TouchInput
+    deactivate TouchInput
+    deactivate SceneManager
+    SceneManager->>SceneManager: setupEventHandlers()
+    note right of SceneManager: registra error / unhandledrejection / unload / keydown
+
+    SceneManager->>SceneManager: goto(Scene_Boot)
+    note right of SceneManager: _nextScene = new Scene_Boot()<br/>_scene es null, no se llama stop()
+
+    SceneManager->>Graphics: startGameLoop()
+    Graphics->>PIXIApp: start()
+    activate PIXIApp
+    deactivate PIXIApp
+
+    deactivate SceneManager
+
+    loop Cada frame (requestAnimationFrame vía PIXI ticker)
+        PIXIApp->>Graphics: _onTick(deltaTime)
+        activate Graphics
+        Graphics->>SceneManager: _tickHandler(deltaTime) → update(deltaTime)
+        Graphics->>PIXIApp: render() — dibuja el stage
+        activate PIXIApp
+        deactivate PIXIApp
+        deactivate Graphics
+    end
