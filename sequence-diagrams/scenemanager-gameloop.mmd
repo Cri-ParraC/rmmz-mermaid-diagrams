@@ -6,42 +6,77 @@ sequenceDiagram
     participant Graphics
     participant SceneManager
     participant AudioManager
+    participant Input
+    participant TouchInput
     participant Window as window
 
     loop app.ticker.started
         PIXIApp->>Graphics: _onTick(deltaTime)
         activate Graphics
+        Graphics->>Graphics: _fpsCounter.startTick()
         Graphics->>SceneManager: update(deltaTime)
         activate SceneManager
+        SceneManager->>SceneManager: determineRepeatNumber(deltaTime)
+        loop i < n
+            SceneManager->>SceneManager: updateMain()
+            activate SceneManager
+            SceneManager->>SceneManager: updateFrameCount()
+            SceneManager->>SceneManager: updateInputData()
+            activate SceneManager
+            SceneManager->>Input: update()
+            SceneManager->>TouchInput: update()
+            deactivate SceneManager
+            SceneManager->>SceneManager: updateEffekseer()
+            SceneManager->>SceneManager: changeScene()
+            SceneManager->>SceneManager: updateScene()
+            deactivate SceneManager
+        end
         deactivate SceneManager
         opt _canRender()
             Graphics->>PIXIApp: render()
             activate PIXIApp
             deactivate PIXIApp
         end
+        Graphics->>Graphics: _fpsCounter.endTick()
         deactivate Graphics
 
         break excepción en update()
             SceneManager->>SceneManager: catchException(e)
             activate SceneManager
-            SceneManager->>Graphics: printError(name, message, e)
-            alt !retry
+            alt e instanceof Error → catchNormalError
+                SceneManager->>Graphics: printError(name, message, e)
                 SceneManager->>AudioManager: stopAll()
-                SceneManager->>SceneManager: stop()
-                activate SceneManager
-                SceneManager->>Graphics: stopGameLoop()
-                activate Graphics
-                Graphics->>PIXIApp: stop()
-                deactivate Graphics
-                deactivate SceneManager
-            else retry
-                SceneManager->>Graphics: showRetryButton(callback)
+            else e[0]==="LoadError" → catchLoadError (ImageManager / FontManager / AudioManager / EffectManager)
+                SceneManager->>Graphics: printError("Failed to load", url)
+                alt retry
+                    SceneManager->>Graphics: showRetryButton(callback)
+                else !retry
+                    SceneManager->>AudioManager: stopAll()
+                end
+            else catchUnknownError
+                SceneManager->>Graphics: printError("UnknownError", String(e))
+                SceneManager->>AudioManager: stopAll()
+            end
+            SceneManager->>SceneManager: stop()
+            activate SceneManager
+            SceneManager->>Graphics: stopGameLoop()
+            activate Graphics
+            Graphics->>PIXIApp: stop()
+            deactivate Graphics
+            deactivate SceneManager
+            opt retry
                 User-)Graphics: click
-                Graphics->>SceneManager: callback()
-                SceneManager->>SceneManager: retry()
+                activate Graphics
+                Graphics->>Graphics: eraseError()
+                note right of Graphics: onclick closure: e[2]() (resource manager retry)
+                Graphics->>SceneManager: resume()
+                activate SceneManager
+                SceneManager->>TouchInput: update()
                 SceneManager->>Graphics: startGameLoop()
                 activate Graphics
                 Graphics->>PIXIApp: start()
+                deactivate Graphics
+                deactivate SceneManager
                 deactivate Graphics
             end
             deactivate SceneManager
