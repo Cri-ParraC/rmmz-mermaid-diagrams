@@ -10,6 +10,8 @@ sequenceDiagram
     participant Input
     participant TouchInput
     participant PluginManager
+    participant Window as window
+    participant Document as document
 
     Main->>SceneManager: run(Scene_Boot)
 
@@ -26,9 +28,7 @@ sequenceDiagram
     SceneManager->>SceneManager: initGraphics()
     activate SceneManager
     SceneManager->>Graphics: initialize()
-    
     activate Graphics
-    
     Graphics->>Graphics: _createAllElements()
     Graphics->>Graphics: _disableContextMenu()
     Graphics->>Graphics: _setupEventHandlers()
@@ -42,13 +42,11 @@ sequenceDiagram
     deactivate PIXIApp
     Graphics->>PIXIApp: ticker.add(_onTick, Graphics)
     activate PIXIApp
-    note right of PIXIApp: _onTick queda registrado<br/>pero aún no se ejecuta
     deactivate PIXIApp
     deactivate Graphics
     deactivate Graphics
     SceneManager->>Graphics: setTickHandler(update)
     activate Graphics
-    note right of Graphics: _tickHandler = SceneManager.update
     deactivate Graphics
     deactivate SceneManager
 
@@ -74,15 +72,29 @@ sequenceDiagram
     deactivate TouchInput
     deactivate SceneManager
     SceneManager->>SceneManager: setupEventHandlers()
-    note right of SceneManager: registra error / unhandledrejection / unload / keydown
+    activate SceneManager
+    SceneManager->>Window: addEventListener("error", onError)
+    activate Window
+    deactivate Window
+    SceneManager->>Window: addEventListener("unhandledrejection", onReject)
+    activate Window
+    deactivate Window
+    SceneManager->>Window: addEventListener("unload", onUnload)
+    activate Window
+    deactivate Window
+    SceneManager->>Document: addEventListener("keydown", onKeyDown)
+    activate Document
+    deactivate Document
+    deactivate SceneManager
 
     SceneManager->>SceneManager: goto(Scene_Boot)
-    note right of SceneManager: _nextScene = new Scene_Boot()<br/>_scene es null, no se llama stop()
 
     SceneManager->>Graphics: startGameLoop()
+    activate Graphics
     Graphics->>PIXIApp: start()
     activate PIXIApp
     deactivate PIXIApp
+    deactivate Graphics
 
     deactivate SceneManager
 
