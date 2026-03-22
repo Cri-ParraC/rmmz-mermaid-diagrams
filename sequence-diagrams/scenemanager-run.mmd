@@ -18,6 +18,7 @@ sequenceDiagram
     activate SceneManager
 
     SceneManager->>SceneManager: initialize()
+    activate SceneManager
     SceneManager->>SceneManager: checkBrowser()
     SceneManager->>SceneManager: checkPluginErrors()
     activate SceneManager
@@ -25,15 +26,18 @@ sequenceDiagram
     activate PluginManager
     deactivate PluginManager
     deactivate SceneManager
+    deactivate SceneManager
     SceneManager->>SceneManager: initGraphics()
     activate SceneManager
     SceneManager->>Graphics: initialize()
     activate Graphics
+    Graphics->>Graphics: _updateRealScale()
     Graphics->>Graphics: _createAllElements()
     Graphics->>Graphics: _disableContextMenu()
     Graphics->>Graphics: _setupEventHandlers()
     Graphics->>Graphics: _createPixiApp()
     activate Graphics
+    Graphics->>Graphics: _setupPixi()
     Graphics->>PIXIApp: <<create>>(autoStart: false)
     activate PIXIApp
     deactivate PIXIApp
@@ -44,6 +48,7 @@ sequenceDiagram
     activate PIXIApp
     deactivate PIXIApp
     deactivate Graphics
+    Graphics->>Graphics: _createEffekseerContext()
     deactivate Graphics
     SceneManager->>Graphics: setTickHandler(update)
     activate Graphics
