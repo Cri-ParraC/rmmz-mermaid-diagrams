@@ -43,19 +43,30 @@ sequenceDiagram
         break excepción en update()
             SceneManager->>SceneManager: catchException(e)
             activate SceneManager
-            alt e instanceof Error → catchNormalError
-                SceneManager->>Graphics: printError(name, message, e)
+            alt e instanceof Error
+                SceneManager->>SceneManager: catchNormalError(e)
+                activate SceneManager
+                SceneManager->>Graphics: printError(e.name, e.message, e)
                 SceneManager->>AudioManager: stopAll()
-            else e[0]==="LoadError" → catchLoadError (ImageManager / FontManager / AudioManager / EffectManager)
+                SceneManager->>SceneManager: console.error(e.stack)
+                deactivate SceneManager
+            else e instanceof Array && e[0] === "LoadError"
+                note over SceneManager: LoadError puede venir de: ImageManager / FontManager / AudioManager / EffectManager
+                SceneManager->>SceneManager: catchLoadError(e)
+                activate SceneManager
                 SceneManager->>Graphics: printError("Failed to load", url)
                 alt retry
                     SceneManager->>Graphics: showRetryButton(callback)
                 else !retry
                     SceneManager->>AudioManager: stopAll()
                 end
-            else catchUnknownError
+                deactivate SceneManager
+            else
+                SceneManager->>SceneManager: catchUnknownError(e)
+                activate SceneManager
                 SceneManager->>Graphics: printError("UnknownError", String(e))
                 SceneManager->>AudioManager: stopAll()
+                deactivate SceneManager
             end
             SceneManager->>SceneManager: stop()
             activate SceneManager
@@ -68,7 +79,7 @@ sequenceDiagram
                 User-)Graphics: click
                 activate Graphics
                 Graphics->>Graphics: eraseError()
-                note right of Graphics: onclick closure: e[2]() (resource manager retry)
+                note right of Graphics: onclick → closure de catchLoadError: retry() [e[2]]
                 Graphics->>SceneManager: resume()
                 activate SceneManager
                 SceneManager->>TouchInput: update()
@@ -88,6 +99,8 @@ sequenceDiagram
         activate SceneManager
         SceneManager->>SceneManager: onError(event)
         activate SceneManager
+        SceneManager->>SceneManager: console.error(event.message)
+        SceneManager->>SceneManager: console.error(event.filename, event.lineno)
         SceneManager->>SceneManager: stop()
         activate SceneManager
         SceneManager->>Graphics: stopGameLoop()
@@ -95,7 +108,7 @@ sequenceDiagram
         Graphics->>PIXIApp: stop()
         deactivate Graphics
         deactivate SceneManager
-        SceneManager->>Graphics: printError("Error", message, event)
+        SceneManager->>Graphics: printError("Error", event.message, event)
         SceneManager->>AudioManager: stopAll()
         deactivate SceneManager
         deactivate SceneManager
@@ -106,6 +119,8 @@ sequenceDiagram
         activate SceneManager
         SceneManager->>SceneManager: onError(event)
         activate SceneManager
+        SceneManager->>SceneManager: console.error(event.message)
+        SceneManager->>SceneManager: console.error(event.filename, event.lineno)
         SceneManager->>SceneManager: stop()
         activate SceneManager
         SceneManager->>Graphics: stopGameLoop()
@@ -113,7 +128,7 @@ sequenceDiagram
         Graphics->>PIXIApp: stop()
         deactivate Graphics
         deactivate SceneManager
-        SceneManager->>Graphics: printError("Error", message, event)
+        SceneManager->>Graphics: printError("Error", event.message, event)
         SceneManager->>AudioManager: stopAll()
         deactivate SceneManager
         deactivate SceneManager
