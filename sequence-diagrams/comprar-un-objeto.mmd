@@ -3,12 +3,28 @@ sequenceDiagram
 
     actor User as Usuario
     participant Scene as Scene_Shop
+    participant BuyWindow as Window_ShopBuy
     participant GameParty as $gameParty
     participant DataManager
     participant dataItems as $dataItems
     participant dataWeapons as $dataWeapons
     participant dataArmors as $dataArmors
     participant GameMap as $gameMap
+
+    User->>Scene: selecciona item de la lista
+    Scene->>Scene: onBuyOk()
+    activate Scene
+    Scene->>BuyWindow: item()
+    activate BuyWindow
+    BuyWindow->>BuyWindow: itemAt(index())
+    activate BuyWindow
+    Note right of BuyWindow: index() = fila resaltada por el cursor<br/>_data[index()] = objeto ya resuelto del database<br/>(inyectado por Scene_Shop via setupGoods)
+    BuyWindow-->>BuyWindow: _data[index()]
+    deactivate BuyWindow
+    BuyWindow-->>Scene: objeto de $dataItems/$dataWeapons/$dataArmors
+    deactivate BuyWindow
+    Note right of Scene: this._item = referencia al objeto del database
+    deactivate Scene
 
     User->>Scene: confirma cantidad a comprar
     Scene->>Scene: doBuy(number)
@@ -17,8 +33,10 @@ sequenceDiagram
     Scene->>GameParty: loseGold(number * buyingPrice())
     activate GameParty
     GameParty->>GameParty: gainGold(-amount)
+    Note right of GameParty: maxGold() → 99999999
     deactivate GameParty
 
+    Note over Scene: item es una referencia directa a un objeto de $dataItems/$dataWeapons/$dataArmors<br/>Ej: { id: 1, name: "Poción", price: 50, itypeId: 1, consumable: true, ... }
     Scene->>GameParty: gainItem(item, number)
     activate GameParty
 
@@ -59,8 +77,16 @@ sequenceDiagram
     end
     deactivate GameParty
 
+    GameParty->>GameParty: numItems(item)
+    activate GameParty
+    Note right of GameParty: lee container[item.id] || 0
+    GameParty-->>GameParty: lastNumber
+    deactivate GameParty
+
+    Note right of GameParty: container[item.id] = (lastNumber + amount).clamp(0, maxItems()) — maxItems() → 99
+    deactivate GameParty
+
     GameParty->>GameMap: requestRefresh()
     activate GameMap
     deactivate GameMap
-    deactivate GameParty
     deactivate Scene
