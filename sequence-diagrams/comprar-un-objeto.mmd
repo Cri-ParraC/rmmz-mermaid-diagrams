@@ -1,0 +1,66 @@
+sequenceDiagram
+    title Scene_Shop — Proceso de compra: datos en $gameParty
+
+    actor User as Usuario
+    participant Scene as Scene_Shop
+    participant GameParty as $gameParty
+    participant DataManager
+    participant dataItems as $dataItems
+    participant dataWeapons as $dataWeapons
+    participant dataArmors as $dataArmors
+    participant GameMap as $gameMap
+
+    User->>Scene: confirma cantidad a comprar
+    Scene->>Scene: doBuy(number)
+
+    activate Scene
+    Scene->>GameParty: loseGold(number * buyingPrice())
+    activate GameParty
+    GameParty->>GameParty: gainGold(-amount)
+    deactivate GameParty
+
+    Scene->>GameParty: gainItem(item, number)
+    activate GameParty
+
+    GameParty->>GameParty: itemContainer(item)
+    activate GameParty
+    GameParty->>DataManager: isItem(item)
+    activate DataManager
+    DataManager->>dataItems: includes(item)
+    activate dataItems
+    dataItems-->>DataManager: true/false
+    deactivate dataItems
+    DataManager-->>GameParty: true/false
+    deactivate DataManager
+    alt es Item de uso
+        GameParty-->>GameParty: retorna _items
+    else
+        GameParty->>DataManager: isWeapon(item)
+        activate DataManager
+        DataManager->>dataWeapons: includes(item)
+        activate dataWeapons
+        dataWeapons-->>DataManager: true/false
+        deactivate dataWeapons
+        DataManager-->>GameParty: true/false
+        deactivate DataManager
+        alt es arma
+            GameParty-->>GameParty: retorna _weapons
+        else es armadura
+            GameParty->>DataManager: isArmor(item)
+            activate DataManager
+            DataManager->>dataArmors: includes(item)
+            activate dataArmors
+            dataArmors-->>DataManager: true/false
+            deactivate dataArmors
+            DataManager-->>GameParty: true/false
+            deactivate DataManager
+            GameParty-->>GameParty: retorna _armors
+        end
+    end
+    deactivate GameParty
+
+    GameParty->>GameMap: requestRefresh()
+    activate GameMap
+    deactivate GameMap
+    deactivate GameParty
+    deactivate Scene
