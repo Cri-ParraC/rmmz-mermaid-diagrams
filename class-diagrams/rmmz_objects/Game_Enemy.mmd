@@ -1,0 +1,54 @@
+classDiagram
+  class Game_Enemy {
+    -_enemyId: number
+    -_letter: string
+    -_plural: boolean
+    -_screenX: number
+    -_screenY: number
+
+    +initialize(enemyId, x, y)
+    +initMembers()
+    +setup(enemyId, x, y)
+    +isEnemy() boolean
+    +friendsUnit() any
+    +opponentsUnit() any
+    +index() number
+    +isBattleMember() boolean
+    +enemyId() number
+    +enemy() any
+    +traitObjects() any[]
+    +paramBase(paramId) number
+    +exp() number
+    +gold() number
+    +makeDropItems() any[]
+    +dropItemRate() number
+    +itemObject(kind, dataId) any
+    +isSpriteVisible() boolean
+    +screenX() number
+    +screenY() number
+    +battlerName() string
+    +battlerHue() number
+    +originalName() string
+    +name() string
+    +isLetterEmpty() boolean
+    +setLetter(letter)
+    +setPlural(plural)
+    +performActionStart(action)
+    +performAction(action)
+    +performActionEnd()
+    +performDamage()
+    +performCollapse()
+    +transform(enemyId)
+    +meetsCondition(action) boolean
+    +meetsTurnCondition(param1, param2) boolean
+    +meetsHpCondition(param1, param2) boolean
+    +meetsMpCondition(param1, param2) boolean
+    +meetsStateCondition(param) boolean
+    +meetsPartyLevelCondition(param) boolean
+    +meetsSwitchCondition(param) boolean
+    +isActionValid(action) boolean
+    +selectAction(actionList, ratingZero) any
+    +selectAllActions(actionList)
+    +makeActions()
+  }
+  note for Game_Enemy "The game object class for an enemy."

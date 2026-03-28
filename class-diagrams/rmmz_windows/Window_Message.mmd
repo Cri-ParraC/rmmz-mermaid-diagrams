@@ -1,0 +1,62 @@
+classDiagram
+  class Window_Message {
+    -_background
+    -_positionType
+    -_waitCount
+    -_faceBitmap
+    -_textState
+    -_goldWindow
+    -_nameBoxWindow
+    -_choiceListWindow
+    -_numberInputWindow
+    -_eventItemWindow
+    -_showFast
+    -_lineShowFast
+    -_pauseSkip
+
+    +initialize(rect)
+    +initMembers()
+    +setGoldWindow(goldWindow)
+    +setNameBoxWindow(nameBoxWindow)
+    +setChoiceListWindow(choiceListWindow)
+    +setNumberInputWindow(numberInputWindow)
+    +setEventItemWindow(eventItemWindow)
+    +clearFlags()
+    +update()
+    +checkToNotClose()
+    +synchronizeNameBox()
+    +canStart()
+    +startMessage()
+    +newLineX(textState)
+    +updatePlacement()
+    +updateBackground()
+    +terminateMessage()
+    +updateWait()
+    +cancelWait()
+    +updateLoading()
+    +updateInput()
+    +isAnySubWindowActive()
+    +updateMessage()
+    +shouldBreakHere(textState)
+    +canBreakHere(textState)
+    +onEndOfText()
+    +startInput()
+    +isTriggered()
+    +doesContinue()
+    +areSettingsChanged()
+    +updateShowFast()
+    +newPage(textState)
+    +updateSpeakerName()
+    +loadMessageFace()
+    +drawMessageFace()
+    +processControlCharacter(textState, c)
+    +processNewLine(textState)
+    +processNewPage(textState)
+    +isEndOfText(textState)
+    +needsNewPage(textState)
+    +processEscapeCharacter(code, textState)
+    +startWait(count)
+    +startPause()
+    +isWaiting()
+  }
+  note for Window_Message "The window for displaying text messages."

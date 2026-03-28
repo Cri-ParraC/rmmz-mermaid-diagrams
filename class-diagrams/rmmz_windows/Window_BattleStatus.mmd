@@ -1,0 +1,28 @@
+classDiagram
+  class Window_BattleStatus {
+    -_bitmapsReady
+
+    +initialize(rect)
+    +extraHeight()
+    +maxCols()
+    +itemHeight()
+    +maxItems()
+    +rowSpacing()
+    +updatePadding()
+    +actor(index)
+    +selectActor(actor)
+    +update()
+    +preparePartyRefresh()
+    +performPartyRefresh()
+    +drawItem(index)
+    +drawItemImage(index)
+    +drawItemStatus(index)
+    +faceRect(index)
+    +nameX(rect)
+    +nameY(rect)
+    +stateIconX(rect)
+    +stateIconY(rect)
+    +basicGaugesX(rect)
+    +basicGaugesY(rect)
+  }
+  note for Window_BattleStatus "The window for displaying the status of party members on the battle screen."

@@ -1,0 +1,20 @@
+classDiagram
+  class ConfigManager {
+    +alwaysDash: boolean
+    +commandRemember: boolean
+    +touchUI: boolean
+    -_isLoaded: boolean
+    +bgmVolume: number
+    +bgsVolume: number
+    +meVolume: number
+    +seVolume: number
+
+    +load()
+    +save()
+    +isLoaded() boolean
+    +makeData() any
+    +applyData(config)
+    +readFlag(config, name, defaultValue) boolean
+    +readVolume(config, name) number
+  }
+  note for ConfigManager "The static class that manages the configuration data."

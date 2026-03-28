@@ -1,0 +1,58 @@
+classDiagram
+  class AudioManager {
+    -_bgmVolume: number
+    -_bgsVolume: number
+    -_meVolume: number
+    -_seVolume: number
+    -_currentBgm: any | null
+    -_currentBgs: any | null
+    -_bgmBuffer: any | null
+    -_bgsBuffer: any | null
+    -_meBuffer: any | null
+    -_seBuffers: any[]
+    -_staticBuffers: any[]
+    -_replayFadeTime: number
+    -_path: string
+    +bgmVolume: number
+    +bgsVolume: number
+    +meVolume: number
+    +seVolume: number
+
+    +playBgm(bgm, pos)
+    +replayBgm(bgm)
+    +isCurrentBgm(bgm) boolean
+    +updateBgmParameters(bgm)
+    +updateCurrentBgm(bgm, pos)
+    +stopBgm()
+    +fadeOutBgm(duration)
+    +fadeInBgm(duration)
+    +playBgs(bgs, pos)
+    +replayBgs(bgs)
+    +isCurrentBgs(bgs) boolean
+    +updateBgsParameters(bgs)
+    +updateCurrentBgs(bgs, pos)
+    +stopBgs()
+    +fadeOutBgs(duration)
+    +fadeInBgs(duration)
+    +playMe(me)
+    +updateMeParameters(me)
+    +fadeOutMe(duration)
+    +stopMe()
+    +playSe(se)
+    +updateSeParameters(buffer, se)
+    +cleanupSe()
+    +stopSe()
+    +playStaticSe(se)
+    +loadStaticSe(se)
+    +isStaticSe(se) boolean
+    +stopAll()
+    +saveBgm() any
+    +saveBgs() any
+    +makeEmptyAudioObject() any
+    +createBuffer(folder, name) any
+    +updateBufferParameters(buffer, configVolume, audio)
+    +audioFileExt() string
+    +checkErrors()
+    +throwLoadError(webAudio)
+  }
+  note for AudioManager "The static class that handles BGM, BGS, ME and SE."

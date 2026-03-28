@@ -1,0 +1,31 @@
+classDiagram
+  class Window_ChoiceList {
+    -_background
+    -_messageWindow
+    -_cancelButton
+
+    +initialize()
+    +setMessageWindow(messageWindow)
+    +createCancelButton()
+    +start()
+    +update()
+    +updateCancelButton()
+    +selectDefault()
+    +updatePlacement()
+    +updateBackground()
+    +placeCancelButton()
+    +windowX()
+    +windowY()
+    +windowWidth()
+    +windowHeight()
+    +numVisibleRows()
+    +maxLines()
+    +maxChoiceWidth()
+    +makeCommandList()
+    +drawItem(index)
+    +isCancelEnabled()
+    +needsCancelButton()
+    +callOkHandler()
+    +callCancelHandler()
+  }
+  note for Window_ChoiceList "The window used for the event command [Show Choices]."

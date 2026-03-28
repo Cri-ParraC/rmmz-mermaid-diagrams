@@ -1,0 +1,12 @@
+classDiagram
+  class Scene_Save {
+    +initialize()
+    +mode() string
+    +helpWindowText() string
+    +firstSavefileId() number
+    +onSavefileOk()
+    +executeSave(savefileId)
+    +onSaveSuccess()
+    +onSaveFailure()
+  }
+  note for Scene_Save "The scene class of the save screen."

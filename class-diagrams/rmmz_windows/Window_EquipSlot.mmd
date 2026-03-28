@@ -1,0 +1,21 @@
+classDiagram
+  class Window_EquipSlot {
+    -_actor
+    -_itemWindow
+    -_statusWindow
+
+    +initialize(rect)
+    +setActor(actor)
+    +update()
+    +maxItems()
+    +item()
+    +itemAt(index)
+    +drawItem(index)
+    +slotNameWidth()
+    +isEnabled(index)
+    +isCurrentItemEnabled()
+    +setStatusWindow(statusWindow)
+    +setItemWindow(itemWindow)
+    +updateHelp()
+  }
+  note for Window_EquipSlot "The window for selecting an equipment slot on the equipment screen."

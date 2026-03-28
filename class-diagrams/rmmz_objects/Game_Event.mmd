@@ -1,0 +1,54 @@
+classDiagram
+  class Game_Event {
+    -_mapId: number
+    -_eventId: number
+    -_moveType: number
+    -_trigger: number | null
+    -_starting: boolean
+    -_erased: boolean
+    -_pageIndex: number
+    -_originalPattern: number
+    -_originalDirection: number
+    -_prelockDirection: number
+    -_locked: boolean
+    -_interpreter: Game_Interpreter | null
+
+    +initialize(mapId, eventId)
+    +initMembers()
+    +eventId() number
+    +event() any
+    +page() any
+    +list() any
+    +isCollidedWithCharacters(x, y) boolean
+    +isCollidedWithEvents(x, y) boolean
+    +isCollidedWithPlayerCharacters(x, y) boolean
+    +lock()
+    +unlock()
+    +updateStop()
+    +updateSelfMovement()
+    +stopCountThreshold() number
+    +moveTypeRandom()
+    +moveTypeTowardPlayer()
+    +isNearThePlayer() boolean
+    +moveTypeCustom()
+    +isStarting() boolean
+    +clearStartingFlag()
+    +isTriggerIn(triggers) boolean
+    +start()
+    +erase()
+    +refresh()
+    +findProperPageIndex() number
+    +meetsConditions(page) boolean
+    +setupPage()
+    +clearPageSettings()
+    +setupPageSettings()
+    +isOriginalPattern() boolean
+    +resetPattern()
+    +checkEventTriggerTouch(x, y)
+    +checkEventTriggerAuto()
+    +update()
+    +updateParallel()
+    +locate(x, y)
+    +forceMoveRoute(moveRoute)
+  }
+  note for Game_Event "The game object class for an event. It contains functionality for event page switching and running parallel process events."

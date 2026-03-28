@@ -1,0 +1,59 @@
+classDiagram
+  class Sprite_Gauge {
+    -_battler: Game_Battler | null
+    -_statusType: string
+    -_value: number
+    -_maxValue: number
+    -_targetValue: number
+    -_targetMaxValue: number
+    -_duration: number
+    -_flashingCount: number
+
+    +initialize()
+    +initMembers()
+    +destroy(options)
+    +createBitmap()
+    +bitmapWidth() number
+    +bitmapHeight() number
+    +textHeight() number
+    +gaugeHeight() number
+    +gaugeX() number
+    +labelY() number
+    +labelFontFace() string
+    +labelFontSize() number
+    +valueFontFace() string
+    +valueFontSize() number
+    +setup(battler, statusType)
+    +update()
+    +updateBitmap()
+    +updateTargetValue(value, maxValue)
+    +smoothness() number
+    +updateGaugeAnimation()
+    +updateFlashing()
+    +flashingColor1() any[]
+    +flashingColor2() any[]
+    +isValid() boolean
+    +currentValue() number
+    +currentMaxValue() number
+    +label() string
+    +gaugeBackColor() string
+    +gaugeColor1() string
+    +gaugeColor2() string
+    +labelColor() string
+    +labelOutlineColor() string
+    +labelOutlineWidth() number
+    +valueColor() string
+    +valueOutlineColor() string
+    +valueOutlineWidth() number
+    +redraw()
+    +drawGauge()
+    +drawGaugeRect(x, y, width, height)
+    +gaugeRate() number
+    +drawLabel()
+    +setupLabelFont()
+    +measureLabelWidth() number
+    +labelOpacity() number
+    +drawValue()
+    +setupValueFont()
+  }
+  note for Sprite_Gauge "The sprite for displaying a status gauge."

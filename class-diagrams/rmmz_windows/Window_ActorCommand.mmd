@@ -1,0 +1,16 @@
+classDiagram
+  class Window_ActorCommand {
+    -_actor
+
+    +initialize(rect)
+    +makeCommandList()
+    +addAttackCommand()
+    +addSkillCommands()
+    +addGuardCommand()
+    +addItemCommand()
+    +setup(actor)
+    +actor()
+    +processOk()
+    +selectLast()
+  }
+  note for Window_ActorCommand "The window for selecting an actor's action on the battle screen."

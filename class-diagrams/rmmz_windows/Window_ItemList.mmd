@@ -1,0 +1,25 @@
+classDiagram
+  class Window_ItemList {
+    -_category
+    -_data
+
+    +initialize(rect)
+    +setCategory(category)
+    +maxCols()
+    +colSpacing()
+    +maxItems()
+    +item()
+    +itemAt(index)
+    +isCurrentItemEnabled()
+    +includes(item)
+    +needsNumber()
+    +isEnabled(item)
+    +makeItemList()
+    +selectLast()
+    +drawItem(index)
+    +numberWidth()
+    +drawItemNumber(item, x, y, width)
+    +updateHelp()
+    +refresh()
+  }
+  note for Window_ItemList "The window for selecting an item on the item screen."

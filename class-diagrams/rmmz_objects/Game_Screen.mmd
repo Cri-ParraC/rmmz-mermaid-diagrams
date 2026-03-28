@@ -1,0 +1,74 @@
+classDiagram
+  class Game_Screen {
+    -_brightness: number
+    -_fadeOutDuration: number
+    -_fadeInDuration: number
+    -_tone: number[]
+    -_toneTarget: number[]
+    -_toneDuration: number
+    -_flashColor: number[]
+    -_flashDuration: number
+    -_shakePower: number
+    -_shakeSpeed: number
+    -_shakeDuration: number
+    -_shakeDirection: number
+    -_shake: number
+    -_zoomX: number
+    -_zoomY: number
+    -_zoomScale: number
+    -_zoomScaleTarget: number
+    -_zoomDuration: number
+    -_weatherType: string
+    -_weatherPower: number
+    -_weatherPowerTarget: number
+    -_weatherDuration: number
+    -_pictures: any[]
+
+    +initialize()
+    +clear()
+    +onBattleStart()
+    +brightness() number
+    +tone() number[]
+    +flashColor() number[]
+    +shake() number
+    +zoomX() number
+    +zoomY() number
+    +zoomScale() number
+    +weatherType() string
+    +weatherPower() number
+    +picture(pictureId) any
+    +realPictureId(pictureId) number
+    +clearFade()
+    +clearTone()
+    +clearFlash()
+    +clearShake()
+    +clearZoom()
+    +clearWeather()
+    +clearPictures()
+    +eraseBattlePictures()
+    +maxPictures() number
+    +startFadeOut(duration)
+    +startFadeIn(duration)
+    +startTint(tone, duration)
+    +startFlash(color, duration)
+    +startShake(power, speed, duration)
+    +startZoom(x, y, scale, duration)
+    +setZoom(x, y, scale)
+    +changeWeather(type, power, duration)
+    +update()
+    +updateFadeOut()
+    +updateFadeIn()
+    +updateTone()
+    +updateFlash()
+    +updateShake()
+    +updateZoom()
+    +updateWeather()
+    +updatePictures()
+    +startFlashForDamage()
+    +showPicture(pictureId, name, origin, x, y, scaleX, scaleY, opacity, blendMode)
+    +movePicture(pictureId, origin, x, y, scaleX, scaleY, opacity, blendMode, duration, easingType)
+    +rotatePicture(pictureId, speed)
+    +tintPicture(pictureId, tone, duration)
+    +erasePicture(pictureId)
+  }
+  note for Game_Screen "The game object class for screen effect data, such as changes in color tone and flashes."

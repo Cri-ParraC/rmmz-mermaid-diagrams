@@ -1,0 +1,17 @@
+classDiagram
+  class Sprite_StateOverlay {
+    -_battler: Game_Battler | null
+    -_overlayIndex: number
+    -_animationCount: number
+    -_pattern: number
+
+    +initialize()
+    +initMembers()
+    +loadBitmap()
+    +setup(battler)
+    +update()
+    +animationWait() number
+    +updatePattern()
+    +updateFrame()
+  }
+  note for Sprite_StateOverlay "The sprite for displaying an overlay image for a state."

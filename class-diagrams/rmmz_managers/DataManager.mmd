@@ -1,0 +1,53 @@
+classDiagram
+  class DataManager {
+    -_globalInfo: any[] | null
+    -_errors: any[]
+    -_databaseFiles: any[]
+
+    +loadGlobalInfo()
+    +removeInvalidGlobalInfo()
+    +saveGlobalInfo()
+    +isGlobalInfoLoaded() boolean
+    +loadDatabase()
+    +loadDataFile(name, src)
+    +onXhrLoad(xhr, name, src, url)
+    +onXhrError(name, src, url)
+    +isDatabaseLoaded() boolean
+    +loadMapData(mapId)
+    +makeEmptyMap()
+    +isMapLoaded() boolean
+    +onLoad(object)
+    +isMapObject(object) boolean
+    +extractArrayMetadata(array)
+    +extractMetadata(data)
+    +checkError()
+    +isBattleTest() boolean
+    +isEventTest() boolean
+    +isTitleSkip() boolean
+    +isSkill(item) boolean
+    +isItem(item) boolean
+    +isWeapon(item) boolean
+    +isArmor(item) boolean
+    +createGameObjects()
+    +setupNewGame()
+    +setupBattleTest()
+    +setupEventTest()
+    +isAnySavefileExists() boolean
+    +latestSavefileId() number
+    +earliestSavefileId() number
+    +emptySavefileId() number
+    +loadAllSavefileImages()
+    +loadSavefileImages(info)
+    +maxSavefiles() number
+    +savefileInfo(savefileId) any | null
+    +savefileExists(savefileId) boolean
+    +saveGame(savefileId) Promise
+    +loadGame(savefileId) Promise
+    +makeSavename(savefileId) string
+    +selectSavefileForNewGame()
+    +makeSavefileInfo() any
+    +makeSaveContents() any
+    +extractSaveContents(contents)
+    +correctDataErrors()
+  }
+  note for DataManager "The static class that manages the database and game objects."

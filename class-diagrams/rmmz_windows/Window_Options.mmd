@@ -1,0 +1,22 @@
+classDiagram
+  class Window_Options {
+    +initialize(rect)
+    +makeCommandList()
+    +addGeneralOptions()
+    +addVolumeOptions()
+    +drawItem(index)
+    +statusWidth()
+    +statusText(index)
+    +isVolumeSymbol(symbol)
+    +booleanStatusText(value)
+    +volumeStatusText(value)
+    +processOk()
+    +cursorRight()
+    +cursorLeft()
+    +changeVolume(symbol, forward, wrap)
+    +volumeOffset()
+    +changeValue(symbol, value)
+    +getConfigValue(symbol)
+    +setConfigValue(symbol, volume)
+  }
+  note for Window_Options "The window for changing various settings on the options screen."

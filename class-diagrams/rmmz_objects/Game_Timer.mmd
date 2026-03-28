@@ -1,0 +1,15 @@
+classDiagram
+  class Game_Timer {
+    -_frames: number
+    -_working: boolean
+
+    +initialize()
+    +update(sceneActive)
+    +start(count)
+    +stop()
+    +isWorking() boolean
+    +seconds() number
+    +frames() number
+    +onExpire()
+  }
+  note for Game_Timer "The game object class for the timer."

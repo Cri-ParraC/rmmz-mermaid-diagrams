@@ -1,0 +1,42 @@
+classDiagram
+  class Window_NameInput {
+    <<static>> LATIN1
+    <<static>> LATIN2
+    <<static>> RUSSIA
+    <<static>> JAPAN1
+    <<static>> JAPAN2
+    <<static>> JAPAN3
+    -_editWindow
+    -_page
+
+    +initialize(rect)
+    +setEditWindow(editWindow)
+    +table()
+    +maxCols()
+    +maxItems()
+    +itemWidth()
+    +groupSpacing()
+    +character()
+    +isPageChange()
+    +isOk()
+    +itemRect(index)
+    +drawItem(index)
+    +updateCursor()
+    +isCursorMovable()
+    +cursorDown(wrap)
+    +cursorUp(wrap)
+    +cursorRight(wrap)
+    +cursorLeft(wrap)
+    +cursorPagedown()
+    +cursorPageup()
+    +processCursorMove()
+    +processHandling()
+    +isCancelEnabled()
+    +processCancel()
+    +processJump()
+    +processBack()
+    +processOk()
+    +onNameAdd()
+    +onNameOk()
+  }
+  note for Window_NameInput "The window for selecting text characters on the name input screen."

@@ -1,0 +1,48 @@
+classDiagram
+  class Sprite_Actor {
+    +MOTIONS: any
+
+    -_actor: Game_Actor | null
+    -_battlerName: string
+    -_motion: any
+    -_motionCount: number
+    -_pattern: number
+    -_mainSprite: Sprite
+    -_shadowSprite: Sprite
+    -_weaponSprite: Sprite_Weapon
+    -_stateSprite: Sprite_StateOverlay
+
+    +initialize(battler)
+    +initMembers()
+    +mainSprite() Sprite
+    +createMainSprite()
+    +createShadowSprite()
+    +createWeaponSprite()
+    +createStateSprite()
+    +setBattler(battler)
+    +moveToStartPosition()
+    +setActorHome(index)
+    +update()
+    +updateShadow()
+    +updateMain()
+    +setupMotion()
+    +setupWeaponAnimation()
+    +startMotion(motionType)
+    +updateTargetPosition()
+    +shouldStepForward() boolean
+    +updateBitmap()
+    +updateFrame()
+    +updateMove()
+    +updateMotion()
+    +updateMotionCount()
+    +motionSpeed() number
+    +refreshMotion()
+    +startEntryMotion()
+    +stepForward()
+    +stepBack()
+    +retreat()
+    +onMoveEnd()
+    +damageOffsetX() number
+    +damageOffsetY() number
+  }
+  note for Sprite_Actor "The sprite for displaying an actor."

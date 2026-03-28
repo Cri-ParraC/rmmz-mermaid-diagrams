@@ -1,0 +1,22 @@
+classDiagram
+  class Window_MenuCommand {
+    +initialize(rect)
+    +makeCommandList()
+    +addMainCommands()
+    +addFormationCommand()
+    +addOriginalCommands()
+    +addOptionsCommand()
+    +addSaveCommand()
+    +addGameEndCommand()
+    +needsCommand(name)
+    +areMainCommandsEnabled()
+    +isFormationEnabled()
+    +isOptionsEnabled()
+    +isSaveEnabled()
+    +isGameEndEnabled()
+    +processOk()
+    +selectLast()
+    <<static>> _lastCommandSymbol
+    <<static>> initCommandPosition()
+  }
+  note for Window_MenuCommand "The window for selecting a command on the menu screen."

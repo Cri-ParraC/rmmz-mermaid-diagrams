@@ -1,0 +1,31 @@
+classDiagram
+  class Game_Troop {
+    -_interpreter: Game_Interpreter
+    -_troopId: number
+    -_eventFlags: object
+    -_enemies: any[]
+    -_turnCount: number
+    -_namesCount: object
+
+    +initialize()
+    +isEventRunning() boolean
+    +updateInterpreter()
+    +turnCount() number
+    +members() any[]
+    +clear()
+    +troop() any
+    +setup(troopId)
+    +makeUniqueNames()
+    +updatePluralFlags()
+    +letterTable() string[]
+    +enemyNames() string[]
+    +meetsConditions(page) boolean
+    +setupBattleEvent()
+    +increaseTurn()
+    +expTotal() number
+    +goldTotal() number
+    +goldRate() number
+    +makeDropItems() any[]
+    +isTpbTurnEnd() boolean
+  }
+  note for Game_Troop "The game object class for a troop and the battle-related data."

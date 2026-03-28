@@ -1,0 +1,26 @@
+classDiagram
+  class Window_SkillList {
+    -_actor
+    -_stypeId
+    -_data
+
+    +initialize(rect)
+    +setActor(actor)
+    +setStypeId(stypeId)
+    +maxCols()
+    +colSpacing()
+    +maxItems()
+    +item()
+    +itemAt(index)
+    +isCurrentItemEnabled()
+    +includes(item)
+    +isEnabled(item)
+    +makeItemList()
+    +selectLast()
+    +drawItem(index)
+    +costWidth()
+    +drawSkillCost(skill, x, y, width)
+    +updateHelp()
+    +refresh()
+  }
+  note for Window_SkillList "The window for selecting a skill on the skill screen."

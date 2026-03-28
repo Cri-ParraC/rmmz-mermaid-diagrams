@@ -1,0 +1,19 @@
+classDiagram
+  class Window_DebugEdit {
+    -_mode
+    -_topId
+
+    +initialize(rect)
+    +maxItems()
+    +drawItem(index)
+    +itemName(dataId)
+    +itemStatus(dataId)
+    +setMode(mode)
+    +setTopId(id)
+    +currentId()
+    +update()
+    +updateSwitch()
+    +updateVariable()
+    +deltaForVariable()
+  }
+  note for Window_DebugEdit "The window for displaying switches and variables on the debug screen."

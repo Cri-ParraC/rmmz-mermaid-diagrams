@@ -1,0 +1,142 @@
+classDiagram
+  class Game_Battler {
+    -_actions: any[]
+    -_speed: number
+    -_result: Game_ActionResult
+    -_actionState: string
+    -_lastTargetIndex: number
+    -_damagePopup: boolean
+    -_effectType: any
+    -_motionType: any
+    -_weaponImageId: number
+    -_motionRefresh: boolean
+    -_selected: boolean
+    -_tpbState: string
+    -_tpbChargeTime: number
+    -_tpbCastTime: number
+    -_tpbIdleTime: number
+    -_tpbTurnCount: number
+    -_tpbTurnEnd: boolean
+
+    +initialize()
+    +initMembers()
+    +clearDamagePopup()
+    +clearWeaponAnimation()
+    +clearEffect()
+    +clearMotion()
+    +requestEffect(effectType)
+    +requestMotion(motionType)
+    +requestMotionRefresh()
+    +cancelMotionRefresh()
+    +select()
+    +deselect()
+    +isDamagePopupRequested() boolean
+    +isEffectRequested() boolean
+    +isMotionRequested() boolean
+    +isWeaponAnimationRequested() boolean
+    +isMotionRefreshRequested() boolean
+    +isSelected() boolean
+    +effectType() any
+    +motionType() any
+    +weaponImageId() number
+    +startDamagePopup()
+    +shouldPopupDamage() boolean
+    +startWeaponAnimation(weaponImageId)
+    +action(index) any
+    +setAction(index, action)
+    +numActions() number
+    +clearActions()
+    +result() Game_ActionResult
+    +clearResult()
+    +clearTpbChargeTime()
+    +applyTpbPenalty()
+    +initTpbChargeTime(advantageous)
+    +tpbChargeTime() number
+    +startTpbCasting()
+    +startTpbAction()
+    +isTpbCharged() boolean
+    +isTpbReady() boolean
+    +isTpbTimeout() boolean
+    +updateTpb()
+    +updateTpbChargeTime()
+    +updateTpbCastTime()
+    +updateTpbAutoBattle()
+    +updateTpbIdleTime()
+    +tpbAcceleration() number
+    +tpbRelativeSpeed() number
+    +tpbSpeed() number
+    +tpbBaseSpeed() number
+    +tpbRequiredCastTime() number
+    +onTpbCharged()
+    +shouldDelayTpbCharge() boolean
+    +finishTpbCharge()
+    +isTpbTurnEnd() boolean
+    +initTpbTurn()
+    +startTpbTurn()
+    +makeTpbActions()
+    +onTpbTimeout()
+    +turnCount() number
+    +canInput() boolean
+    +refresh()
+    +addState(stateId)
+    +isStateAddable(stateId) boolean
+    +isStateRestrict(stateId) boolean
+    +onRestrict()
+    +removeState(stateId)
+    +escape()
+    +addBuff(paramId, turns)
+    +addDebuff(paramId, turns)
+    +removeBuff(paramId)
+    +removeBattleStates()
+    +removeAllBuffs()
+    +removeStatesAuto(timing)
+    +removeBuffsAuto()
+    +removeStatesByDamage()
+    +makeActionTimes() number
+    +makeActions()
+    +speed() number
+    +makeSpeed()
+    +currentAction() any
+    +removeCurrentAction()
+    +setLastTarget(target)
+    +forceAction(skillId, targetIndex)
+    +useItem(item)
+    +consumeItem(item)
+    +gainHp(value)
+    +gainMp(value)
+    +gainTp(value)
+    +gainSilentTp(value)
+    +initTp()
+    +clearTp()
+    +chargeTpByDamage(damageRate)
+    +regenerateHp()
+    +maxSlipDamage() number
+    +regenerateMp()
+    +regenerateTp()
+    +regenerateAll()
+    +onBattleStart(advantageous)
+    +onAllActionsEnd()
+    +onTurnEnd()
+    +onBattleEnd()
+    +onDamage(value)
+    +setActionState(actionState)
+    +isUndecided() boolean
+    +isInputting() boolean
+    +isWaiting() boolean
+    +isActing() boolean
+    +isChanting() boolean
+    +isGuardWaiting() boolean
+    +performActionStart(action)
+    +performAction(action)*
+    +performActionEnd()*
+    +performDamage()*
+    +performMiss()
+    +performRecovery()
+    +performEvasion()
+    +performMagicEvasion()
+    +performCounter()
+    +performReflection()
+    +performSubstitute(target)*
+    +performCollapse()*
+  }
+  note for Game_Battler "The superclass of Game_Actor and Game_Enemy. It contains methods for sprites and actions."

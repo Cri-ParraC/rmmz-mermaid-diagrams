@@ -1,0 +1,8 @@
+classDiagram
+  class Game_Actors {
+    -_data: (Game_Actor | null)[]
+
+    +initialize()
+    +actor(actorId) Game_Actor | null
+  }
+  note for Game_Actors "The wrapper class for an actor array."

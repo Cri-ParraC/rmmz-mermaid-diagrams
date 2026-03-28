@@ -1,0 +1,33 @@
+classDiagram
+  class Scene_Equip {
+    -_statusWindow: Window_EquipStatus
+    -_commandWindow: Window_EquipCommand
+    -_slotWindow: Window_EquipSlot
+    -_itemWindow: Window_EquipItem
+
+    +initialize()
+    +create()
+    +createStatusWindow()
+    +statusWindowRect() Rectangle
+    +createCommandWindow()
+    +commandWindowRect() Rectangle
+    +createSlotWindow()
+    +slotWindowRect() Rectangle
+    +createItemWindow()
+    +itemWindowRect() Rectangle
+    +statusWidth() number
+    +needsPageButtons() boolean
+    +arePageButtonsEnabled() boolean
+    +refreshActor()
+    +commandEquip()
+    +commandOptimize()
+    +commandClear()
+    +onSlotOk()
+    +onSlotCancel()
+    +onItemOk()
+    +executeEquipChange()
+    +onItemCancel()
+    +onActorChange()
+    +hideItemWindow()
+  }
+  note for Scene_Equip "The scene class of the equipment screen."

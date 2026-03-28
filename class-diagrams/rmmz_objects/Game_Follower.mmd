@@ -1,0 +1,13 @@
+classDiagram
+  class Game_Follower {
+    -_memberIndex: number
+
+    +initialize(memberIndex)
+    +refresh()
+    +actor() any
+    +isVisible() boolean
+    +isGathered() boolean
+    +update()
+    +chaseCharacter(character)
+  }
+  note for Game_Follower "The game object class for a follower. A follower is an allied character, other than the front character, displayed in the party."

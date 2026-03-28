@@ -1,0 +1,140 @@
+classDiagram
+  class Game_BattlerBase {
+    -_hp: number
+    -_mp: number
+    -_tp: number
+    -_hidden: boolean
+    -_paramPlus: number[]
+    -_states: number[]
+    -_stateTurns: object
+    -_buffs: number[]
+    -_buffTurns: number[]
+
+    +initialize()
+    +initMembers()
+    +clearParamPlus()
+    +clearStates()
+    +eraseState(stateId)
+    +isStateAffected(stateId) boolean
+    +isDeathStateAffected() boolean
+    +deathStateId() number
+    +resetStateCounts(stateId)
+    +isStateExpired(stateId) boolean
+    +updateStateTurns()
+    +clearBuffs()
+    +eraseBuff(paramId)
+    +buffLength() number
+    +buff(paramId) number
+    +isBuffAffected(paramId) boolean
+    +isDebuffAffected(paramId) boolean
+    +isBuffOrDebuffAffected(paramId) boolean
+    +isMaxBuffAffected(paramId) boolean
+    +isMaxDebuffAffected(paramId) boolean
+    +increaseBuff(paramId)
+    +decreaseBuff(paramId)
+    +overwriteBuffTurns(paramId, turns)
+    +isBuffExpired(paramId) boolean
+    +updateBuffTurns()
+    +die()
+    +revive()
+    +states() any[]
+    +stateIcons() number[]
+    +buffIcons() number[]
+    +buffIconIndex(buffLevel, paramId) number
+    +allIcons() number[]
+    +traitObjects() any[]
+    +allTraits() any[]
+    +traits(code) any[]
+    +traitsWithId(code, id) any[]
+    +traitsPi(code, id) number
+    +traitsSum(code, id) number
+    +traitsSumAll(code) number
+    +traitsSet(code) any[]
+    +paramBase(paramId) number
+    +paramPlus(paramId) number
+    +paramBasePlus(paramId) number
+    +paramMin(paramId) number
+    +paramMax(paramId) number
+    +paramRate(paramId) number
+    +paramBuffRate(paramId) number
+    +param(paramId) number
+    +xparam(xparamId) number
+    +sparam(sparamId) number
+    +elementRate(elementId) number
+    +debuffRate(paramId) number
+    +stateRate(stateId) number
+    +stateResistSet() any[]
+    +isStateResist(stateId) boolean
+    +attackElements() number[]
+    +attackStates() number[]
+    +attackStatesRate(stateId) number
+    +attackSpeed() number
+    +attackTimesAdd() number
+    +attackSkillId() number
+    +addedSkillTypes() number[]
+    +isSkillTypeSealed(stypeId) boolean
+    +addedSkills() number[]
+    +isSkillSealed(skillId) boolean
+    +isEquipWtypeOk(wtypeId) boolean
+    +isEquipAtypeOk(atypeId) boolean
+    +isEquipTypeLocked(etypeId) boolean
+    +isEquipTypeSealed(etypeId) boolean
+    +slotType() number
+    +isDualWield() boolean
+    +actionPlusSet() number[]
+    +specialFlag(flagId) boolean
+    +collapseType() number
+    +partyAbility(abilityId) boolean
+    +isAutoBattle() boolean
+    +isGuard() boolean
+    +isSubstitute() boolean
+    +isPreserveTp() boolean
+    +addParam(paramId, value)
+    +setHp(hp)
+    +setMp(mp)
+    +setTp(tp)
+    +maxTp() number
+    +refresh()
+    +recoverAll()
+    +hpRate() number
+    +mpRate() number
+    +tpRate() number
+    +hide()
+    +appear()
+    +isHidden() boolean
+    +isAppeared() boolean
+    +isDead() boolean
+    +isAlive() boolean
+    +isDying() boolean
+    +isRestricted() boolean
+    +canInput() boolean
+    +canMove() boolean
+    +isConfused() boolean
+    +confusionLevel() number
+    +isActor() boolean
+    +isEnemy() boolean
+    +sortStates()
+    +restriction() number
+    +addNewState(stateId)
+    +onRestrict()*
+    +mostImportantStateText() string
+    +stateMotionIndex() number
+    +stateOverlayIndex() number
+    +isSkillWtypeOk(skill) boolean
+    +skillMpCost(skill) number
+    +skillTpCost(skill) number
+    +canPaySkillCost(skill) boolean
+    +paySkillCost(skill)
+    +isOccasionOk(item) boolean
+    +meetsUsableItemConditions(item) boolean
+    +meetsSkillConditions(skill) boolean
+    +meetsItemConditions(item) boolean
+    +canUse(item) boolean
+    +canEquip(item) boolean
+    +canEquipWeapon(item) boolean
+    +canEquipArmor(item) boolean
+    +guardSkillId() number
+    +canAttack() boolean
+    +canGuard() boolean
+  }
+  note for Game_BattlerBase "The superclass of Game_Battler. It mainly contains parameters calculation."

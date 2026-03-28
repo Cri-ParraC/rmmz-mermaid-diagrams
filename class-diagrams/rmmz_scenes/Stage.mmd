@@ -1,0 +1,9 @@
+classDiagram
+  class PIXI_Container["PIXI.Container"]
+  class Stage {
+    +initialize()
+    +destroy()
+  }
+  note for Stage "The root object of the display tree."
+
+  PIXI_Container <|-- Stage

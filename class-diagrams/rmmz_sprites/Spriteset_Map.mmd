@@ -1,0 +1,39 @@
+classDiagram
+  class Spriteset_Map {
+    -_balloonSprites: Sprite_Balloon[]
+    -_parallax: TilingSprite
+    -_parallaxName: string
+    -_tilemap: Tilemap
+    -_tileset: any
+    -_characterSprites: Sprite_Character[]
+    -_shadowSprite: Sprite
+    -_destinationSprite: Sprite_Destination
+    -_weather: Weather
+
+    +initialize()
+    +destroy(options)
+    +loadSystemImages()
+    +createLowerLayer()
+    +update()
+    +hideCharacters()
+    +createParallax()
+    +createTilemap()
+    +loadTileset()
+    +createCharacters()
+    +createShadow()
+    +createDestination()
+    +createWeather()
+    +updateTileset()
+    +updateParallax()
+    +updateTilemap()
+    +updateShadow()
+    +updateWeather()
+    +updateBalloons()
+    +processBalloonRequests()
+    +createBalloon(request)
+    +removeBalloon(sprite)
+    +removeAllBalloons()
+    +findTargetSprite(target) Sprite_Character | undefined
+    +animationBaseDelay() number
+  }
+  note for Spriteset_Map "The set of sprites on the map screen."

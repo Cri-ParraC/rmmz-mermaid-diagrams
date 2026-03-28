@@ -1,0 +1,17 @@
+classDiagram
+  class Sprite_Weapon {
+    -_weaponImageId: number
+    -_animationCount: number
+    -_pattern: number
+
+    +initialize()
+    +initMembers()
+    +setup(weaponImageId)
+    +update()
+    +animationWait() number
+    +updatePattern()
+    +loadBitmap()
+    +updateFrame()
+    +isPlaying() boolean
+  }
+  note for Sprite_Weapon "The sprite for displaying a weapon image for attacking."

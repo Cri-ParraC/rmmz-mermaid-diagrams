@@ -1,0 +1,13 @@
+classDiagram
+  class Scene_Options {
+    -_optionsWindow: Window_Options
+
+    +initialize()
+    +create()
+    +terminate()
+    +createOptionsWindow()
+    +optionsWindowRect() Rectangle
+    +maxCommands() number
+    +maxVisibleCommands() number
+  }
+  note for Scene_Options "The scene class of the options screen."

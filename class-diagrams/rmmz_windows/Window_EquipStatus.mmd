@@ -1,0 +1,22 @@
+classDiagram
+  class Window_EquipStatus {
+    -_actor
+    -_tempActor
+
+    +initialize(rect)
+    +setActor(actor)
+    +colSpacing()
+    +refresh()
+    +setTempActor(tempActor)
+    +drawAllParams()
+    +drawItem(x, y, paramId)
+    +drawParamName(x, y, paramId)
+    +drawCurrentParam(x, y, paramId)
+    +drawRightArrow(x, y)
+    +drawNewParam(x, y, paramId)
+    +rightArrowWidth()
+    +paramWidth()
+    +paramX()
+    +paramY(index)
+  }
+  note for Window_EquipStatus "The window for displaying parameter changes on the equipment screen."

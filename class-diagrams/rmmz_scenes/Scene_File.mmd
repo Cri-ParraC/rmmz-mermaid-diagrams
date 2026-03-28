@@ -1,0 +1,23 @@
+classDiagram
+  class Scene_File {
+    -_helpWindow: Window_Help
+    -_listWindow: Window_SavefileList
+
+    +initialize()
+    +create()
+    +helpAreaHeight() number
+    +start()
+    +savefileId() number
+    +isSavefileEnabled(savefileId) boolean
+    +createHelpWindow()
+    +helpWindowRect() Rectangle
+    +createListWindow()
+    +listWindowRect() Rectangle
+    +mode() string
+    +needsAutosave() boolean
+    +activateListWindow()
+    +helpWindowText() string
+    +firstSavefileId() number
+    +onSavefileOk()*
+  }
+  note for Scene_File "The superclass of Scene_Save and Scene_Load."

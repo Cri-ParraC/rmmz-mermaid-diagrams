@@ -1,0 +1,21 @@
+classDiagram
+  class Scene_Debug {
+    -_rangeWindow: Window_DebugRange
+    -_editWindow: Window_DebugEdit
+    -_debugHelpWindow: Window_Base
+
+    +initialize()
+    +create()
+    +needsCancelButton() boolean
+    +createRangeWindow()
+    +rangeWindowRect() Rectangle
+    +createEditWindow()
+    +editWindowRect() Rectangle
+    +createDebugHelpWindow()
+    +debugHelpWindowRect() Rectangle
+    +onRangeOk()
+    +onEditCancel()
+    +refreshHelpWindow()
+    +helpText() string
+  }
+  note for Scene_Debug "The scene class of the debug screen."

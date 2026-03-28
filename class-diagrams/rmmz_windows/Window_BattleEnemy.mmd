@@ -1,0 +1,17 @@
+classDiagram
+  class Window_BattleEnemy {
+    -_enemies
+
+    +initialize(rect)
+    +maxCols()
+    +maxItems()
+    +enemy()
+    +enemyIndex()
+    +drawItem(index)
+    +show()
+    +hide()
+    +refresh()
+    +select(index)
+    +processTouch()
+  }
+  note for Window_BattleEnemy "The window for selecting a target enemy on the battle screen."

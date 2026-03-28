@@ -1,0 +1,16 @@
+classDiagram
+  class EffectManager {
+    -_cache: object
+    -_errorUrls: string[]
+
+    +load(filename) any
+    +startLoading(url) any
+    +clear()
+    +onLoad(url)*
+    +onError(url)
+    +makeUrl(filename) string
+    +checkErrors()
+    +throwLoadError(url)
+    +isReady() boolean
+  }
+  note for EffectManager "The static class that loads Effekseer effects."

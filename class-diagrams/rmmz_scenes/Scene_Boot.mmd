@@ -1,0 +1,23 @@
+classDiagram
+  class Scene_Boot {
+    -_databaseLoaded: boolean
+
+    +initialize()
+    +create()
+    +isReady() boolean
+    +onDatabaseLoaded()
+    +setEncryptionInfo()
+    +loadSystemImages()
+    +loadPlayerData()
+    +loadGameFonts()
+    +isPlayerDataLoaded() boolean
+    +start()
+    +startNormalGame()
+    +resizeScreen()
+    +adjustBoxSize()
+    +adjustWindow()
+    +screenScale() number
+    +updateDocumentTitle()
+    +checkPlayerLocation()
+  }
+  note for Scene_Boot "The scene class for initializing the entire game."

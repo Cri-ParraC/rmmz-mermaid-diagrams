@@ -1,0 +1,27 @@
+classDiagram
+  class Sprite_Damage {
+    -_duration: number
+    -_flashColor: any[]
+    -_flashDuration: number
+    -_colorType: number
+
+    +initialize()
+    +destroy(options)
+    +setup(target)
+    +setupCriticalEffect()
+    +fontFace() string
+    +fontSize() number
+    +damageColor() string
+    +outlineColor() string
+    +outlineWidth() number
+    +createMiss()
+    +createDigits(value)
+    +createChildSprite(width, height) Sprite
+    +createBitmap(width, height) Bitmap
+    +update()
+    +updateChild(sprite)
+    +updateFlash()
+    +updateOpacity()
+    +isPlaying() boolean
+  }
+  note for Sprite_Damage "The sprite for displaying a popup damage."

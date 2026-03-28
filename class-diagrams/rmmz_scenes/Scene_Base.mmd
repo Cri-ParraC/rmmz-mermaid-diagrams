@@ -1,0 +1,53 @@
+classDiagram
+  class Scene_Base {
+    -_started: boolean
+    -_active: boolean
+    -_fadeSign: number
+    -_fadeDuration: number
+    -_fadeWhite: boolean
+    -_fadeOpacity: number
+    -_windowLayer: WindowLayer
+    -_colorFilter: ColorFilter
+
+    +initialize()
+    +create()*
+    +isActive() boolean
+    +isReady() boolean
+    +start()
+    +update()
+    +stop()
+    +isStarted() boolean
+    +isBusy() boolean
+    +isFading() boolean
+    +terminate()*
+    +createWindowLayer()
+    +addWindow(window)
+    +startFadeIn(duration, white)
+    +startFadeOut(duration, white)
+    +createColorFilter()
+    +updateColorFilter()
+    +updateFade()
+    +updateChildren()
+    +popScene()
+    +checkGameover()
+    +fadeOutAll()
+    +fadeSpeed() number
+    +slowFadeSpeed() number
+    +scaleSprite(sprite)
+    +centerSprite(sprite)
+    +isBottomHelpMode() boolean
+    +isBottomButtonMode() boolean
+    +isRightInputMode() boolean
+    +mainCommandWidth() number
+    +buttonAreaTop() number
+    +buttonAreaBottom() number
+    +buttonAreaHeight() number
+    +buttonY() number
+    +calcWindowHeight(numLines, selectable) number
+    +requestAutosave()
+    +isAutosaveEnabled() boolean
+    +executeAutosave()
+    +onAutosaveSuccess()*
+    +onAutosaveFailure()*
+  }
+  note for Scene_Base "The superclass of all scenes within the game."

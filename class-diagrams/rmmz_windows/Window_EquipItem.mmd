@@ -1,0 +1,20 @@
+classDiagram
+  class Window_EquipItem {
+    -_actor
+    -_slotId
+    -_statusWindow
+
+    +initialize(rect)
+    +maxCols()
+    +colSpacing()
+    +setActor(actor)
+    +setSlotId(slotId)
+    +includes(item)
+    +etypeId()
+    +isEnabled(item)
+    +selectLast()
+    +setStatusWindow(statusWindow)
+    +updateHelp()
+    +playOkSound()
+  }
+  note for Window_EquipItem "The window for selecting an equipment item on the equipment screen."

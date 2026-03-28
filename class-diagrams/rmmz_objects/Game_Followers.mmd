@@ -1,0 +1,27 @@
+classDiagram
+  class Game_Followers {
+    -_visible: boolean
+    -_gathering: boolean
+    -_data: Game_Follower[]
+
+    +initialize()
+    +setup()
+    +isVisible() boolean
+    +show()
+    +hide()
+    +data() Game_Follower[]
+    +reverseData() Game_Follower[]
+    +follower(index) Game_Follower
+    +refresh()
+    +update()
+    +updateMove()
+    +jumpAll()
+    +synchronize(x, y, d)
+    +gather()
+    +areGathering() boolean
+    +visibleFollowers() Game_Follower[]
+    +areMoving() boolean
+    +areGathered() boolean
+    +isSomeoneCollided(x, y) boolean
+  }
+  note for Game_Followers "The wrapper class for a follower array."

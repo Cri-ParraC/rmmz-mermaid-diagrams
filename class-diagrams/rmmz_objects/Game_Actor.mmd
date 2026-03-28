@@ -1,0 +1,154 @@
+classDiagram
+  class Game_Actor {
+    -_actorId: number
+    -_name: string
+    -_nickname: string
+    -_profile: string
+    -_classId: number
+    -_level: number
+    -_characterName: string
+    -_characterIndex: number
+    -_faceName: string
+    -_faceIndex: number
+    -_battlerName: string
+    -_exp: object
+    -_skills: number[]
+    -_equips: Game_Item[]
+    -_actionInputIndex: number
+    -_lastMenuSkill: Game_Item
+    -_lastBattleSkill: Game_Item
+    -_lastCommandSymbol: string
+
+    +initialize(actorId)
+    +initMembers()
+    +setup(actorId)
+    +actorId() number
+    +actor() any
+    +name() string
+    +setName(name)
+    +nickname() string
+    +setNickname(nickname)
+    +profile() string
+    +setProfile(profile)
+    +characterName() string
+    +characterIndex() number
+    +faceName() string
+    +faceIndex() number
+    +battlerName() string
+    +clearStates()
+    +eraseState(stateId)
+    +resetStateCounts(stateId)
+    +initImages()
+    +expForLevel(level) number
+    +initExp()
+    +currentExp() number
+    +currentLevelExp() number
+    +nextLevelExp() number
+    +nextRequiredExp() number
+    +maxLevel() number
+    +isMaxLevel() boolean
+    +initSkills()
+    +initEquips(equips)
+    +equipSlots() number[]
+    +equips() any[]
+    +weapons() any[]
+    +armors() any[]
+    +hasWeapon(weapon) boolean
+    +hasArmor(armor) boolean
+    +isEquipChangeOk(slotId) boolean
+    +changeEquip(slotId, item)
+    +forceChangeEquip(slotId, item)
+    +tradeItemWithParty(newItem, oldItem) boolean
+    +changeEquipById(etypeId, itemId)
+    +isEquipped(item) boolean
+    +discardEquip(item)
+    +releaseUnequippableItems(forcing)
+    +clearEquipments()
+    +optimizeEquipments()
+    +bestEquipItem(slotId) any
+    +calcEquipItemPerformance(item) number
+    +isSkillWtypeOk(skill) boolean
+    +isWtypeEquipped(wtypeId) boolean
+    +refresh()
+    +hide()
+    +isActor() boolean
+    +friendsUnit() any
+    +opponentsUnit() any
+    +index() number
+    +isBattleMember() boolean
+    +isFormationChangeOk() boolean
+    +currentClass() any
+    +isClass(gameClass) boolean
+    +skillTypes() number[]
+    +skills() any[]
+    +usableSkills() any[]
+    +traitObjects() any[]
+    +attackElements() number[]
+    +hasNoWeapons() boolean
+    +bareHandsElementId() number
+    +paramBase(paramId) number
+    +paramPlus(paramId) number
+    +attackAnimationId1() number
+    +attackAnimationId2() number
+    +bareHandsAnimationId() number
+    +changeExp(exp, show)
+    +levelUp()
+    +levelDown()
+    +findNewSkills(lastSkills) number[]
+    +displayLevelUp(newSkills)
+    +gainExp(exp)
+    +finalExpRate() number
+    +benchMembersExpRate() number
+    +shouldDisplayLevelUp() boolean
+    +changeLevel(level, show)
+    +learnSkill(skillId)
+    +forgetSkill(skillId)
+    +isLearnedSkill(skillId) boolean
+    +hasSkill(skillId) boolean
+    +changeClass(classId, keepExp)
+    +setCharacterImage(characterName, characterIndex)
+    +setFaceImage(faceName, faceIndex)
+    +setBattlerImage(battlerName)
+    +isSpriteVisible() boolean
+    +performActionStart(action)
+    +performAction(action)
+    +performActionEnd()
+    +performAttack()
+    +performDamage()
+    +performEvasion()
+    +performMagicEvasion()
+    +performCounter()
+    +performCollapse()
+    +performVictory()
+    +performEscape()
+    +makeActionList() any[]
+    +makeAutoBattleActions()
+    +makeConfusionActions()
+    +makeActions()
+    +onPlayerWalk()
+    +updateStateSteps(state)
+    +showAddedStates()
+    +showRemovedStates()
+    +stepsForTurn() number
+    +turnEndOnMap()
+    +checkFloorEffect()
+    +executeFloorDamage()
+    +basicFloorDamage() number
+    +maxFloorDamage() number
+    +performMapDamage()
+    +clearActions()
+    +inputtingAction() any
+    +selectNextCommand()
+    +selectPreviousCommand()
+    +lastSkill() any
+    +lastMenuSkill() any
+    +setLastMenuSkill(skill)
+    +lastBattleSkill() any
+    +setLastBattleSkill(skill)
+    +lastCommandSymbol() string
+    +setLastCommandSymbol(symbol)
+    +testEscape(item) boolean
+    +meetsUsableItemConditions(item) boolean
+    +onEscapeFailure()
+  }
+  note for Game_Actor "The game object class for an actor."

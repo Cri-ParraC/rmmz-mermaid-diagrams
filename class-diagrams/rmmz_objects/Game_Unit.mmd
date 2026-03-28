@@ -1,0 +1,29 @@
+classDiagram
+  class Game_Unit {
+    -_inBattle: boolean
+
+    +initialize()
+    +inBattle() boolean
+    +members() any[]
+    +aliveMembers() any[]
+    +deadMembers() any[]
+    +movableMembers() any[]
+    +clearActions()
+    +agility() number
+    +tgrSum() number
+    +randomTarget() any | null
+    +randomDeadTarget() any | null
+    +smoothTarget(index) any | undefined
+    +smoothDeadTarget(index) any | undefined
+    +clearResults()
+    +onBattleStart(advantageous)
+    +onBattleEnd()
+    +makeActions()
+    +select(activeMember)
+    +isAllDead() boolean
+    +substituteBattler(target) any | null
+    +tpbBaseSpeed() number
+    +tpbReferenceTime() number
+    +updateTpb()
+  }
+  note for Game_Unit "The superclass of Game_Party and Game_Troop."

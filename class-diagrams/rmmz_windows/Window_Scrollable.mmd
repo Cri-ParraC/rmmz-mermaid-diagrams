@@ -1,0 +1,53 @@
+classDiagram
+  class Window_Scrollable {
+    -_scrollX
+    -_scrollY
+    -_scrollBaseX
+    -_scrollBaseY
+    -_scrollTargetX
+    -_scrollTargetY
+    -_scrollDuration
+    -_scrollAccelX
+    -_scrollAccelY
+    -_scrollTouching
+    -_scrollLastTouchX
+    -_scrollLastTouchY
+    -_scrollLastCursorVisible
+
+    +initialize(rect)
+    +clearScrollStatus()
+    +scrollX()
+    +scrollY()
+    +scrollBaseX()
+    +scrollBaseY()
+    +scrollTo(x, y)
+    +scrollBy(x, y)
+    +smoothScrollTo(x, y)
+    +smoothScrollBy(x, y)
+    +setScrollAccel(x, y)
+    +overallWidth()
+    +overallHeight()
+    +maxScrollX()
+    +maxScrollY()
+    +scrollBlockWidth()
+    +scrollBlockHeight()
+    +smoothScrollDown(n)
+    +smoothScrollUp(n)
+    +update()
+    +processWheelScroll()
+    +processTouchScroll()
+    +isWheelScrollEnabled()
+    +isTouchScrollEnabled()
+    +isScrollEnabled()
+    +isTouchedInsideFrame()
+    +onTouchScrollStart()
+    +onTouchScroll()
+    +onTouchScrollEnd()
+    +updateSmoothScroll()
+    +updateScrollAccel()
+    +updateArrows()
+    +updateOrigin()
+    +updateScrollBase(baseX, baseY)
+    +paint()
+  }
+  note for Window_Scrollable "The window class with scroll functions."

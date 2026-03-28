@@ -1,0 +1,13 @@
+classDiagram
+  class Window_SkillType {
+    -_actor
+    -_skillWindow
+
+    +initialize(rect)
+    +setActor(actor)
+    +makeCommandList()
+    +update()
+    +setSkillWindow(skillWindow)
+    +selectLast()
+  }
+  note for Window_SkillType "The window for selecting a skill type on the skill screen."

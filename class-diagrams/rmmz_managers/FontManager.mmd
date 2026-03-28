@@ -1,0 +1,12 @@
+classDiagram
+  class FontManager {
+    -_urls: object
+    -_states: object
+
+    +load(family, filename)
+    +isReady() boolean
+    +startLoading(family, url)
+    +throwLoadError(family)
+    +makeUrl(filename) string
+  }
+  note for FontManager "The static class that loads font files."

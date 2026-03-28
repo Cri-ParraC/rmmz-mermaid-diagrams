@@ -1,0 +1,130 @@
+classDiagram
+  class BattleManager {
+    +setup(troopId, canEscape, canLose)
+    +initMembers()
+    -_phase: string
+    -_inputting: boolean
+    -_canEscape: boolean
+    -_canLose: boolean
+    -_battleTest: boolean
+    -_eventCallback: any | null
+    -_preemptive: boolean
+    -_surprise: boolean
+    -_currentActor: any | null
+    -_actionForcedBattler: any | null
+    -_mapBgm: any | null
+    -_mapBgs: any | null
+    -_actionBattlers: any[]
+    -_subject: any | null
+    -_action: any | null
+    -_targets: any[]
+    -_logWindow: any | null
+    -_spriteset: any | null
+    -_escapeRatio: number
+    -_escaped: boolean
+    -_rewards: any
+    -_tpbNeedsPartyCommand: boolean
+
+    +isTpb() boolean
+    +isActiveTpb() boolean
+    +isBattleTest() boolean
+    +setBattleTest(battleTest)
+    +setEventCallback(callback)
+    +setLogWindow(logWindow)
+    +setSpriteset(spriteset)
+    +onEncounter()
+    +ratePreemptive() number
+    +rateSurprise() number
+    +saveBgmAndBgs()
+    +playBattleBgm()
+    +playVictoryMe()
+    +playDefeatMe()
+    +replayBgmAndBgs()
+    +makeEscapeRatio()
+    +update(timeActive)
+    +updatePhase(timeActive)
+    +updateEvent() boolean
+    +updateEventMain() boolean
+    +isBusy() boolean
+    +updateTpbInput()
+    +checkTpbInputClose()
+    +checkTpbInputOpen()
+    +isPartyTpbInputtable() boolean
+    +needsActorInputCancel() boolean
+    +isTpbMainPhase() boolean
+    +isInputting() boolean
+    +isInTurn() boolean
+    +isTurnEnd() boolean
+    +isAborting() boolean
+    +isBattleEnd() boolean
+    +canEscape() boolean
+    +canLose() boolean
+    +isEscaped() boolean
+    +actor() any
+    +startBattle()
+    +displayStartMessages()
+    +startInput()
+    +inputtingAction() any | null
+    +selectNextCommand()
+    +selectNextActor()
+    +selectPreviousCommand()
+    +selectPreviousActor()
+    +changeCurrentActor(forward)
+    +startActorInput()
+    +finishActorInput()
+    +cancelActorInput()
+    +updateStart()
+    +startTurn()
+    +updateTurn(timeActive)
+    +updateTpb()
+    +updateAllTpbBattlers()
+    +updateTpbBattler(battler)
+    +checkTpbTurnEnd()
+    +processTurn()
+    +endBattlerActions(battler)
+    +endTurn()
+    +updateTurnEnd()
+    +endAllBattlersTurn()
+    +displayBattlerStatus(battler, current)
+    +getNextSubject() any | null
+    +allBattleMembers() any[]
+    +makeActionOrders()
+    +startAction()
+    +updateAction()
+    +endAction()
+    +invokeAction(subject, target)
+    +invokeNormalAction(subject, target)
+    +invokeCounterAttack(subject, target)
+    +invokeMagicReflection(subject, target)
+    +applySubstitute(target) any
+    +checkSubstitute(target) boolean
+    +isActionForced() boolean
+    +forceAction(battler)
+    +processForcedAction()
+    +abort()
+    +checkBattleEnd() boolean
+    +checkAbort() boolean
+    +processVictory()
+    +processEscape() boolean
+    +onEscapeSuccess()
+    +onEscapeFailure()
+    +processPartyEscape()
+    +processAbort()
+    +processDefeat()
+    +endBattle(result)
+    +updateBattleEnd()
+    +makeRewards()
+    +displayVictoryMessage()
+    +displayDefeatMessage()
+    +displayEscapeSuccessMessage()
+    +displayEscapeFailureMessage()
+    +displayRewards()
+    +displayExp()
+    +displayGold()
+    +displayDropItems()
+    +gainRewards()
+    +gainExp()
+    +gainGold()
+    +gainDropItems()
+  }
+  note for BattleManager "The static class that manages battle progress."

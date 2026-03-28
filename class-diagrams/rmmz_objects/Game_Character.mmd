@@ -1,0 +1,91 @@
+classDiagram
+  class Game_Character {
+    +ROUTE_END: number
+    +ROUTE_MOVE_DOWN: number
+    +ROUTE_MOVE_LEFT: number
+    +ROUTE_MOVE_RIGHT: number
+    +ROUTE_MOVE_UP: number
+    +ROUTE_MOVE_LOWER_L: number
+    +ROUTE_MOVE_LOWER_R: number
+    +ROUTE_MOVE_UPPER_L: number
+    +ROUTE_MOVE_UPPER_R: number
+    +ROUTE_MOVE_RANDOM: number
+    +ROUTE_MOVE_TOWARD: number
+    +ROUTE_MOVE_AWAY: number
+    +ROUTE_MOVE_FORWARD: number
+    +ROUTE_MOVE_BACKWARD: number
+    +ROUTE_JUMP: number
+    +ROUTE_WAIT: number
+    +ROUTE_TURN_DOWN: number
+    +ROUTE_TURN_LEFT: number
+    +ROUTE_TURN_RIGHT: number
+    +ROUTE_TURN_UP: number
+    +ROUTE_TURN_90D_R: number
+    +ROUTE_TURN_90D_L: number
+    +ROUTE_TURN_180D: number
+    +ROUTE_TURN_90D_R_L: number
+    +ROUTE_TURN_RANDOM: number
+    +ROUTE_TURN_TOWARD: number
+    +ROUTE_TURN_AWAY: number
+    +ROUTE_SWITCH_ON: number
+    +ROUTE_SWITCH_OFF: number
+    +ROUTE_CHANGE_SPEED: number
+    +ROUTE_CHANGE_FREQ: number
+    +ROUTE_WALK_ANIME_ON: number
+    +ROUTE_WALK_ANIME_OFF: number
+    +ROUTE_STEP_ANIME_ON: number
+    +ROUTE_STEP_ANIME_OFF: number
+    +ROUTE_DIR_FIX_ON: number
+    +ROUTE_DIR_FIX_OFF: number
+    +ROUTE_THROUGH_ON: number
+    +ROUTE_THROUGH_OFF: number
+    +ROUTE_TRANSPARENT_ON: number
+    +ROUTE_TRANSPARENT_OFF: number
+    +ROUTE_CHANGE_IMAGE: number
+    +ROUTE_CHANGE_OPACITY: number
+    +ROUTE_CHANGE_BLEND_MODE: number
+    +ROUTE_PLAY_SE: number
+    +ROUTE_SCRIPT: number
+
+    -_moveRouteForcing: boolean
+    -_moveRoute: any
+    -_moveRouteIndex: number
+    -_originalMoveRoute: any
+    -_originalMoveRouteIndex: number
+    -_waitCount: number
+
+    +initialize()
+    +initMembers()
+    +memorizeMoveRoute()
+    +restoreMoveRoute()
+    +isMoveRouteForcing() boolean
+    +setMoveRoute(moveRoute)
+    +forceMoveRoute(moveRoute)
+    +updateStop()
+    +updateRoutineMove()
+    +processMoveCommand(command)
+    +deltaXFrom(x) number
+    +deltaYFrom(y) number
+    +moveRandom()
+    +moveTowardCharacter(character)
+    +moveAwayFromCharacter(character)
+    +turnTowardCharacter(character)
+    +turnAwayFromCharacter(character)
+    +turnTowardPlayer()
+    +turnAwayFromPlayer()
+    +moveTowardPlayer()
+    +moveAwayFromPlayer()
+    +moveForward()
+    +moveBackward()
+    +processRouteEnd()
+    +advanceMoveRouteIndex()
+    +turnRight90()
+    +turnLeft90()
+    +turn180()
+    +turnRightOrLeft90()
+    +turnRandom()
+    +swap(character)
+    +findDirectionTo(goalX, goalY) number
+    +searchLimit() number
+  }
+  note for Game_Character "The superclass of Game_Player, Game_Follower, GameVehicle, and Game_Event."

@@ -1,0 +1,42 @@
+classDiagram
+  class Sprite_Character {
+    -_character: any
+    -_balloonDuration: number
+    -_tilesetId: number
+    -_tileId: number
+    -_characterName: string
+    -_characterIndex: number
+    -_isBigCharacter: boolean
+    -_upperBody: Sprite | null
+    -_lowerBody: Sprite | null
+    -_bushDepth: number
+
+    +initialize(character)
+    +initMembers()
+    +setCharacter(character)
+    +checkCharacter(character) boolean
+    +update()
+    +updateVisibility()
+    +isTile() boolean
+    +isObjectCharacter() boolean
+    +isEmptyCharacter() boolean
+    +tilesetBitmap(tileId) Bitmap
+    +updateBitmap()
+    +isImageChanged() boolean
+    +setTileBitmap()
+    +setCharacterBitmap()
+    +updateFrame()
+    +updateTileFrame()
+    +updateCharacterFrame()
+    +characterBlockX() number
+    +characterBlockY() number
+    +characterPatternX() number
+    +characterPatternY() number
+    +patternWidth() number
+    +patternHeight() number
+    +updateHalfBodySprites()
+    +createHalfBodySprites()
+    +updatePosition()
+    +updateOther()
+  }
+  note for Sprite_Character "The sprite for displaying a character."

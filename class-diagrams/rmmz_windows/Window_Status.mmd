@@ -1,0 +1,17 @@
+classDiagram
+  class Window_Status {
+    -_actor
+
+    +initialize(rect)
+    +setActor(actor)
+    +refresh()
+    +drawBlock1()
+    +block1Y()
+    +drawBlock2()
+    +block2Y()
+    +drawBasicInfo(x, y)
+    +drawExpInfo(x, y)
+    +expTotalValue()
+    +expNextValue()
+  }
+  note for Window_Status "The window for displaying full status on the status screen."

@@ -1,0 +1,25 @@
+classDiagram
+  class Sprite_Name {
+    -_battler: Game_Battler | null
+    -_name: string
+    -_textColor: string
+
+    +initialize()
+    +initMembers()
+    +destroy(options)
+    +createBitmap()
+    +bitmapWidth() number
+    +bitmapHeight() number
+    +fontFace() string
+    +fontSize() number
+    +setup(battler)
+    +update()
+    +updateBitmap()
+    +name() string
+    +textColor() string
+    +outlineColor() string
+    +outlineWidth() number
+    +redraw()
+    +setupFont()
+  }
+  note for Sprite_Name "The sprite for displaying a status gauge."

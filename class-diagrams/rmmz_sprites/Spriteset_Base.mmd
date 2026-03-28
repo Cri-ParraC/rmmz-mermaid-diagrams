@@ -1,0 +1,43 @@
+classDiagram
+  class Spriteset_Base {
+    -_animationSprites: any[]
+    -_baseSprite: Sprite
+    -_blackScreen: ScreenSprite
+    -_baseColorFilter: ColorFilter
+    -_pictureContainer: Sprite
+    -_timerSprite: Sprite_Timer
+    -_overallColorFilter: ColorFilter
+    -_effectsContainer: any
+
+    +initialize()
+    +destroy(options)
+    +loadSystemImages()*
+    +createLowerLayer()
+    +createUpperLayer()
+    +update()
+    +createBaseSprite()
+    +createBaseFilters()
+    +createPictures()
+    +pictureContainerRect() Rectangle
+    +createTimer()
+    +createOverallFilters()
+    +updateBaseFilters()
+    +updateOverallFilters()
+    +updatePosition()
+    +findTargetSprite(target) any
+    +updateAnimations()
+    +processAnimationRequests()
+    +createAnimation(request)
+    +createAnimationSprite(targets, animation, mirror, delay)
+    +isMVAnimation(animation) boolean
+    +makeTargetSprites(targets) Sprite[]
+    +lastAnimationSprite() any
+    +isAnimationForEach(animation) boolean
+    +animationBaseDelay() number
+    +animationNextDelay() number
+    +animationShouldMirror(target) boolean
+    +removeAnimation(sprite)
+    +removeAllAnimations()
+    +isAnimationPlaying() boolean
+  }
+  note for Spriteset_Base "The superclass of Spriteset_Map and Spriteset_Battle."

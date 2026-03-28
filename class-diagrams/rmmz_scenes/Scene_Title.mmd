@@ -1,0 +1,25 @@
+classDiagram
+  class Scene_Title {
+    -_commandWindow: Window_TitleCommand
+    -_gameTitleSprite: Sprite
+    -_backSprite1: Sprite
+    -_backSprite2: Sprite
+
+    +initialize()
+    +create()
+    +start()
+    +update()
+    +isBusy() boolean
+    +terminate()
+    +createBackground()
+    +createForeground()
+    +drawGameTitle()
+    +adjustBackground()
+    +createCommandWindow()
+    +commandWindowRect() Rectangle
+    +commandNewGame()
+    +commandContinue()
+    +commandOptions()
+    +playTitleMusic()
+  }
+  note for Scene_Title "The scene class of the title screen."

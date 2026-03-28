@@ -1,0 +1,46 @@
+classDiagram
+  class Sprite_Enemy {
+    -_enemy: Game_Enemy | null
+    -_appeared: boolean
+    -_battlerName: string | null
+    -_battlerHue: number
+    -_effectType: string | null
+    -_effectDuration: number
+    -_shake: number
+    -_stateIconSprite: Sprite_StateIcon
+
+    +initialize(battler)
+    +initMembers()
+    +createStateIconSprite()
+    +setBattler(battler)
+    +update()
+    +updateBitmap()
+    +loadBitmap(name)
+    +setHue(hue)
+    +updateFrame()
+    +updatePosition()
+    +updateStateSprite()
+    +initVisibility()
+    +setupEffect()
+    +startEffect(effectType)
+    +startAppear()
+    +startDisappear()
+    +startWhiten()
+    +startBlink()
+    +startCollapse()
+    +startBossCollapse()
+    +startInstantCollapse()
+    +updateEffect()
+    +isEffecting() boolean
+    +revertToNormal()
+    +updateWhiten()
+    +updateBlink()
+    +updateAppear()
+    +updateDisappear()
+    +updateCollapse()
+    +updateBossCollapse()
+    +updateInstantCollapse()
+    +damageOffsetX() number
+    +damageOffsetY() number
+  }
+  note for Sprite_Enemy "The sprite for displaying an enemy."

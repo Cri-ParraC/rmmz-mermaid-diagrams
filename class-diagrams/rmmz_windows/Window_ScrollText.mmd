@@ -1,0 +1,23 @@
+classDiagram
+  class Window_ScrollText {
+    -_reservedRect
+    -_text
+    -_maxBitmapHeight
+    -_allTextHeight
+    -_blockHeight
+    -_blockIndex
+    -_scrollY
+
+    +initialize(rect)
+    +update()
+    +startMessage()
+    +refresh()
+    +updatePlacement()
+    +contentsHeight()
+    +updateMessage()
+    +scrollSpeed()
+    +isFastForward()
+    +fastForwardRate()
+    +terminateMessage()
+  }
+  note for Window_ScrollText "The window for displaying scrolling text. No frame is displayed, but it is handled as a window for convenience."

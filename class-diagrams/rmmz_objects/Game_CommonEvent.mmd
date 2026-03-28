@@ -1,0 +1,13 @@
+classDiagram
+  class Game_CommonEvent {
+    -_commonEventId: number
+    -_interpreter: Game_Interpreter | null
+
+    +initialize(commonEventId)
+    +event() any
+    +list() any
+    +refresh()
+    +isActive() boolean
+    +update()
+  }
+  note for Game_CommonEvent "The game object class for a common event. It contains functionality for running parallel process events."

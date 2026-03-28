@@ -1,0 +1,13 @@
+classDiagram
+  class Scene_GameEnd {
+    -_commandWindow: Window_GameEnd
+
+    +initialize()
+    +create()
+    +stop()
+    +createBackground()
+    +createCommandWindow()
+    +commandWindowRect() Rectangle
+    +commandToTitle()
+  }
+  note for Scene_GameEnd "The scene class of the game end screen."

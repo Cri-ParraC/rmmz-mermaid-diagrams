@@ -1,0 +1,20 @@
+classDiagram
+  class Window_DebugRange {
+    <<static>> lastTopRow
+    <<static>> lastIndex
+    -_maxSwitches
+    -_maxVariables
+    -_editWindow
+
+    +initialize(rect)
+    +maxItems()
+    +update()
+    +mode(index)
+    +topId(index)
+    +isSwitchMode(index)
+    +drawItem(index)
+    +isCancelTriggered()
+    +processCancel()
+    +setEditWindow(editWindow)
+  }
+  note for Window_DebugRange "The window for selecting a block of switches/variables on the debug screen."

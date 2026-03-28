@@ -1,0 +1,28 @@
+classDiagram
+  class Scene_Menu {
+    -_commandWindow: Window_MenuCommand
+    -_goldWindow: Window_Gold
+    -_statusWindow: Window_MenuStatus
+
+    +initialize()
+    +helpAreaHeight() number
+    +create()
+    +start()
+    +createCommandWindow()
+    +commandWindowRect() Rectangle
+    +createGoldWindow()
+    +goldWindowRect() Rectangle
+    +createStatusWindow()
+    +statusWindowRect() Rectangle
+    +commandItem()
+    +commandPersonal()
+    +commandFormation()
+    +commandOptions()
+    +commandSave()
+    +commandGameEnd()
+    +onPersonalOk()
+    +onPersonalCancel()
+    +onFormationOk()
+    +onFormationCancel()
+  }
+  note for Scene_Menu "The scene class of the menu screen."

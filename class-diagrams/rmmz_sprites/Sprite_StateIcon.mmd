@@ -1,0 +1,18 @@
+classDiagram
+  class Sprite_StateIcon {
+    -_battler: Game_Battler | null
+    -_iconIndex: number
+    -_animationCount: number
+    -_animationIndex: number
+
+    +initialize()
+    +initMembers()
+    +loadBitmap()
+    +setup(battler)
+    +update()
+    +animationWait() number
+    +updateIcon()
+    +shouldDisplay() boolean
+    +updateFrame()
+  }
+  note for Sprite_StateIcon "The sprite for displaying state icons."

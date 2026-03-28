@@ -1,0 +1,20 @@
+classDiagram
+  class Window_EventItem {
+    -_messageWindow
+    -_cancelButton
+
+    +initialize(rect)
+    +setMessageWindow(messageWindow)
+    +createCancelButton()
+    +start()
+    +update()
+    +updateCancelButton()
+    +updatePlacement()
+    +placeCancelButton()
+    +includes(item)
+    +needsNumber()
+    +isEnabled(item)
+    +onOk()
+    +onCancel()
+  }
+  note for Window_EventItem "The window used for the event command [Select Item]."

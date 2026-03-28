@@ -1,0 +1,37 @@
+classDiagram
+  class Window_NumberInput {
+    -_number
+    -_maxDigits
+    -_messageWindow
+    -_buttons
+
+    +initialize()
+    +setMessageWindow(messageWindow)
+    +start()
+    +updatePlacement()
+    +windowWidth()
+    +windowHeight()
+    +maxCols()
+    +maxItems()
+    +itemWidth()
+    +itemRect(index)
+    +isScrollEnabled()
+    +isHoverEnabled()
+    +createButtons()
+    +placeButtons()
+    +totalButtonWidth()
+    +buttonSpacing()
+    +buttonY()
+    +update()
+    +processDigitChange()
+    +changeDigit(up)
+    +isTouchOkEnabled()
+    +isOkEnabled()
+    +isCancelEnabled()
+    +processOk()
+    +drawItem(index)
+    +onButtonUp()
+    +onButtonDown()
+    +onButtonOk()
+  }
+  note for Window_NumberInput "The window used for the event command [Input Number]."

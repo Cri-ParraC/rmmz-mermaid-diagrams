@@ -1,0 +1,57 @@
+classDiagram
+  class Scene_Shop {
+    -_goods: any[]
+    -_purchaseOnly: boolean
+    -_item: any
+    -_goldWindow: Window_Gold
+    -_commandWindow: Window_ShopCommand
+    -_dummyWindow: Window_Base
+    -_numberWindow: Window_ShopNumber
+    -_statusWindow: Window_ShopStatus
+    -_buyWindow: Window_ShopBuy
+    -_categoryWindow: Window_ItemCategory
+    -_sellWindow: Window_ShopSell
+
+    +initialize()
+    +prepare(goods, purchaseOnly)
+    +create()
+    +createGoldWindow()
+    +goldWindowRect() Rectangle
+    +createCommandWindow()
+    +commandWindowRect() Rectangle
+    +createDummyWindow()
+    +dummyWindowRect() Rectangle
+    +createNumberWindow()
+    +numberWindowRect() Rectangle
+    +createStatusWindow()
+    +statusWindowRect() Rectangle
+    +createBuyWindow()
+    +buyWindowRect() Rectangle
+    +createCategoryWindow()
+    +categoryWindowRect() Rectangle
+    +createSellWindow()
+    +sellWindowRect() Rectangle
+    +statusWidth() number
+    +activateBuyWindow()
+    +activateSellWindow()
+    +commandBuy()
+    +commandSell()
+    +onBuyOk()
+    +onBuyCancel()
+    +onCategoryOk()
+    +onCategoryCancel()
+    +onSellOk()
+    +onSellCancel()
+    +onNumberOk()
+    +onNumberCancel()
+    +doBuy(number)
+    +doSell(number)
+    +endNumberInput()
+    +maxBuy() number
+    +maxSell() number
+    +money() number
+    +currencyUnit() string
+    +buyingPrice() number
+    +sellingPrice() number
+  }
+  note for Scene_Shop "The scene class of the shop screen."

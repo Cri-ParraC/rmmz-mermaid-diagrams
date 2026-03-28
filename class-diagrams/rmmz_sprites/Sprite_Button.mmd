@@ -1,0 +1,23 @@
+classDiagram
+  class Sprite_Button {
+    -_buttonType: string
+    -_clickHandler: function | null
+    -_coldFrame: Rectangle | null
+    -_hotFrame: Rectangle | null
+
+    +initialize(buttonType)
+    +setupFrames()
+    +blockWidth() number
+    +blockHeight() number
+    +loadButtonImage()
+    +buttonData() any
+    +update()
+    +checkBitmap()
+    +updateFrame()
+    +updateOpacity()
+    +setColdFrame(x, y, width, height)
+    +setHotFrame(x, y, width, height)
+    +setClickHandler(method)
+    +onClick()
+  }
+  note for Sprite_Button "The sprite for displaying a button."

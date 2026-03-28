@@ -1,0 +1,37 @@
+classDiagram
+  class StorageManager {
+    -_forageKeys: any[]
+    -_forageKeysUpdated: boolean
+
+    +isLocalMode() boolean
+    +saveObject(saveName, object) Promise
+    +loadObject(saveName) Promise
+    +objectToJson(object) Promise
+    +jsonToObject(json) Promise
+    +jsonToZip(json) Promise
+    +zipToJson(zip) Promise
+    +saveZip(saveName, zip) Promise
+    +loadZip(saveName) Promise
+    +exists(saveName) boolean
+    +remove(saveName)
+    +saveToLocalFile(saveName, zip) Promise
+    +loadFromLocalFile(saveName) Promise
+    +localFileExists(saveName) boolean
+    +removeLocalFile(saveName)
+    +saveToForage(saveName, zip) Promise
+    +loadFromForage(saveName) Promise
+    +forageExists(saveName) boolean
+    +removeForage(saveName) Promise
+    +updateForageKeys() Promise
+    +forageKeysUpdated() boolean
+    +fsMkdir(path)
+    +fsRename(oldPath, newPath)
+    +fsUnlink(path)
+    +fsReadFile(path) string | null
+    +fsWriteFile(path, data)
+    +fileDirectoryPath() string
+    +filePath(saveName) string
+    +forageKey(saveName) string
+    +forageTestKey() string
+  }
+  note for StorageManager "The static class that manages storage for saving game data."

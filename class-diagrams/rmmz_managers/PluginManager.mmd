@@ -1,0 +1,19 @@
+classDiagram
+  class PluginManager {
+    -_scripts: string[]
+    -_errorUrls: string[]
+    -_parameters: object
+    -_commands: object
+
+    +setup(plugins)
+    +parameters(name) any
+    +setParameters(name, parameters)
+    +loadScript(filename)
+    +onError(e)
+    +makeUrl(filename) string
+    +checkErrors()
+    +throwLoadError(url)
+    +registerCommand(pluginName, commandName, func)
+    +callCommand(self, pluginName, commandName, args)
+  }
+  note for PluginManager "The static class that manages the plugins."

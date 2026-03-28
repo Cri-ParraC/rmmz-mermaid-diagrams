@@ -1,0 +1,31 @@
+classDiagram
+  class Spriteset_Battle {
+    -_battlebackLocated: boolean
+    -_backgroundFilter: PIXI.filters.BlurFilter
+    -_backgroundSprite: Sprite
+    -_back1Sprite: Sprite_Battleback
+    -_back2Sprite: Sprite_Battleback
+    -_battleField: Sprite
+    -_enemySprites: Sprite_Enemy[]
+    -_actorSprites: Sprite_Actor[]
+
+    +initialize()
+    +loadSystemImages()
+    +createLowerLayer()
+    +createBackground()
+    +createBattleback()
+    +createBattleField()
+    +battleFieldOffsetY() number
+    +update()
+    +updateBattleback()
+    +createEnemies()
+    +compareEnemySprite(a, b) number
+    +createActors()
+    +updateActors()
+    +findTargetSprite(target) Sprite_Battler | undefined
+    +battlerSprites() Sprite_Battler[]
+    +isEffecting() boolean
+    +isAnyoneMoving() boolean
+    +isBusy() boolean
+  }
+  note for Spriteset_Battle "The set of sprites on the battle screen."

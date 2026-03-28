@@ -1,0 +1,26 @@
+classDiagram
+  class Window_ShopBuy {
+    -_money
+    -_shopGoods
+    -_data
+    -_price
+    -_statusWindow
+
+    +initialize(rect)
+    +setupGoods(shopGoods)
+    +maxItems()
+    +item()
+    +itemAt(index)
+    +setMoney(money)
+    +isCurrentItemEnabled()
+    +price(item)
+    +isEnabled(item)
+    +refresh()
+    +makeItemList()
+    +goodsToItem(goods)
+    +drawItem(index)
+    +priceWidth()
+    +setStatusWindow(statusWindow)
+    +updateHelp()
+  }
+  note for Window_ShopBuy "The window for selecting an item to buy on the shop screen."

@@ -1,0 +1,19 @@
+classDiagram
+  class Scene_Splash {
+    -_backSprite: Sprite
+    -_waitCount: number
+
+    +initialize()
+    +create()
+    +start()
+    +update()
+    +stop()
+    +createBackground()
+    +adjustBackground()
+    +isEnabled() boolean
+    +initWaitCount()
+    +updateWaitCount() boolean
+    +checkSkip()
+    +gotoTitle()
+  }
+  note for Scene_Splash "The scene class of the splash screen."

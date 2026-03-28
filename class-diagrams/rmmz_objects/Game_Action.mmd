@@ -1,0 +1,117 @@
+classDiagram
+  class Game_Action {
+    -_subjectActorId: number
+    -_subjectEnemyIndex: number
+    -_forcing: boolean
+    -_item: Game_Item
+    -_targetIndex: number
+    -_reflectionTarget: any
+
+    +initialize(subject, forcing)
+    +clear()
+    +setSubject(subject)
+    +subject() any
+    +friendsUnit() any
+    +opponentsUnit() any
+    +setEnemyAction(action)
+    +setAttack()
+    +setGuard()
+    +setSkill(skillId)
+    +setItem(itemId)
+    +setItemObject(object)
+    +setTarget(targetIndex)
+    +item() any
+    +isSkill() boolean
+    +isItem() boolean
+    +numRepeats() number
+    +checkItemScope(list) boolean
+    +isForOpponent() boolean
+    +isForFriend() boolean
+    +isForEveryone() boolean
+    +isForAliveFriend() boolean
+    +isForDeadFriend() boolean
+    +isForUser() boolean
+    +isForOne() boolean
+    +isForRandom() boolean
+    +isForAll() boolean
+    +needsSelection() boolean
+    +numTargets() number
+    +checkDamageType(list) boolean
+    +isHpEffect() boolean
+    +isMpEffect() boolean
+    +isDamage() boolean
+    +isRecover() boolean
+    +isDrain() boolean
+    +isHpRecover() boolean
+    +isMpRecover() boolean
+    +isCertainHit() boolean
+    +isPhysical() boolean
+    +isMagical() boolean
+    +isAttack() boolean
+    +isGuard() boolean
+    +isMagicSkill() boolean
+    +decideRandomTarget()
+    +setConfusion()
+    +prepare()
+    +isValid() boolean
+    +speed() number
+    +makeTargets() any[]
+    +repeatTargets(targets) any[]
+    +confusionTarget() any
+    +targetsForEveryone() any[]
+    +targetsForOpponents() any[]
+    +targetsForFriends() any[]
+    +randomTargets(unit) any[]
+    +targetsForDead(unit) any[]
+    +targetsForAlive(unit) any[]
+    +targetsForDeadAndAlive(unit) any[]
+    +evaluate() number
+    +itemTargetCandidates() any[]
+    +evaluateWithTarget(target) any
+    +testApply(target) boolean
+    +testLifeAndDeath(target) boolean
+    +hasItemAnyValidEffects(target) boolean
+    +testItemEffect(target, effect) boolean
+    +itemCnt(target) number
+    +itemMrf(target) number
+    +itemHit(target) number
+    +itemEva(target) number
+    +itemCri(target) number
+    +apply(target)
+    +makeDamageValue(target, critical) number
+    +evalDamageFormula(target) number
+    +calcElementRate(target) number
+    +elementsMaxRate(target, elements) number
+    +applyCritical(damage) number
+    +applyVariance(damage, variance) number
+    +applyGuard(damage, target) number
+    +executeDamage(target, value)
+    +executeHpDamage(target, value)
+    +executeMpDamage(target, value)
+    +gainDrainedHp(value)
+    +gainDrainedMp(value)
+    +applyItemEffect(target, effect)
+    +itemEffectRecoverHp(target, effect)
+    +itemEffectRecoverMp(target, effect)
+    +itemEffectGainTp(target, effect)
+    +itemEffectAddState(target, effect)
+    +itemEffectAddAttackState(target, effect)
+    +itemEffectAddNormalState(target, effect)
+    +itemEffectRemoveState(target, effect)
+    +itemEffectAddBuff(target, effect)
+    +itemEffectAddDebuff(target, effect)
+    +itemEffectRemoveBuff(target, effect)
+    +itemEffectRemoveDebuff(target, effect)
+    +itemEffectSpecial(target, effect)
+    +itemEffectGrow(target, effect)
+    +itemEffectLearnSkill(target, effect)
+    +itemEffectCommonEvent(target, effect)*
+    +makeSuccess(target)
+    +applyItemUserEffect(target)
+    +lukEffectRate(target) number
+    +applyGlobal()
+    +updateLastUsed()
+    +updateLastSubject()
+    +updateLastTarget(target)
+  }
+  note for Game_Action "The game object class for a battle action."

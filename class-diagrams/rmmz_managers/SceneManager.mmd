@@ -1,0 +1,62 @@
+classDiagram
+  class SceneManager {
+    -_scene: any | null
+    -_nextScene: any | null
+    -_stack: any[]
+    -_exiting: boolean
+    -_previousScene: any | null
+    -_previousClass: any | null
+    -_backgroundBitmap: Bitmap | null
+    -_smoothDeltaTime: number
+    -_elapsedTime: number
+
+    +run(sceneClass)
+    +initialize()
+    +checkBrowser()
+    +checkPluginErrors()
+    +initGraphics()
+    +initAudio()
+    +initVideo()
+    +initInput()
+    +setupEventHandlers()
+    +update(deltaTime)
+    +determineRepeatNumber(deltaTime) number
+    +terminate()
+    +onError(event)
+    +onReject(event)
+    +onUnload()
+    +onKeyDown(event)
+    +reloadGame()
+    +showDevTools()
+    +catchException(e)
+    +catchNormalError(e)
+    +catchLoadError(e)
+    +catchUnknownError(e)
+    +updateMain()
+    +updateFrameCount()
+    +updateInputData()
+    +updateEffekseer()
+    +changeScene()
+    +updateScene()
+    +isGameActive() boolean
+    +onSceneTerminate()
+    +onSceneCreate()
+    +onBeforeSceneStart()
+    +onSceneStart()
+    +isSceneChanging() boolean
+    +isCurrentSceneBusy() boolean
+    +isNextScene(sceneClass) boolean
+    +isPreviousScene(sceneClass) boolean
+    +goto(sceneClass)
+    +push(sceneClass)
+    +pop()
+    +exit()
+    +clearStack()
+    +stop()
+    +prepareNextScene()
+    +snap() Bitmap
+    +snapForBackground()
+    +backgroundBitmap() Bitmap | null
+    +resume()
+  }
+  note for SceneManager "The static class that manages scene transitions."

@@ -1,0 +1,24 @@
+classDiagram
+  class Window_NameEdit {
+    -_actor
+    -_maxLength
+    -_name
+    -_defaultName
+
+    +initialize(rect)
+    +setup(actor, maxLength)
+    +name()
+    +restoreDefault()
+    +add(ch)
+    +back()
+    +faceWidth()
+    +charWidth()
+    +left()
+    +itemRect(index)
+    +underlineRect(index)
+    +underlineColor()
+    +drawUnderline(index)
+    +drawChar(index)
+    +refresh()
+  }
+  note for Window_NameEdit "The window for editing an actor's name on the name input screen."

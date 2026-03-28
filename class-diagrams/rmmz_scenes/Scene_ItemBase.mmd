@@ -1,0 +1,27 @@
+classDiagram
+  class Scene_ItemBase {
+    -_actorWindow: Window_MenuActor
+    -_itemWindow: Window_Selectable
+
+    +initialize()
+    +create()
+    +createActorWindow()
+    +actorWindowRect() Rectangle
+    +item()
+    +user()
+    +isCursorLeft() boolean
+    +showActorWindow()
+    +hideActorWindow()
+    +isActorWindowActive() boolean
+    +onActorOk()
+    +onActorCancel()
+    +determineItem()
+    +useItem()
+    +activateItemWindow()
+    +itemTargetActors() Game_Actor[]
+    +canUse() boolean
+    +isItemEffectsValid() boolean
+    +applyItem()
+    +checkCommonEvent()
+  }
+  note for Scene_ItemBase "The superclass of Scene_Item and Scene_Skill."

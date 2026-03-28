@@ -1,0 +1,16 @@
+classDiagram
+  class Scene_Load {
+    -_loadSuccess: boolean
+
+    +initialize()
+    +terminate()
+    +mode() string
+    +helpWindowText() string
+    +firstSavefileId() number
+    +onSavefileOk()
+    +executeLoad(savefileId)
+    +onLoadSuccess()
+    +onLoadFailure()
+    +reloadMapIfUpdated()
+  }
+  note for Scene_Load "The scene class of the load screen."

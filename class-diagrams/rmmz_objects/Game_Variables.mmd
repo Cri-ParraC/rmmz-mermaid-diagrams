@@ -1,0 +1,11 @@
+classDiagram
+  class Game_Variables {
+    -_data: any[]
+
+    +initialize()
+    +clear()
+    +value(variableId) any
+    +setValue(variableId, value)
+    +onChange()
+  }
+  note for Game_Variables "The game object class for variables."

@@ -1,0 +1,27 @@
+classDiagram
+  class Window_Command {
+    -_list
+
+    +initialize(rect)
+    +maxItems()
+    +clearCommandList()
+    +makeCommandList()*
+    +addCommand(name, symbol, enabled, ext)
+    +commandName(index)
+    +commandSymbol(index)
+    +isCommandEnabled(index)
+    +currentData()
+    +isCurrentItemEnabled()
+    +currentSymbol()
+    +currentExt()
+    +findSymbol(symbol)
+    +selectSymbol(symbol)
+    +findExt(ext)
+    +selectExt(ext)
+    +drawItem(index)
+    +itemTextAlign()
+    +isOkEnabled()
+    +callOkHandler()
+    +refresh()
+  }
+  note for Window_Command "The superclass of windows for selecting a command."

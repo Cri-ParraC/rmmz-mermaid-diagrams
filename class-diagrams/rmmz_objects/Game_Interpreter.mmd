@@ -1,0 +1,174 @@
+classDiagram
+  class Game_Interpreter {
+    -_depth: number
+    -_branch: object
+    -_indent: number
+    -_frameCount: number
+    -_freezeChecker: number
+    -_mapId: number
+    -_eventId: number
+    -_list: any[] | null
+    -_index: number
+    -_waitCount: number
+    -_waitMode: string
+    -_comments: any
+    -_characterId: number
+    -_childInterpreter: Game_Interpreter | null
+
+    +initialize(depth)
+    +checkOverflow()
+    +clear()
+    +setup(list, eventId)
+    +loadImages()
+    +eventId() number
+    +isOnCurrentMap() boolean
+    +setupReservedCommonEvent() boolean
+    +isRunning() boolean
+    +update()
+    +updateChild() boolean
+    +updateWait() boolean
+    +updateWaitCount() boolean
+    +updateWaitMode() boolean
+    +setWaitMode(waitMode)
+    +wait(duration)
+    +fadeSpeed() number
+    +executeCommand() boolean
+    +checkFreeze() boolean
+    +terminate()
+    +skipBranch()
+    +currentCommand() any
+    +nextEventCode() number
+    +iterateActorId(param, callback)
+    +iterateActorEx(param1, param2, callback)
+    +iterateActorIndex(param, callback)
+    +iterateEnemyIndex(param, callback)
+    +iterateBattler(param1, param2, callback)
+    +character(param) any | null
+    +operateValue(operation, operandType, operand) number
+    +changeHp(target, value, allowDeath)
+    +command101(params) boolean
+    +command102(params) boolean
+    +setupChoices(params)
+    +command402(params) boolean
+    +command403() boolean
+    +command103(params) boolean
+    +setupNumInput(params)
+    +command104(params) boolean
+    +setupItemChoice(params)
+    +command105(params) boolean
+    +command108(params) boolean
+    +command109() boolean
+    +command111(params) boolean
+    +command411() boolean
+    +command112() boolean
+    +command413() boolean
+    +command113() boolean
+    +command115() boolean
+    +command117(params) boolean
+    +setupChild(list, eventId)
+    +command118() boolean
+    +command119(params) boolean
+    +jumpTo(index)
+    +command121(params) boolean
+    +command122(params) boolean
+    +gameDataOperand(type, param1, param2) any
+    +operateVariable(variableId, operationType, value)
+    +command123(params) boolean
+    +command124(params) boolean
+    +command125(params) boolean
+    +command126(params) boolean
+    +command127(params) boolean
+    +command128(params) boolean
+    +command129(params) boolean
+    +command132(params) boolean
+    +command133(params) boolean
+    +command134(params) boolean
+    +command135(params) boolean
+    +command136(params) boolean
+    +command137(params) boolean
+    +command138(params) boolean
+    +command139(params) boolean
+    +command140(params) boolean
+    +command201(params) boolean
+    +command202(params) boolean
+    +command203(params) boolean
+    +command204(params) boolean
+    +command205(params) boolean
+    +command206() boolean
+    +command211(params) boolean
+    +command212(params) boolean
+    +command213(params) boolean
+    +command214() boolean
+    +command216(params) boolean
+    +command217() boolean
+    +command221() boolean
+    +command222() boolean
+    +command223(params) boolean
+    +command224(params) boolean
+    +command225(params) boolean
+    +command230(params) boolean
+    +command231(params) boolean
+    +command232(params) boolean
+    +picturePoint(params) any
+    +command233(params) boolean
+    +command234(params) boolean
+    +command235(params) boolean
+    +command236(params) boolean
+    +command241(params) boolean
+    +command242(params) boolean
+    +command243() boolean
+    +command244() boolean
+    +command245(params) boolean
+    +command246(params) boolean
+    +command249(params) boolean
+    +command250(params) boolean
+    +command251() boolean
+    +command261(params) boolean
+    +videoFileExt() string
+    +command281(params) boolean
+    +command282(params) boolean
+    +command283(params) boolean
+    +command284(params) boolean
+    +command285(params) boolean
+    +command301(params) boolean
+    +command601() boolean
+    +command602() boolean
+    +command603() boolean
+    +command302(params) boolean
+    +command303(params) boolean
+    +command311(params) boolean
+    +command312(params) boolean
+    +command326(params) boolean
+    +command313(params) boolean
+    +command314(params) boolean
+    +command315(params) boolean
+    +command316(params) boolean
+    +command317(params) boolean
+    +command318(params) boolean
+    +command319(params) boolean
+    +command320(params) boolean
+    +command321(params) boolean
+    +command322(params) boolean
+    +command323(params) boolean
+    +command324(params) boolean
+    +command325(params) boolean
+    +command331(params) boolean
+    +command332(params) boolean
+    +command342(params) boolean
+    +command333(params) boolean
+    +command334(params) boolean
+    +command335(params) boolean
+    +command336(params) boolean
+    +command337(params) boolean
+    +command339(params) boolean
+    +command340() boolean
+    +command351() boolean
+    +command352() boolean
+    +command353() boolean
+    +command354() boolean
+    +command355() boolean
+    +command356(params) boolean
+    +pluginCommand(command, args)*
+    +command357(params) boolean
+  }
+  note for Game_Interpreter "The interpreter for running event commands."

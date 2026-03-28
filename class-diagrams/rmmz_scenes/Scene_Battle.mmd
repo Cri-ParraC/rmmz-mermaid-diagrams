@@ -1,0 +1,90 @@
+classDiagram
+  class Scene_Battle {
+    -_spriteset: Spriteset_Battle
+    -_logWindow: Window_BattleLog
+    -_statusWindow: Window_BattleStatus
+    -_partyCommandWindow: Window_PartyCommand
+    -_actorCommandWindow: Window_ActorCommand
+    -_helpWindow: Window_Help
+    -_skillWindow: Window_BattleSkill
+    -_itemWindow: Window_BattleItem
+    -_actorWindow: Window_BattleActor
+    -_enemyWindow: Window_BattleEnemy
+    -_cancelButton: Sprite_Button
+
+    +initialize()
+    +create()
+    +start()
+    +update()
+    +updateVisibility()
+    +updateBattleProcess()
+    +isTimeActive() boolean
+    +isAnyInputWindowActive() boolean
+    +changeInputWindow()
+    +stop()
+    +terminate()
+    +shouldAutosave() boolean
+    +needsSlowFadeOut() boolean
+    +updateLogWindowVisibility()
+    +updateStatusWindowVisibility()
+    +shouldOpenStatusWindow() boolean
+    +updateStatusWindowPosition()
+    +statusWindowX() number
+    +updateInputWindowVisibility()
+    +needsInputWindowChange() boolean
+    +updateCancelButton()
+    +createDisplayObjects()
+    +createSpriteset()
+    +createAllWindows()
+    +createLogWindow()
+    +logWindowRect() Rectangle
+    +createStatusWindow()
+    +statusWindowRect() Rectangle
+    +createPartyCommandWindow()
+    +partyCommandWindowRect() Rectangle
+    +createActorCommandWindow()
+    +actorCommandWindowRect() Rectangle
+    +createHelpWindow()
+    +helpWindowRect() Rectangle
+    +createSkillWindow()
+    +skillWindowRect() Rectangle
+    +createItemWindow()
+    +itemWindowRect() Rectangle
+    +createActorWindow()
+    +actorWindowRect() Rectangle
+    +createEnemyWindow()
+    +enemyWindowRect() Rectangle
+    +helpAreaTop() number
+    +helpAreaBottom() number
+    +helpAreaHeight() number
+    +buttonAreaTop() number
+    +windowAreaHeight() number
+    +createButtons()
+    +createCancelButton()
+    +closeCommandWindows()
+    +hideSubInputWindows()
+    +startPartyCommandSelection()
+    +commandFight()
+    +commandEscape()
+    +startActorCommandSelection()
+    +commandAttack()
+    +commandSkill()
+    +commandGuard()
+    +commandItem()
+    +commandCancel()
+    +selectNextCommand()
+    +selectPreviousCommand()
+    +startActorSelection()
+    +onActorOk()
+    +onActorCancel()
+    +startEnemySelection()
+    +onEnemyOk()
+    +onEnemyCancel()
+    +onSkillOk()
+    +onSkillCancel()
+    +onItemOk()
+    +onItemCancel()
+    +onSelectAction()
+    +endCommandSelection()
+  }
+  note for Scene_Battle "The scene class of the battle screen."

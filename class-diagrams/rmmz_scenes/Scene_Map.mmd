@@ -1,0 +1,69 @@
+classDiagram
+  class Scene_Map {
+    -_waitCount: number
+    -_encounterEffectDuration: number
+    -_mapLoaded: boolean
+    -_touchCount: number
+    -_menuEnabled: boolean
+    -_transfer: boolean
+    -_lastMapWasNull: boolean
+    -_spriteset: Spriteset_Map
+    -_mapNameWindow: Window_MapName
+    -_menuButton: Sprite_Button
+    +menuCalling: boolean
+
+    +initialize()
+    +create()
+    +isReady() boolean
+    +onMapLoaded()
+    +onTransfer()
+    +start()
+    +onTransferEnd()
+    +shouldAutosave() boolean
+    +update()
+    +updateMainMultiply()
+    +updateMain()
+    +isPlayerActive() boolean
+    +isFastForward() boolean
+    +stop()
+    +isBusy() boolean
+    +terminate()
+    +needsFadeIn() boolean
+    +needsSlowFadeOut() boolean
+    +updateWaitCount() boolean
+    +updateDestination()
+    +updateMenuButton()
+    +hideMenuButton()
+    +updateMapNameWindow()
+    +isMenuEnabled() boolean
+    +isMapTouchOk() boolean
+    +processMapTouch()
+    +isAnyButtonPressed() boolean
+    +onMapTouch()
+    +isSceneChangeOk() boolean
+    +updateScene()
+    +createDisplayObjects()
+    +createSpriteset()
+    +createAllWindows()
+    +createMapNameWindow()
+    +mapNameWindowRect() Rectangle
+    +createButtons()
+    +createMenuButton()
+    +updateTransferPlayer()
+    +updateEncounter()
+    +updateCallMenu()
+    +isMenuCalled() boolean
+    +callMenu()
+    +updateCallDebug()
+    +isDebugCalled() boolean
+    +fadeInForTransfer()
+    +fadeOutForTransfer()
+    +launchBattle()
+    +stopAudioOnBattleStart()
+    +startEncounterEffect()
+    +updateEncounterEffect()
+    +snapForBattleBackground()
+    +startFlashForEncounter(duration)
+    +encounterEffectSpeed() number
+  }
+  note for Scene_Map "The scene class of the map screen."

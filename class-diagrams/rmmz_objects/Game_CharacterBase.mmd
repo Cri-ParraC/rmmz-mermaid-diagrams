@@ -1,0 +1,132 @@
+classDiagram
+  class Game_CharacterBase {
+    +x: number
+    +y: number
+
+    -_x: number
+    -_y: number
+    -_realX: number
+    -_realY: number
+    -_moveSpeed: number
+    -_moveFrequency: number
+    -_opacity: number
+    -_blendMode: number
+    -_direction: number
+    -_pattern: number
+    -_priorityType: number
+    -_tileId: number
+    -_characterName: string
+    -_characterIndex: number
+    -_isObjectCharacter: boolean
+    -_walkAnime: boolean
+    -_stepAnime: boolean
+    -_directionFix: boolean
+    -_through: boolean
+    -_transparent: boolean
+    -_bushDepth: number
+    -_animationId: number
+    -_balloonId: number
+    -_animationPlaying: boolean
+    -_balloonPlaying: boolean
+    -_animationCount: number
+    -_stopCount: number
+    -_jumpCount: number
+    -_jumpPeak: number
+    -_movementSuccess: boolean
+
+    +initialize()
+    +initMembers()
+    +pos(x, y) boolean
+    +posNt(x, y) boolean
+    +moveSpeed() number
+    +setMoveSpeed(moveSpeed)
+    +moveFrequency() number
+    +setMoveFrequency(moveFrequency)
+    +opacity() number
+    +setOpacity(opacity)
+    +blendMode() number
+    +setBlendMode(blendMode)
+    +isNormalPriority() boolean
+    +setPriorityType(priorityType)
+    +isMoving() boolean
+    +isJumping() boolean
+    +jumpHeight() number
+    +isStopping() boolean
+    +checkStop(threshold) boolean
+    +resetStopCount()
+    +realMoveSpeed() number
+    +distancePerFrame() number
+    +isDashing() boolean
+    +isDebugThrough() boolean
+    +straighten()
+    +reverseDir(d) number
+    +canPass(x, y, d) boolean
+    +canPassDiagonally(x, y, horz, vert) boolean
+    +isMapPassable(x, y, d) boolean
+    +isCollidedWithCharacters(x, y) boolean
+    +isCollidedWithEvents(x, y) boolean
+    +isCollidedWithVehicles(x, y) boolean
+    +setPosition(x, y)
+    +copyPosition(character)
+    +locate(x, y)
+    +direction() number
+    +setDirection(d)
+    +isTile() boolean
+    +isObjectCharacter() boolean
+    +shiftY() number
+    +scrolledX() number
+    +scrolledY() number
+    +screenX() number
+    +screenY() number
+    +screenZ() number
+    +isNearTheScreen() boolean
+    +update()
+    +updateStop()
+    +updateJump()
+    +updateMove()
+    +updateAnimation()
+    +animationWait() number
+    +updateAnimationCount()
+    +updatePattern()
+    +maxPattern() number
+    +pattern() number
+    +setPattern(pattern)
+    +isOriginalPattern() boolean
+    +resetPattern()
+    +refreshBushDepth()
+    +isOnLadder() boolean
+    +isOnBush() boolean
+    +terrainTag() number
+    +regionId() number
+    +increaseSteps()
+    +tileId() number
+    +characterName() string
+    +characterIndex() number
+    +setImage(characterName, characterIndex)
+    +setTileImage(tileId)
+    +checkEventTriggerTouchFront(d)
+    +checkEventTriggerTouch(x, y) boolean
+    +isMovementSucceeded(x, y) boolean
+    +setMovementSuccess(success)
+    +moveStraight(d)
+    +moveDiagonally(horz, vert)
+    +jump(xPlus, yPlus)
+    +hasWalkAnime() boolean
+    +setWalkAnime(walkAnime)
+    +hasStepAnime() boolean
+    +setStepAnime(stepAnime)
+    +isDirectionFixed() boolean
+    +setDirectionFix(directionFix)
+    +isThrough() boolean
+    +setThrough(through)
+    +isTransparent() boolean
+    +bushDepth() number
+    +setTransparent(transparent)
+    +startAnimation()
+    +startBalloon()
+    +isAnimationPlaying() boolean
+    +isBalloonPlaying() boolean
+    +endAnimation()
+    +endBalloon()
+  }
+  note for Game_CharacterBase "The superclass of Game_Character. It handles basic information, such as coordinates and images, shared by all characters."

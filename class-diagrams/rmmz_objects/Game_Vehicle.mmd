@@ -1,0 +1,41 @@
+classDiagram
+  class Game_Vehicle {
+    -_type: string
+    -_mapId: number
+    -_altitude: number
+    -_driving: boolean
+    -_bgm: any | null
+
+    +initialize(type)
+    +initMembers()
+    +isBoat() boolean
+    +isShip() boolean
+    +isAirship() boolean
+    +resetDirection()
+    +initMoveSpeed()
+    +vehicle() any | null
+    +loadSystemSettings()
+    +refresh()
+    +setLocation(mapId, x, y)
+    +pos(x, y) boolean
+    +isMapPassable(x, y, d) boolean
+    +getOn()
+    +getOff()
+    +setBgm(bgm)
+    +playBgm()
+    +syncWithPlayer()
+    +screenY() number
+    +shadowX() number
+    +shadowY() number
+    +shadowOpacity() number
+    +canMove() boolean
+    +update()
+    +updateAirship()
+    +updateAirshipAltitude()
+    +maxAltitude() number
+    +isLowest() boolean
+    +isHighest() boolean
+    +isTakeoffOk() boolean
+    +isLandOk(x, y, d) boolean
+  }
+  note for Game_Vehicle "The game object class for a vehicle."

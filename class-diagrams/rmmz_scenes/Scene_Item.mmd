@@ -1,0 +1,19 @@
+classDiagram
+  class Scene_Item {
+    -_categoryWindow: Window_ItemCategory
+    -_itemWindow: Window_ItemList
+
+    +initialize()
+    +create()
+    +createCategoryWindow()
+    +categoryWindowRect() Rectangle
+    +createItemWindow()
+    +itemWindowRect() Rectangle
+    +user() Game_Battler
+    +onCategoryOk()
+    +onItemOk()
+    +onItemCancel()
+    +playSeForItem()
+    +useItem()
+  }
+  note for Scene_Item "The scene class of the item screen."

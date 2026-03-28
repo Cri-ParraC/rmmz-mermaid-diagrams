@@ -1,0 +1,140 @@
+classDiagram
+  class Game_Map {
+    -_interpreter: Game_Interpreter
+    -_mapId: number
+    -_tilesetId: number
+    -_events: any[]
+    -_commonEvents: any[]
+    -_vehicles: any[]
+    -_displayX: number
+    -_displayY: number
+    -_nameDisplay: boolean
+    -_scrollDirection: number
+    -_scrollRest: number
+    -_scrollSpeed: number
+    -_parallaxName: string
+    -_parallaxZero: boolean
+    -_parallaxLoopX: boolean
+    -_parallaxLoopY: boolean
+    -_parallaxSx: number
+    -_parallaxSy: number
+    -_parallaxX: number
+    -_parallaxY: number
+    -_battleback1Name: string | null
+    -_battleback2Name: string | null
+    -_needsRefresh: boolean
+    -_tileEvents: any[]
+
+    +initialize()
+    +setup(mapId)
+    +isEventRunning() boolean
+    +tileWidth() number
+    +tileHeight() number
+    +bushDepth() number
+    +mapId() number
+    +tilesetId() number
+    +displayX() number
+    +displayY() number
+    +parallaxName() string
+    +battleback1Name() string | null
+    +battleback2Name() string | null
+    +requestRefresh()
+    +isNameDisplayEnabled() boolean
+    +disableNameDisplay()
+    +enableNameDisplay()
+    +createVehicles()
+    +refereshVehicles()
+    +vehicles() any[]
+    +vehicle(type) any | null
+    +boat() any
+    +ship() any
+    +airship() any
+    +setupEvents()
+    +events() any[]
+    +event(eventId) any
+    +eraseEvent(eventId)
+    +autorunCommonEvents() any[]
+    +parallelCommonEvents() any[]
+    +setupScroll()
+    +setupParallax()
+    +setupBattleback()
+    +setDisplayPos(x, y)
+    +parallaxOx() number
+    +parallaxOy() number
+    +tileset() any
+    +tilesetFlags() any[]
+    +displayName() string
+    +width() number
+    +height() number
+    +data() any
+    +isLoopHorizontal() boolean
+    +isLoopVertical() boolean
+    +isDashDisabled() boolean
+    +encounterList() any[]
+    +encounterStep() number
+    +isOverworld() boolean
+    +screenTileX() number
+    +screenTileY() number
+    +adjustX(x) number
+    +adjustY(y) number
+    +roundX(x) number
+    +roundY(y) number
+    +xWithDirection(x, d) number
+    +yWithDirection(y, d) number
+    +roundXWithDirection(x, d) number
+    +roundYWithDirection(y, d) number
+    +deltaX(x1, x2) number
+    +deltaY(y1, y2) number
+    +distance(x1, y1, x2, y2) number
+    +canvasToMapX(x) number
+    +canvasToMapY(y) number
+    +autoplay()
+    +refreshIfNeeded()
+    +refresh()
+    +refreshTileEvents()
+    +eventsXy(x, y) any[]
+    +eventsXyNt(x, y) any[]
+    +tileEventsXy(x, y) any[]
+    +eventIdXy(x, y) number
+    +scrollDown(distance)
+    +scrollLeft(distance)
+    +scrollRight(distance)
+    +scrollUp(distance)
+    +isValid(x, y) boolean
+    +checkPassage(x, y, bit) boolean
+    +tileId(x, y, z) number
+    +layeredTiles(x, y) number[]
+    +allTiles(x, y) number[]
+    +autotileType(x, y, z) number
+    +isPassable(x, y, d) boolean
+    +isBoatPassable(x, y) boolean
+    +isShipPassable(x, y) boolean
+    +isAirshipLandOk(x, y) boolean
+    +checkLayeredTilesFlags(x, y, bit) boolean
+    +isLadder(x, y) boolean
+    +isBush(x, y) boolean
+    +isCounter(x, y) boolean
+    +isDamageFloor(x, y) boolean
+    +terrainTag(x, y) number
+    +regionId(x, y) number
+    +startScroll(direction, distance, speed)
+    +isScrolling() boolean
+    +update(sceneActive)
+    +updateScroll()
+    +scrollDistance() number
+    +doScroll(direction, distance)
+    +updateEvents()
+    +updateVehicles()
+    +updateParallax()
+    +changeTileset(tilesetId)
+    +changeBattleback(battleback1Name, battleback2Name)
+    +changeParallax(name, loopX, loopY, sx, sy)
+    +updateInterpreter()
+    +unlockEvent(eventId)
+    +setupStartingEvent() boolean
+    +setupTestEvent() boolean
+    +setupStartingMapEvent() boolean
+    +setupAutorunCommonEvent() boolean
+    +isAnyEventStarting() boolean
+  }
+  note for Game_Map "The game object class for a map. It contains scrolling and passage determination functions."

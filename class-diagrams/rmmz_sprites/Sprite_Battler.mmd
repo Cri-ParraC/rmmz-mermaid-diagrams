@@ -1,0 +1,43 @@
+classDiagram
+  class Sprite_Battler {
+    -_battler: Game_Battler | null
+    -_damages: Sprite_Damage[]
+    -_homeX: number
+    -_homeY: number
+    -_offsetX: number
+    -_offsetY: number
+    -_targetOffsetX: number
+    -_targetOffsetY: number
+    -_movementDuration: number
+    -_selectionEffectCount: number
+
+    +initialize(battler)
+    +initMembers()
+    +setBattler(battler)
+    +checkBattler(battler) boolean
+    +mainSprite() Sprite
+    +setHome(x, y)
+    +update()
+    +updateVisibility()
+    +updateMain()
+    +updateBitmap()*
+    +updateFrame()*
+    +updateMove()
+    +updatePosition()
+    +updateDamagePopup()
+    +updateSelectionEffect()
+    +setupDamagePopup()
+    +createDamageSprite()
+    +destroyDamageSprite(sprite)
+    +damageOffsetX() number
+    +damageOffsetY() number
+    +startMove(x, y, duration)
+    +onMoveEnd()*
+    +isEffecting() boolean
+    +isMoving() boolean
+    +inHomePosition() boolean
+    +onMouseEnter()
+    +onPress()
+    +onClick()
+  }
+  note for Sprite_Battler "The superclass of Sprite_Actor and Sprite_Enemy."

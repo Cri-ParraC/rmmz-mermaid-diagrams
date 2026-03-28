@@ -1,0 +1,19 @@
+classDiagram
+  class Scene_Name {
+    -_actorId: number
+    -_maxLength: number
+    -_actor: Game_Actor
+    -_editWindow: Window_NameEdit
+    -_inputWindow: Window_NameInput
+
+    +initialize()
+    +prepare(actorId, maxLength)
+    +create()
+    +start()
+    +createEditWindow()
+    +editWindowRect() Rectangle
+    +createInputWindow()
+    +inputWindowRect() Rectangle
+    +onInputOk()
+  }
+  note for Scene_Name "The scene class of the name input screen."

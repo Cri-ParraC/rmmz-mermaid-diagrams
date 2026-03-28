@@ -1,0 +1,13 @@
+classDiagram
+  class Window_ItemCategory {
+    -_itemWindow
+
+    +initialize(rect)
+    +maxCols()
+    +update()
+    +makeCommandList()
+    +needsCommand(name)
+    +setItemWindow(itemWindow)
+    +needsSelection()
+  }
+  note for Window_ItemCategory "The window for selecting a category of items on the item and shop screens."

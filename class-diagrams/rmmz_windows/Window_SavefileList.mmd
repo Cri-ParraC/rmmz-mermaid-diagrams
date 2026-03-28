@@ -1,0 +1,23 @@
+classDiagram
+  class Window_SavefileList {
+    -_mode
+    -_autosave
+
+    +initialize(rect)
+    +setMode(mode, autosave)
+    +maxItems()
+    +numVisibleRows()
+    +itemHeight()
+    +drawItem(index)
+    +indexToSavefileId(index)
+    +savefileIdToIndex(savefileId)
+    +isEnabled(savefileId)
+    +savefileId()
+    +selectSavefile(savefileId)
+    +drawTitle(savefileId, x, y)
+    +drawContents(info, rect)
+    +drawPartyCharacters(info, x, y)
+    +drawPlaytime(info, x, y, width)
+    +playOkSound()
+  }
+  note for Window_SavefileList "The window for selecting a save file on the save and load screens."

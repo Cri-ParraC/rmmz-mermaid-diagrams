@@ -1,0 +1,90 @@
+classDiagram
+  class Window {
+    -_isWindow
+    -_windowskin
+    -_width
+    -_height
+    -_cursorRect
+    -_openness
+    -_animationCount
+    -_padding
+    -_margin
+    -_colorTone
+    -_innerChildren
+    -_container
+    -_backSprite
+    -_frameSprite
+    -_clientArea
+    -_contentsBackSprite
+    -_cursorSprite
+    -_contentsSprite
+    -_downArrowSprite
+    -_upArrowSprite
+    -_pauseSignSprite
+
+    +origin
+    +active
+    +frameVisible
+    +cursorVisible
+    +downArrowVisible
+    +upArrowVisible
+    +pause
+
+    +windowskin
+    +contents
+    +contentsBack
+    +width
+    +height
+    +padding
+    +margin
+    +opacity
+    +backOpacity
+    +contentsOpacity
+    +openness
+    +innerWidth
+    +innerHeight
+    +innerRect
+
+    +initialize()
+    +destroy()
+    +update()
+    +move(x, y, width, height)
+    +isOpen()
+    +isClosed()
+    +setCursorRect(x, y, width, height)
+    +moveCursorBy(x, y)
+    +moveInnerChildrenBy(x, y)
+    +setTone(r, g, b)
+    +addChildToBack(child)
+    +addInnerChild(child)
+    +updateTransform()
+    +drawShape(graphics)
+    +_createAllParts()
+    +_createContainer()
+    +_createBackSprite()
+    +_createFrameSprite()
+    +_createClientArea()
+    +_createContentsBackSprite()
+    +_createCursorSprite()
+    +_createContentsSprite()
+    +_createArrowSprites()
+    +_createPauseSignSprites()
+    +_onWindowskinLoad()
+    +_refreshAllParts()
+    +_refreshBack()
+    +_refreshFrame()
+    +_refreshCursor()
+    +_setRectPartsGeometry(sprite, srect, drect, m)
+    +_refreshArrows()
+    +_refreshPauseSign()
+    +_updateClientArea()
+    +_updateFrame()
+    +_updateContentsBack()
+    +_updateCursor()
+    +_makeCursorAlpha()
+    +_updateContents()
+    +_updateArrows()
+    +_updatePauseSign()
+    +_updateFilterArea()
+  }
+  note for Window "The window in the game."

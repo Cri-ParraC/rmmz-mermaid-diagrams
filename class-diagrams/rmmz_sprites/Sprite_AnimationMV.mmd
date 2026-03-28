@@ -1,0 +1,48 @@
+classDiagram
+  class Sprite_AnimationMV {
+    -_targets: any[]
+    -_animation: any
+    -_mirror: boolean
+    -_delay: number
+    -_rate: number
+    -_duration: number
+    -_flashColor: any[]
+    -_flashDuration: number
+    -_screenFlashDuration: number
+    -_hidingDuration: number
+    -_hue1: number
+    -_hue2: number
+    -_bitmap1: Bitmap | null
+    -_bitmap2: Bitmap | null
+    -_cellSprites: Sprite[]
+    -_screenFlashSprite: ScreenSprite | null
+
+    +initialize()
+    +initMembers()
+    +setup(targets, animation, mirror, delay)
+    +setupRate()
+    +setupDuration()
+    +update()
+    +updateFlash()
+    +updateScreenFlash()
+    +absoluteX() number
+    +absoluteY() number
+    +updateHiding()
+    +isPlaying() boolean
+    +loadBitmaps()
+    +isReady() boolean
+    +createCellSprites()
+    +createScreenFlashSprite()
+    +updateMain()
+    +updatePosition()
+    +updateFrame()
+    +currentFrameIndex() number
+    +updateAllCellSprites(frame)
+    +updateCellSprite(sprite, cell)
+    +processTimingData(timing)
+    +startFlash(color, duration)
+    +startScreenFlash(color, duration)
+    +startHiding(duration)
+    +onEnd()
+  }
+  note for Sprite_AnimationMV "The sprite for displaying an old format animation."

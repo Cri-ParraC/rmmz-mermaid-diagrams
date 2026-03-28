@@ -1,0 +1,37 @@
+classDiagram
+  class Game_ActionResult {
+    +used: boolean
+    +missed: boolean
+    +evaded: boolean
+    +physical: boolean
+    +drain: boolean
+    +critical: boolean
+    +success: boolean
+    +hpAffected: boolean
+    +hpDamage: number
+    +mpDamage: number
+    +tpDamage: number
+    +addedStates: number[]
+    +removedStates: number[]
+    +addedBuffs: number[]
+    +addedDebuffs: number[]
+    +removedBuffs: number[]
+
+    +initialize()
+    +clear()
+    +addedStateObjects() any[]
+    +removedStateObjects() any[]
+    +isStatusAffected() boolean
+    +isHit() boolean
+    +isStateAdded(stateId) boolean
+    +pushAddedState(stateId)
+    +isStateRemoved(stateId) boolean
+    +pushRemovedState(stateId)
+    +isBuffAdded(paramId) boolean
+    +pushAddedBuff(paramId)
+    +isDebuffAdded(paramId) boolean
+    +pushAddedDebuff(paramId)
+    +isBuffRemoved(paramId) boolean
+    +pushRemovedBuff(paramId)
+  }
+  note for Game_ActionResult "The game object class for a result of a battle action. For convinience, all member variables in this class are public."

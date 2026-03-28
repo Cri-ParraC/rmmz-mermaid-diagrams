@@ -1,0 +1,36 @@
+classDiagram
+  class ColorManager {
+    -_windowskin: any
+
+    +loadWindowskin()
+    +textColor(n) string
+    +normalColor() string
+    +systemColor() string
+    +crisisColor() string
+    +deathColor() string
+    +gaugeBackColor() string
+    +hpGaugeColor1() string
+    +hpGaugeColor2() string
+    +mpGaugeColor1() string
+    +mpGaugeColor2() string
+    +mpCostColor() string
+    +powerUpColor() string
+    +powerDownColor() string
+    +ctGaugeColor1() string
+    +ctGaugeColor2() string
+    +tpGaugeColor1() string
+    +tpGaugeColor2() string
+    +tpCostColor() string
+    +pendingColor() string
+    +hpColor(actor) string
+    +mpColor(actor) string
+    +tpColor(actor) string
+    +paramchangeTextColor(change) string
+    +damageColor(colorType) string
+    +outlineColor() string
+    +dimColor1() string
+    +dimColor2() string
+    +itemBackColor1() string
+    +itemBackColor2() string
+  }
+  note for ColorManager "The static class that handles the window colors."

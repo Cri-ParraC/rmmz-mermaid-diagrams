@@ -1,0 +1,28 @@
+classDiagram
+  class Scene_Message {
+    -_messageWindow: Window_Message
+    -_scrollTextWindow: Window_ScrollText
+    -_goldWindow: Window_Gold
+    -_nameBoxWindow: Window_NameBox
+    -_choiceListWindow: Window_ChoiceList
+    -_numberInputWindow: Window_NumberInput
+    -_eventItemWindow: Window_EventItem
+
+    +initialize()
+    +isMessageWindowClosing() boolean
+    +createAllWindows()
+    +createMessageWindow()
+    +messageWindowRect() Rectangle
+    +createScrollTextWindow()
+    +scrollTextWindowRect() Rectangle
+    +createGoldWindow()
+    +goldWindowRect() Rectangle
+    +createNameBoxWindow()
+    +createChoiceListWindow()
+    +createNumberInputWindow()
+    +createEventItemWindow()
+    +eventItemWindowRect() Rectangle
+    +associateWindows()
+    +cancelMessageWait()
+  }
+  note for Scene_Message "The superclass of Scene_Map and Scene_Battle."

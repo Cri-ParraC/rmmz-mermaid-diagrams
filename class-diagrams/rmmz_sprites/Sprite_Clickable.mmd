@@ -1,0 +1,18 @@
+classDiagram
+  class Sprite_Clickable {
+    -_pressed: boolean
+    -_hovered: boolean
+
+    +initialize()
+    +update()
+    +processTouch()
+    +isPressed() boolean
+    +isClickEnabled() boolean
+    +isBeingTouched() boolean
+    +hitTest(x, y) boolean
+    +onMouseEnter()*
+    +onMouseExit()*
+    +onPress()*
+    +onClick()*
+  }
+  note for Sprite_Clickable "The sprite class with click handling functions."

@@ -1,0 +1,55 @@
+classDiagram
+  class Game_Picture {
+    -_name: string
+    -_origin: number
+    -_x: number
+    -_y: number
+    -_scaleX: number
+    -_scaleY: number
+    -_opacity: number
+    -_blendMode: number
+    -_tone: number[] | null
+    -_toneTarget: number[] | null
+    -_toneDuration: number
+    -_angle: number
+    -_rotationSpeed: number
+    -_targetX: number
+    -_targetY: number
+    -_targetScaleX: number
+    -_targetScaleY: number
+    -_targetOpacity: number
+    -_duration: number
+    -_wholeDuration: number
+    -_easingType: number
+    -_easingExponent: number
+
+    +initialize()
+    +name() string
+    +origin() number
+    +x() number
+    +y() number
+    +scaleX() number
+    +scaleY() number
+    +opacity() number
+    +blendMode() number
+    +tone() number[] | null
+    +angle() number
+    +initBasic()
+    +initTarget()
+    +initTone()
+    +initRotation()
+    +show(name, origin, x, y, scaleX, scaleY, opacity, blendMode)
+    +move(origin, x, y, scaleX, scaleY, opacity, blendMode, duration, easingType)
+    +rotate(speed)
+    +tint(tone, duration)
+    +update()
+    +updateMove()
+    +updateTone()
+    +updateRotation()
+    +applyEasing(current, target) number
+    +calcEasing(t) number
+    +easeIn(t, exponent) number
+    +easeOut(t, exponent) number
+    +easeInOut(t, exponent) number
+  }
+  note for Game_Picture "The game object class for a picture."

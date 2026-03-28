@@ -1,0 +1,24 @@
+classDiagram
+  class TilingSprite {
+    +_emptyBaseTexture: any | null
+
+    -_bitmap: Bitmap | null
+    -_width: number
+    -_height: number
+    -_frame: Rectangle
+    +origin: Point
+
+    +bitmap: Bitmap
+    +opacity: number
+
+    +initialize(bitmap)
+    +destroy()
+    +update()
+    +move(x, y, width, height)
+    +setFrame(x, y, width, height)
+    +updateTransform()
+    +_onBitmapChange()
+    +_onBitmapLoad()
+    +_refresh()
+  }
+  note for TilingSprite "The sprite object for a tiling image."

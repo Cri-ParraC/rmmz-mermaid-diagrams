@@ -1,0 +1,11 @@
+classDiagram
+  class Window_TitleCommand {
+    +initialize(rect)
+    <<static>> _lastCommandSymbol
+    <<static>> initCommandPosition()
+    +makeCommandList()
+    +isContinueEnabled()
+    +processOk()
+    +selectLast()
+  }
+  note for Window_TitleCommand "The window for selecting New Game/Continue on the title screen."

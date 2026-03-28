@@ -1,0 +1,25 @@
+classDiagram
+  class Window_ShopStatus {
+    -_item
+    -_pageIndex
+
+    +initialize(rect)
+    +refresh()
+    +setItem(item)
+    +isEquipItem()
+    +drawPossession(x, y)
+    +drawEquipInfo(x, y)
+    +statusMembers()
+    +pageSize()
+    +maxPages()
+    +drawActorEquipInfo(x, y, actor)
+    +drawActorParamChange(x, y, actor, item1)
+    +paramId()
+    +currentEquippedItem(actor, etypeId)
+    +update()
+    +updatePage()
+    +isPageChangeEnabled()
+    +isPageChangeRequested()
+    +changePage()
+  }
+  note for Window_ShopStatus "The window for displaying number of items in possession and the actor's equipment on the shop screen."

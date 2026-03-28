@@ -1,0 +1,77 @@
+classDiagram
+  class Game_System {
+    -_saveEnabled: boolean
+    -_menuEnabled: boolean
+    -_encounterEnabled: boolean
+    -_formationEnabled: boolean
+    -_battleCount: number
+    -_winCount: number
+    -_escapeCount: number
+    -_saveCount: number
+    -_versionId: number
+    -_savefileId: number
+    -_framesOnSave: number
+    -_bgmOnSave: any
+    -_bgsOnSave: any
+    -_windowTone: any
+    -_battleBgm: any
+    -_victoryMe: any
+    -_defeatMe: any
+    -_savedBgm: any
+    -_walkingBgm: any
+
+    +initialize()
+    +isJapanese() boolean
+    +isChinese() boolean
+    +isKorean() boolean
+    +isCJK() boolean
+    +isRussian() boolean
+    +isSideView() boolean
+    +isAutosaveEnabled() boolean
+    +isMessageSkipEnabled() boolean
+    +isSaveEnabled() boolean
+    +disableSave()
+    +enableSave()
+    +isMenuEnabled() boolean
+    +disableMenu()
+    +enableMenu()
+    +isEncounterEnabled() boolean
+    +disableEncounter()
+    +enableEncounter()
+    +isFormationEnabled() boolean
+    +disableFormation()
+    +enableFormation()
+    +battleCount() number
+    +winCount() number
+    +escapeCount() number
+    +saveCount() number
+    +versionId() number
+    +savefileId() number
+    +setSavefileId(savefileId)
+    +windowTone() any
+    +setWindowTone(value)
+    +battleBgm() any
+    +setBattleBgm(value)
+    +victoryMe() any
+    +setVictoryMe(value)
+    +defeatMe() any
+    +setDefeatMe(value)
+    +onBattleStart()
+    +onBattleWin()
+    +onBattleEscape()
+    +onBeforeSave()
+    +onAfterLoad()
+    +playtime() number
+    +playtimeText() string
+    +saveBgm()
+    +replayBgm()
+    +saveWalkingBgm()
+    +replayWalkingBgm()
+    +saveWalkingBgm2()
+    +mainFontFace() string
+    +numberFontFace() string
+    +mainFontSize() number
+    +windowPadding() number
+    +windowOpacity() number
+  }
+  note for Game_System "The game object class for the system data."

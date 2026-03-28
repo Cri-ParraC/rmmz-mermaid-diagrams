@@ -1,0 +1,27 @@
+classDiagram
+  class Scene_Skill {
+    -_skillTypeWindow: Window_SkillType
+    -_statusWindow: Window_SkillStatus
+    -_itemWindow: Window_SkillList
+
+    +initialize()
+    +create()
+    +start()
+    +createSkillTypeWindow()
+    +skillTypeWindowRect() Rectangle
+    +createStatusWindow()
+    +statusWindowRect() Rectangle
+    +createItemWindow()
+    +itemWindowRect() Rectangle
+    +needsPageButtons() boolean
+    +arePageButtonsEnabled() boolean
+    +refreshActor()
+    +user() Game_Actor
+    +commandSkill()
+    +onItemOk()
+    +onItemCancel()
+    +playSeForItem()
+    +useItem()
+    +onActorChange()
+  }
+  note for Scene_Skill "The scene class of the skill screen."

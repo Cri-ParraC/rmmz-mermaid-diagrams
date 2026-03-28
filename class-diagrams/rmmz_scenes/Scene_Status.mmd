@@ -1,0 +1,27 @@
+classDiagram
+  class Scene_Status {
+    -_profileWindow: Window_Help
+    -_statusWindow: Window_Status
+    -_statusParamsWindow: Window_StatusParams
+    -_statusEquipWindow: Window_StatusEquip
+
+    +initialize()
+    +create()
+    +helpAreaHeight() number
+    +createProfileWindow()
+    +profileWindowRect() Rectangle
+    +createStatusWindow()
+    +statusWindowRect() Rectangle
+    +createStatusParamsWindow()
+    +statusParamsWindowRect() Rectangle
+    +createStatusEquipWindow()
+    +statusEquipWindowRect() Rectangle
+    +statusParamsWidth() number
+    +statusParamsHeight() number
+    +profileHeight() number
+    +start()
+    +needsPageButtons() boolean
+    +refreshActor()
+    +onActorChange()
+  }
+  note for Scene_Status "The scene class of the status screen."

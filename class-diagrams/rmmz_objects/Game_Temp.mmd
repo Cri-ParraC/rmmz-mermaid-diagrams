@@ -1,0 +1,45 @@
+classDiagram
+  class Game_Temp {
+    -_isPlaytest: boolean
+    -_destinationX: number | null
+    -_destinationY: number | null
+    -_touchTarget: any
+    -_touchState: string
+    -_needsBattleRefresh: boolean
+    -_commonEventQueue: number[]
+    -_animationQueue: any[]
+    -_balloonQueue: any[]
+    -_lastActionData: number[]
+
+    +initialize()
+    +isPlaytest() boolean
+    +setDestination(x, y)
+    +clearDestination()
+    +isDestinationValid() boolean
+    +destinationX() number | null
+    +destinationY() number | null
+    +setTouchState(target, state)
+    +clearTouchState()
+    +touchTarget() any
+    +touchState() string
+    +requestBattleRefresh()
+    +clearBattleRefreshRequest()
+    +isBattleRefreshRequested() boolean
+    +reserveCommonEvent(commonEventId)
+    +retrieveCommonEvent() any
+    +clearCommonEventReservation()
+    +isCommonEventReserved() boolean
+    +requestAnimation(targets, animationId, mirror)
+    +retrieveAnimation() any
+    +requestBalloon(target, balloonId)
+    +retrieveBalloon() any
+    +lastActionData(type) number
+    +setLastActionData(type, value)
+    +setLastUsedSkillId(skillID)
+    +setLastUsedItemId(itemID)
+    +setLastSubjectActorId(actorID)
+    +setLastSubjectEnemyIndex(enemyIndex)
+    +setLastTargetActorId(actorID)
+    +setLastTargetEnemyIndex(enemyIndex)
+  }
+  note for Game_Temp "The game object class for temporary data that is not included in save data."

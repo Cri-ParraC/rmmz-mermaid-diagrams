@@ -1,0 +1,40 @@
+classDiagram
+  class ImageManager {
+    +standardIconWidth: number
+    +standardIconHeight: number
+    +standardFaceWidth: number
+    +standardFaceHeight: number
+    -_cache: object
+    -_system: object
+    -_emptyBitmap: Bitmap
+    +iconWidth: number
+    +iconHeight: number
+    +faceWidth: number
+    +faceHeight: number
+
+    +getIconSize() number
+    +getFaceSize() number
+    +loadAnimation(filename)
+    +loadBattleback1(filename)
+    +loadBattleback2(filename)
+    +loadEnemy(filename)
+    +loadCharacter(filename)
+    +loadFace(filename)
+    +loadParallax(filename)
+    +loadPicture(filename)
+    +loadSvActor(filename)
+    +loadSvEnemy(filename)
+    +loadSystem(filename)
+    +loadTileset(filename)
+    +loadTitle1(filename)
+    +loadTitle2(filename)
+    +loadBitmap(folder, filename)
+    +loadBitmapFromUrl(url)
+    +clear()
+    +isReady() boolean
+    +throwLoadError(bitmap)
+    +isObjectCharacter(filename) boolean
+    +isBigCharacter(filename) boolean
+    +isZeroParallax(filename) boolean
+  }
+  note for ImageManager "The static class that loads images, creates bitmap objects and retains them."

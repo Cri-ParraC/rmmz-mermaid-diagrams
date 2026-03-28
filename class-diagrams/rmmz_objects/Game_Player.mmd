@@ -1,0 +1,89 @@
+classDiagram
+  class Game_Player {
+    -_vehicleType: string
+    -_vehicleGettingOn: boolean
+    -_vehicleGettingOff: boolean
+    -_dashing: boolean
+    -_needsMapReload: boolean
+    -_transferring: boolean
+    -_newMapId: number
+    -_newX: number
+    -_newY: number
+    -_newDirection: number
+    -_fadeType: number
+    -_followers: Game_Followers
+    -_encounterCount: number
+
+    +initialize()
+    +initMembers()
+    +clearTransferInfo()
+    +followers() Game_Followers
+    +refresh()
+    +isStopping() boolean
+    +reserveTransfer(mapId, x, y, d, fadeType)
+    +setupForNewGame()
+    +requestMapReload()
+    +isTransferring() boolean
+    +newMapId() number
+    +fadeType() number
+    +performTransfer()
+    +isMapPassable(x, y, d) boolean
+    +vehicle() any
+    +isInBoat() boolean
+    +isInShip() boolean
+    +isInAirship() boolean
+    +isInVehicle() boolean
+    +isNormal() boolean
+    +isDashing() boolean
+    +isDebugThrough() boolean
+    +isCollided(x, y) boolean
+    +centerX() number
+    +centerY() number
+    +center(x, y)
+    +locate(x, y)
+    +increaseSteps()
+    +makeEncounterCount()
+    +makeEncounterTroopId() number
+    +meetsEncounterConditions(encounter) boolean
+    +executeEncounter() boolean
+    +startMapEvent(x, y, triggers, normal)
+    +moveByInput()
+    +canMove() boolean
+    +getInputDirection() number
+    +executeMove(direction)
+    +update(sceneActive)
+    +updateDashing()
+    +isDashButtonPressed() boolean
+    +updateScroll(lastScrolledX, lastScrolledY)
+    +updateVehicle()
+    +updateVehicleGetOn()
+    +updateVehicleGetOff()
+    +updateNonmoving(wasMoving, sceneActive)
+    +triggerAction() boolean
+    +triggerButtonAction() boolean
+    +triggerTouchAction() boolean
+    +triggerTouchActionD1(x1, y1) boolean
+    +triggerTouchActionD2(x2, y2) boolean
+    +triggerTouchActionD3(x2, y2) boolean
+    +updateEncounterCount()
+    +canEncounter() boolean
+    +encounterProgressValue() number
+    +checkEventTriggerHere(triggers)
+    +checkEventTriggerThere(triggers)
+    +checkEventTriggerTouch(x, y)
+    +canStartLocalEvents() boolean
+    +getOnOffVehicle() boolean
+    +getOnVehicle() boolean
+    +getOffVehicle() boolean
+    +forceMoveForward()
+    +isOnDamageFloor() boolean
+    +moveStraight(d)
+    +moveDiagonally(horz, vert)
+    +jump(xPlus, yPlus)
+    +showFollowers()
+    +hideFollowers()
+    +gatherFollowers()
+    +areFollowersGathering() boolean
+    +areFollowersGathered() boolean
+  }
+  note for Game_Player "The game object class for the player. It contains event starting determinants and map scrolling functions."

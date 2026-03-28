@@ -1,0 +1,23 @@
+classDiagram
+  class Window_MenuStatus {
+    -_formationMode
+    -_pendingIndex
+
+    +initialize(rect)
+    +maxItems()
+    +numVisibleRows()
+    +itemHeight()
+    +actor(index)
+    +drawItem(index)
+    +drawPendingItemBackground(index)
+    +drawItemImage(index)
+    +drawItemStatus(index)
+    +processOk()
+    +isCurrentItemEnabled()
+    +selectLast()
+    +formationMode()
+    +setFormationMode(formationMode)
+    +pendingIndex()
+    +setPendingIndex(index)
+  }
+  note for Window_MenuStatus "The window for displaying party member status on the menu screen."

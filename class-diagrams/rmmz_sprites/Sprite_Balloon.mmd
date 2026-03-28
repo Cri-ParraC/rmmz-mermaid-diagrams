@@ -1,0 +1,19 @@
+classDiagram
+  class Sprite_Balloon {
+    -_target: Sprite | null
+    -_balloonId: number
+    -_duration: number
+
+    +initialize()
+    +initMembers()
+    +loadBitmap()
+    +setup(targetSprite, balloonId)
+    +update()
+    +updatePosition()
+    +updateFrame()
+    +speed() number
+    +waitTime() number
+    +frameIndex() number
+    +isPlaying() boolean
+  }
+  note for Sprite_Balloon "The sprite for displaying a balloon icon."

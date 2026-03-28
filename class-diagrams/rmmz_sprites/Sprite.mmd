@@ -1,0 +1,42 @@
+classDiagram
+  class Sprite {
+    +_emptyBaseTexture: any | null
+    +_counter: number
+
+    +spriteId: number
+    -_bitmap: Bitmap | null
+    -_frame: Rectangle
+    -_hue: number
+    -_blendColor: number[]
+    -_colorTone: number[]
+    -_colorFilter: ColorFilter | null
+    -_blendMode: number
+    -_hidden: boolean
+    -_refreshFrame: boolean
+
+    +bitmap: Bitmap
+    +width: number
+    +height: number
+    +opacity: number
+    +blendMode: number
+
+    +initialize(bitmap)
+    +destroy()
+    +update()
+    +hide()
+    +show()
+    +updateVisibility()
+    +move(x, y)
+    +setFrame(x, y, width, height)
+    +setHue(hue)
+    +getBlendColor() array
+    +setBlendColor(color)
+    +getColorTone() array
+    +setColorTone(tone)
+    +_onBitmapChange()
+    +_onBitmapLoad(bitmapLoaded)
+    +_refresh()
+    +_createColorFilter()
+    +_updateColorFilter()
+  }
+  note for Sprite "The basic object that is rendered to the game screen."

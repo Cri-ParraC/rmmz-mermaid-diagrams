@@ -1,0 +1,43 @@
+classDiagram
+  class Sprite_Animation {
+    -_targets: any[]
+    -_animation: any
+    -_mirror: boolean
+    -_delay: number
+    -_previous: any
+    -_effect: any
+    -_handle: any
+    -_playing: boolean
+    -_started: boolean
+    -_frameIndex: number
+    -_maxTimingFrames: number
+    -_flashColor: any[]
+    -_flashDuration: number
+    -_viewportSize: number
+
+    +initialize()
+    +initMembers()
+    +destroy(options)
+    +setup(targets, animation, mirror, delay, previous)
+    +update()
+    +canStart() boolean
+    +shouldWaitForPrevious() boolean
+    +updateEffectGeometry()
+    +updateMain()
+    +processSoundTimings()
+    +processFlashTimings()
+    +checkEnd()
+    +updateFlash()
+    +isPlaying() boolean
+    +setRotation(x, y, z)
+    +_render(renderer)
+    +setProjectionMatrix(renderer)
+    +setCameraMatrix(renderer)
+    +setViewport(renderer)
+    +targetPosition(renderer) Point
+    +targetSpritePosition(sprite) Point
+    +resetViewport(renderer)
+    +onBeforeRender(renderer)
+    +onAfterRender(renderer)
+  }
+  note for Sprite_Animation "The sprite for displaying an animation."
