@@ -1,0 +1,135 @@
+sequenceDiagram
+    title RPG Maker MZ — Skill screen (Scene_Skill → Window_SkillList → use a skill in the menu)
+
+    actor User as Player
+    participant SceneManager
+    participant SceneSkill as Scene_Skill (Scene_ItemBase)
+    participant TypeWindow as Window_SkillType
+    participant StatusWindow as Window_SkillStatus
+    participant SkillWindow as Window_SkillList
+    participant ActorWindow as Window_MenuActor
+    participant MenuActor as actor() (Game_Actor)
+    participant GameParty as $gameParty
+
+    Note over SceneSkill: pushed by Scene_Menu.onPersonalOk() for "skill"<br/>Window_MenuStatus.processOk() also calls $gameParty.setMenuActor(actor)<br/>(see scene-menu.mmd)
+    SceneManager->>SceneSkill: create()
+    activate SceneSkill
+    SceneSkill->>GameParty: menuActor()
+    Note right of SceneSkill: Scene_MenuBase.create() → updateActor()<br/>_actor = $gameParty.menuActor()<br/>needsPageButtons() = true → pageup / pagedown buttons
+    SceneSkill->>SceneSkill: createHelpWindow()
+    SceneSkill->>TypeWindow: <<create>> new Window_SkillType(rect)
+    SceneSkill->>TypeWindow: setHandler("skill", commandSkill), ("cancel", popScene)
+    SceneSkill->>TypeWindow: setHandler("pagedown", nextActor), ("pageup", previousActor)
+    SceneSkill->>StatusWindow: <<create>> new Window_SkillStatus(rect)
+    SceneSkill->>SkillWindow: <<create>> new Window_SkillList(rect)
+    SceneSkill->>SkillWindow: setHandler("ok", onItemOk), ("cancel", onItemCancel)
+    SceneSkill->>TypeWindow: setSkillWindow(_itemWindow)
+    SceneSkill->>ActorWindow: createActorWindow()
+    Note right of ActorWindow: Scene_ItemBase: new Window_MenuActor(rect), hidden<br/>setHandler("ok", onActorOk), ("cancel", onActorCancel)
+    deactivate SceneSkill
+
+    SceneManager->>SceneSkill: start()
+    activate SceneSkill
+    SceneSkill->>SceneSkill: refreshActor()
+    SceneSkill->>TypeWindow: setActor(actor)
+    activate TypeWindow
+    TypeWindow->>MenuActor: skillTypes()
+    Note right of TypeWindow: makeCommandList(): one "skill" command per stypeId<br/>name = $dataSystem.skillTypes[stypeId], ext = stypeId
+    TypeWindow->>MenuActor: lastMenuSkill()
+    Note right of TypeWindow: selectLast(): selectExt(skill.stypeId) or forceSelect(0)
+    deactivate TypeWindow
+    SceneSkill->>StatusWindow: setActor(actor)
+    SceneSkill->>SkillWindow: setActor(actor)
+    deactivate SceneSkill
+
+    loop every frame — Window_SkillType.update()
+        TypeWindow->>SkillWindow: setStypeId(currentExt())
+        opt stypeId changed
+            SkillWindow->>SkillWindow: refresh() → makeItemList()
+            activate SkillWindow
+            SkillWindow->>MenuActor: skills()
+            Note right of SkillWindow: _data = actor.skills().filter(includes)<br/>includes(item) = item.stypeId === _stypeId
+            loop drawItem(index) for each skill
+                SkillWindow->>SkillWindow: isEnabled(skill)
+                SkillWindow->>MenuActor: canUse(skill)
+                Note right of MenuActor: Game_BattlerBase.canUse → meetsSkillConditions():<br/>canMove() and occasion 0 or 2 (menu),<br/>isSkillWtypeOk, canPaySkillCost (_mp / _tp),<br/>not sealed skill / skill type
+                Note right of SkillWindow: disabled skills drawn translucent<br/>drawSkillCost(): TP cost or MP cost
+            end
+            deactivate SkillWindow
+        end
+    end
+
+    opt pageup / pagedown in the type window (or page buttons)
+        User->>TypeWindow: Q / W
+        TypeWindow->>SceneSkill: callHandler("pagedown") → nextActor()
+        activate SceneSkill
+        SceneSkill->>GameParty: makeMenuActorNext()
+        SceneSkill->>SceneSkill: updateActor()
+        SceneSkill->>SceneSkill: onActorChange()
+        Note right of SceneSkill: SoundManager.playCursor(), refreshActor(),<br/>_itemWindow.deselect(), _skillTypeWindow.activate()<br/>(details in scene-status-and-name.mmd)
+        deactivate SceneSkill
+    end
+
+    User->>TypeWindow: OK on a skill type
+    TypeWindow->>SceneSkill: commandSkill()
+    SceneSkill->>SkillWindow: activate()
+    SceneSkill->>SkillWindow: selectLast()
+    SkillWindow->>MenuActor: lastSkill() → lastMenuSkill()
+    Note right of SkillWindow: forceSelect(index of that skill or 0)
+
+    alt Cancel in the skill list
+        User->>SkillWindow: Cancel
+        SkillWindow->>SceneSkill: onItemCancel()
+        SceneSkill->>SkillWindow: deselect()
+        SceneSkill->>TypeWindow: activate()
+    else OK on a skill
+        User->>SkillWindow: OK
+        SkillWindow->>SkillWindow: processOk() → isCurrentItemEnabled()
+        Note right of SkillWindow: isEnabled(item) → actor.canUse(item)<br/>disabled → playBuzzerSound() and stop
+        SkillWindow->>SceneSkill: callOkHandler() → onItemOk()
+        activate SceneSkill
+        SceneSkill->>MenuActor: setLastMenuSkill(item())
+        SceneSkill->>SceneSkill: determineItem()
+        Note right of SceneSkill: Scene_ItemBase.determineItem() with user() = actor()<br/>for friends → showActorWindow() + selectForItem(item)<br/>(user scope skill: setCursorFixed(true), forceSelect(actor.index()))<br/>otherwise → useItem() and activateItemWindow()<br/>shared flow detailed in scene-item-use.mmd
+        deactivate SceneSkill
+    end
+
+    User->>ActorWindow: OK on a target actor
+    ActorWindow->>SceneSkill: onActorOk()
+    activate SceneSkill
+    SceneSkill->>SceneSkill: canUse()
+    Note right of SceneSkill: user().canUse(item) && isItemEffectsValid()<br/>(Game_Action.testApply on itemTargetActors())
+    alt cannot use
+        SceneSkill->>SceneSkill: SoundManager.playBuzzer()
+    else can use
+        SceneSkill->>SceneSkill: useItem()
+        activate SceneSkill
+        Note right of SceneSkill: Scene_Skill.useItem() calls Scene_ItemBase.useItem()
+        SceneSkill->>SceneSkill: playSeForItem() → SoundManager.playUseSkill()
+        SceneSkill->>MenuActor: useItem(item)
+        activate MenuActor
+        Note right of MenuActor: Game_Battler.useItem(): DataManager.isSkill(item)
+        MenuActor->>MenuActor: paySkillCost(skill)
+        Note right of MenuActor: _mp -= skillMpCost(skill)<br/>_tp -= skillTpCost(skill)
+        deactivate MenuActor
+        SceneSkill->>SceneSkill: applyItem(), checkCommonEvent(), checkGameover()
+        Note right of SceneSkill: Game_Action.apply(target) per target and repeat,<br/>applyGlobal() may reserve a common event<br/>→ SceneManager.goto(Scene_Map)<br/>(see scene-item-use.mmd)
+        SceneSkill->>ActorWindow: refresh()
+        SceneSkill->>StatusWindow: refresh()
+        Note right of StatusWindow: shows the reduced MP / TP
+        SceneSkill->>SkillWindow: refresh()
+        Note right of SkillWindow: enabled state recomputed with canUse()
+        deactivate SceneSkill
+    end
+    deactivate SceneSkill
+
+    opt Cancel in the actor window
+        User->>ActorWindow: Cancel
+        ActorWindow->>SceneSkill: onActorCancel()
+        SceneSkill->>SceneSkill: hideActorWindow(), activateItemWindow()
+    end
+
+    User->>TypeWindow: Cancel
+    TypeWindow->>SceneSkill: popScene()
+    SceneSkill->>SceneManager: pop()
+    Note right of SceneManager: back to Scene_Menu
