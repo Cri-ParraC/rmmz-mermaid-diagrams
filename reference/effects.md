@@ -79,7 +79,7 @@ Then `executeDamage(target, value)`:
 - MP types (2, 4, 6) → `executeMpDamage()`: unless MP recover, caps `value` at `target.mp`; `makeSuccess()` only if
   `value !== 0`; `target.gainMp(-value)`; `gainDrainedMp(value)`.
 
-`evaluate()` / `evaluateWithTarget()` (auto battle and confused AI) call the same `makeDamageValue(target, false)`.
+`evaluate()` / `evaluateWithTarget()` (auto battle, from `Game_Actor.makeAutoBattleActions()`) call the same `makeDamageValue(target, false)`.
 
 ## Effect codes
 

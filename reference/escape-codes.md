@@ -77,7 +77,7 @@ These work only in the Show Text window. Other codes fall through to `Window_Bas
 - **Show fast.** `updateShowFast()` sets `_showFast` when `isTriggered()` is true; the rest of the page is then drawn
   in one frame, but it still stops at any wait (`isWaiting()`), so `\.`, `\|` and `\!` are **not** skipped by pressing OK.
 - **Skipping waits.** `Window_Message.cancelWait()` sets `_waitCount` to 0 only if `$gameSystem.isMessageSkipEnabled()`
-  (`$dataSystem.optMessageSkip`). It is called from `Scene_Map.updateMainMultiply()` while `isFastForward()` (long
+  (`$dataSystem.optMessageSkip`). It is called through `Scene_Message.cancelMessageWait()` from `Scene_Map.updateMainMultiply()` while `isFastForward()` (long
   press of OK or touch during an event).
 - **Page end.** After every new line, `processNewLine()` calls `startPause()` when the next line no longer fits
   (`needsNewPage()`). The control character `\f` (added by `Game_Message.newPage()`, used by
