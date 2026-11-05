@@ -1,0 +1,118 @@
+sequenceDiagram
+    title RPG Maker MZ — Game Over and Return to Title
+
+    actor User as Player
+    participant Caller as Scene_Map / Scene_ItemBase
+    participant Interpreter as Game_Interpreter
+    participant BattleManager
+    participant SceneMenu as Scene_Menu
+    participant SceneGameEnd as Scene_GameEnd
+    participant SceneManager
+    participant SceneGameover as Scene_Gameover
+    participant AudioManager
+    participant SceneTitle as Scene_Title
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over User,SceneTitle: Ways to reach Scene_Gameover
+    alt party wiped out outside battle
+        Caller->>Caller: checkGameover()
+        Note right of Caller: Scene_Map.updateScene() every frame,<br/>Scene_ItemBase.useItem() after an item or skill
+        opt $gameParty.isAllDead()
+            Caller->>SceneManager: goto(Scene_Gameover)
+        end
+    else Game Over command (command353)
+        Interpreter->>SceneManager: goto(Scene_Gameover)
+        Note right of Interpreter: works on the map and in battle
+    else defeat in battle
+        BattleManager->>BattleManager: updateBattleEnd()
+        Note right of BattleManager: !_escaped && $gameParty.isAllDead()<br/>and !_canLose (see battle-turn.mmd)
+        BattleManager->>SceneManager: goto(Scene_Gameover)
+    end
+    Note right of SceneManager: see scenemanager-scene-change.mmd<br/>the old scene stop() checks needsSlowFadeOut()<br/>(next scene is Scene_Title or Scene_Gameover)<br/>→ startFadeOut(slowFadeSpeed())
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over User,SceneTitle: Scene_Gameover lifecycle
+    SceneManager->>SceneGameover: create()
+    activate SceneGameover
+    SceneGameover->>SceneGameover: playGameoverMusic()
+    SceneGameover->>AudioManager: stopBgm(), stopBgs()
+    SceneGameover->>AudioManager: playMe($dataSystem.gameoverMe)
+    SceneGameover->>SceneGameover: createBackground()
+    Note right of SceneGameover: _backSprite.bitmap = ImageManager.loadSystem("GameOver")
+    deactivate SceneGameover
+
+    SceneManager->>SceneGameover: start()
+    activate SceneGameover
+    SceneGameover->>SceneGameover: adjustBackground()
+    Note right of SceneGameover: scaleSprite(), centerSprite()
+    SceneGameover->>SceneGameover: startFadeIn(slowFadeSpeed(), false)
+    deactivate SceneGameover
+
+    loop every frame
+        SceneManager->>SceneGameover: update()
+        activate SceneGameover
+        opt isActive() && !isBusy() && isTriggered()
+            User->>SceneGameover: OK key or touch
+            Note right of SceneGameover: Input.isTriggered("ok") || TouchInput.isTriggered()
+            SceneGameover->>SceneGameover: gotoTitle()
+            SceneGameover->>SceneManager: goto(Scene_Title)
+        end
+        SceneGameover->>SceneGameover: Scene_Base.prototype.update()
+        deactivate SceneGameover
+    end
+
+    SceneManager->>SceneGameover: stop()
+    activate SceneGameover
+    SceneGameover->>SceneGameover: fadeOutAll()
+    Note right of SceneGameover: fades screen, BGM, BGS and ME
+    deactivate SceneGameover
+    SceneManager->>SceneGameover: terminate()
+    activate SceneGameover
+    SceneGameover->>AudioManager: stopAll()
+    deactivate SceneGameover
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over User,SceneTitle: Return to Title from an event or the menu
+    alt Return to Title Screen (command354)
+        Interpreter->>SceneManager: goto(Scene_Title)
+    else menu → Game End
+        User->>SceneMenu: chooses "Game End"
+        SceneMenu->>SceneMenu: commandGameEnd()
+        SceneMenu->>SceneManager: push(Scene_GameEnd)
+        SceneManager->>SceneGameEnd: create()
+        activate SceneGameEnd
+        SceneGameEnd->>SceneGameEnd: createCommandWindow()
+        Note right of SceneGameEnd: Window_GameEnd with handlers<br/>"toTitle" → commandToTitle(), "cancel" → popScene()<br/>background is the map snapshot at opacity 128
+        deactivate SceneGameEnd
+        alt User chooses "To Title"
+            User->>SceneGameEnd: To Title
+            SceneGameEnd->>SceneGameEnd: commandToTitle()
+            activate SceneGameEnd
+            SceneGameEnd->>SceneGameEnd: fadeOutAll()
+            SceneGameEnd->>SceneManager: goto(Scene_Title)
+            SceneGameEnd->>SceneGameEnd: Window_TitleCommand.initCommandPosition()
+            Note right of SceneGameEnd: the title cursor starts on the first command again
+            deactivate SceneGameEnd
+        else User cancels
+            User->>SceneGameEnd: Cancel
+            SceneGameEnd->>SceneManager: pop()
+            Note right of SceneManager: back to Scene_Menu
+        end
+    end
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over User,SceneTitle: Scene_Title takes over
+    SceneManager->>SceneTitle: create()
+    Note right of SceneTitle: createBackground(), createForeground(),<br/>createWindowLayer(), createCommandWindow()
+    SceneManager->>SceneTitle: start()
+    activate SceneTitle
+    SceneTitle->>SceneManager: clearStack()
+    SceneTitle->>SceneTitle: adjustBackground()
+    SceneTitle->>SceneTitle: playTitleMusic()
+    SceneTitle->>SceneTitle: startFadeIn(fadeSpeed(), false)
+    deactivate SceneTitle
+    Note right of SceneTitle: game objects stay in memory until<br/>New Game or Continue replaces them<br/>(see scene-boot-new-game.mmd)
+    end
