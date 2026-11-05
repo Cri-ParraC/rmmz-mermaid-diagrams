@@ -1,0 +1,122 @@
+sequenceDiagram
+    title RPG Maker MZ — Game_Followers — Party followers on the map
+
+    participant Interpreter as Game_Interpreter
+    participant GamePlayer as $gamePlayer
+    participant Followers as Game_Followers
+    participant Follower as Game_Follower
+    participant GameParty as $gameParty
+    participant SpriteChar as Sprite_Character
+
+    Note over GamePlayer,Follower: Creation — Game_Player.initMembers()
+    GamePlayer->>Followers: <<create>> new Game_Followers()
+    activate Followers
+    Note right of Followers: _visible = $dataSystem.optFollowers<br/>_gathering = false
+    Followers->>Followers: setup()
+    loop i = 1 .. $gameParty.maxBattleMembers() - 1
+        Followers->>Follower: <<create>> new Game_Follower(i)
+        Note right of Follower: _memberIndex = i<br/>setTransparent($dataSystem.optTransparent)<br/>setThrough(true) → never blocked
+    end
+    deactivate Followers
+    Note over SpriteChar: Spriteset_Map.createCharacters() makes one Sprite_Character<br/>per follower (reverseData(), so follower 1 draws on top)
+
+    Note over GamePlayer,Follower: Refresh and visibility
+    Note over Interpreter,GamePlayer: $gamePlayer.refresh() is called by performTransfer(),<br/>$gameParty.addActor() / removeActor(), swapOrder(), command216 ...
+    opt command216 (Change Player Followers)
+        Interpreter->>GamePlayer: showFollowers() / hideFollowers()
+        GamePlayer->>Followers: show() / hide()
+        Note right of Followers: _visible = true / false
+        Interpreter->>GamePlayer: refresh()
+    end
+    activate GamePlayer
+    GamePlayer->>GameParty: leader()
+    GamePlayer->>GamePlayer: setImage(actor.characterName(), actor.characterIndex())
+    GamePlayer->>Followers: refresh()
+    activate Followers
+    loop each follower in _data
+        Followers->>Follower: refresh()
+        activate Follower
+        Follower->>Follower: isVisible()
+        Follower->>GameParty: battleMembers()[_memberIndex]
+        Note right of Follower: visible = actor() exists and<br/>$gamePlayer.followers().isVisible()
+        alt visible
+            Follower->>Follower: setImage(actor.characterName(), actor.characterIndex())
+        else
+            Follower->>Follower: setImage("", 0)
+            Note right of SpriteChar: isEmptyCharacter() → sprite hidden
+        end
+        deactivate Follower
+    end
+    deactivate Followers
+    deactivate GamePlayer
+
+    Note over GamePlayer,Follower: Movement chain — the player moves first, followers chase
+    GamePlayer->>GamePlayer: moveStraight(d)
+    activate GamePlayer
+    opt canPass(x, y, d)
+        GamePlayer->>Followers: updateMove()
+        activate Followers
+        loop i = _data.length - 1 down to 0
+            Note right of Followers: precedingCharacter = i > 0 ? _data[i - 1] : $gamePlayer
+            Followers->>Follower: chaseCharacter(precedingCharacter)
+            activate Follower
+            Note right of Follower: sx = deltaXFrom(character.x), sy = deltaYFrom(character.y)
+            alt sx and sy both non-zero
+                Follower->>Follower: moveDiagonally(sx > 0 ? 4 : 6, sy > 0 ? 8 : 2)
+            else sx !== 0
+                Follower->>Follower: moveStraight(sx > 0 ? 4 : 6)
+            else sy !== 0
+                Follower->>Follower: moveStraight(sy > 0 ? 8 : 2)
+            end
+            Follower->>Follower: setMoveSpeed($gamePlayer.realMoveSpeed())
+            deactivate Follower
+        end
+        Note right of Followers: last follower moves first, so each one steps<br/>onto the tile its predecessor is leaving
+        deactivate Followers
+    end
+    GamePlayer->>GamePlayer: Game_Character.moveStraight(d)
+    deactivate GamePlayer
+    Note over GamePlayer,Followers: moveDiagonally() does the same with canPassDiagonally(),<br/>jump() calls _followers.jumpAll(), locate() calls synchronize(x, y, d)
+
+    Note over GamePlayer,Follower: Every frame — end of Game_Player.update()
+    GamePlayer->>Followers: update()
+    activate Followers
+    opt areGathering()
+        opt !areMoving()
+            Followers->>Followers: updateMove()
+            Note right of Followers: one more chase step toward the player
+        end
+        opt areGathered()
+            Note right of Followers: every visibleFollowers() isGathered():<br/>!isMoving() and pos($gamePlayer.x, $gamePlayer.y)
+            Note right of Followers: _gathering = false
+        end
+    end
+    loop each follower in _data
+        Followers->>Follower: update()
+        activate Follower
+        Follower->>Follower: Game_Character.update()
+        Note right of Follower: updateMove() → _realX/_realY slide to _x/_y
+        Follower->>GamePlayer: realMoveSpeed(), opacity(), blendMode(),<br/>hasWalkAnime(), hasStepAnime(), isDirectionFixed(), isTransparent()
+        Follower->>Follower: setMoveSpeed() / setOpacity() / setBlendMode() /<br/>setWalkAnime() / setStepAnime() / setDirectionFix() / setTransparent()
+        deactivate Follower
+    end
+    deactivate Followers
+
+    Note over Interpreter,Follower: Gather Followers — command217
+    Interpreter->>Interpreter: command217()
+    activate Interpreter
+    opt !$gameParty.inBattle()
+        Interpreter->>GamePlayer: gatherFollowers()
+        GamePlayer->>Followers: gather()
+        Note right of Followers: _gathering = true
+        Interpreter->>Interpreter: setWaitMode("gather")
+    end
+    deactivate Interpreter
+    loop until gathered
+        Interpreter->>Interpreter: updateWaitMode()
+        Interpreter->>GamePlayer: areFollowersGathering()
+        GamePlayer->>Followers: areGathering()
+        Followers-->>Interpreter: _gathering
+        Note right of GamePlayer: canMove() is false while areFollowersGathering(),<br/>vehicle get on / off also calls gatherFollowers() (see vehicles.mmd)
+    end
+    Note right of Interpreter: _gathering === false → _waitMode = "", event continues
