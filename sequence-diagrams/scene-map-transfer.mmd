@@ -1,0 +1,109 @@
+sequenceDiagram
+    title RPG Maker MZ — Transfer Player (command201 → new Scene_Map)
+
+    participant Interpreter as Game_Interpreter
+    participant GamePlayer as $gamePlayer
+    participant OldMap as Scene_Map (old)
+    participant SceneManager
+    participant NewMap as Scene_Map (new)
+    participant DataManager
+    participant GameMap as $gameMap
+
+    Interpreter->>Interpreter: command201(params)
+    activate Interpreter
+    Note right of Interpreter: returns false (retry next frame) while<br/>$gameParty.inBattle() or $gameMessage.isBusy()
+    Note right of Interpreter: mapId, x, y direct or from $gameVariables
+    Interpreter->>GamePlayer: reserveTransfer(mapId, x, y, d, fadeType)
+    Note right of GamePlayer: _transferring = true<br/>_newMapId, _newX, _newY, _newDirection, _fadeType
+    Interpreter->>Interpreter: setWaitMode("transfer")
+    deactivate Interpreter
+
+    Note over OldMap: same frame, after updateMain()
+    OldMap->>OldMap: updateScene()
+    activate OldMap
+    OldMap->>OldMap: updateTransferPlayer()
+    activate OldMap
+    OldMap->>GamePlayer: isTransferring()
+    GamePlayer-->>OldMap: true
+    OldMap->>SceneManager: goto(Scene_Map)
+    deactivate OldMap
+    deactivate OldMap
+
+    activate SceneManager
+    SceneManager->>NewMap: <<create>> new Scene_Map()
+    SceneManager->>OldMap: stop()
+    deactivate SceneManager
+    activate OldMap
+    OldMap->>GamePlayer: straighten()
+    Note right of OldMap: _mapNameWindow.close()
+    OldMap->>SceneManager: isNextScene(Scene_Map)
+    SceneManager-->>OldMap: true
+    OldMap->>OldMap: fadeOutForTransfer()
+    Note right of OldMap: fadeType 0 = black, 1 = white, 2 = none<br/>startFadeOut(fadeSpeed(), white)
+    deactivate OldMap
+
+    loop until !OldMap.isBusy() — SceneManager.changeScene()
+        Note over OldMap: isFading() keeps the old map on screen
+    end
+
+    SceneManager->>OldMap: terminate()
+    Note right of OldMap: SceneManager.snapForBackground()
+    SceneManager->>NewMap: create()
+    activate NewMap
+    NewMap->>GamePlayer: isTransferring()
+    GamePlayer-->>NewMap: true
+    Note right of NewMap: _transfer = true
+    NewMap->>DataManager: loadMapData($gamePlayer.newMapId())
+    Note right of DataManager: loadDataFile("$dataMap", "MapXXX.json")
+    NewMap->>NewMap: onTransfer()
+    Note right of NewMap: ImageManager.clear(), EffectManager.clear()
+    deactivate NewMap
+
+    loop every frame until ready — SceneManager.updateScene()
+        SceneManager->>NewMap: isReady()
+        activate NewMap
+        opt !_mapLoaded && DataManager.isMapLoaded()
+            NewMap->>NewMap: onMapLoaded()
+            activate NewMap
+            NewMap->>GamePlayer: performTransfer()
+            activate GamePlayer
+            GamePlayer->>GamePlayer: setDirection(_newDirection)
+            opt _newMapId !== $gameMap.mapId() || _needsMapReload
+                GamePlayer->>GameMap: setup(_newMapId)
+                activate GameMap
+                GameMap->>GameMap: setupEvents()
+                Note right of GameMap: new Game_Event(mapId, id) per $dataMap.events<br/>+ parallel Game_CommonEvents
+                GameMap->>GameMap: setupScroll()
+                GameMap->>GameMap: setupParallax()
+                GameMap->>GameMap: setupBattleback()
+                deactivate GameMap
+            end
+            GamePlayer->>GamePlayer: locate(_newX, _newY)
+            GamePlayer->>GamePlayer: refresh()
+            GamePlayer->>GamePlayer: clearTransferInfo()
+            Note right of GamePlayer: _transferring = false
+            deactivate GamePlayer
+            NewMap->>NewMap: createDisplayObjects()
+            Note right of NewMap: createSpriteset() → Spriteset_Map loads<br/>tileset / character bitmaps, then windows and buttons
+            deactivate NewMap
+        end
+        Note right of NewMap: _mapLoaded && Scene_Message.isReady()<br/>(waits for ImageManager bitmaps)
+        deactivate NewMap
+    end
+
+    SceneManager->>NewMap: start()
+    activate NewMap
+    NewMap->>SceneManager: clearStack()
+    NewMap->>NewMap: fadeInForTransfer()
+    NewMap->>NewMap: onTransferEnd()
+    activate NewMap
+    Note right of NewMap: _mapNameWindow.open()
+    NewMap->>GameMap: autoplay()
+    Note right of GameMap: map BGM / BGS
+    opt shouldAutosave()
+        NewMap->>NewMap: requestAutosave()
+    end
+    deactivate NewMap
+    deactivate NewMap
+
+    Note over Interpreter: updateWaitMode() "transfer":<br/>$gamePlayer.isTransferring() is now false → next command runs
