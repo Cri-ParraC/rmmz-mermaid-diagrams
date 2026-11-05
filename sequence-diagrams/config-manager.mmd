@@ -1,0 +1,129 @@
+sequenceDiagram
+    title RPG Maker MZ — ConfigManager (load at boot, edit in Options, save)
+
+    actor User as Player
+    participant SceneBoot as Scene_Boot
+    participant SceneOptions as Scene_Options
+    participant WinOptions as Window_Options
+    participant ConfigManager
+    participant AudioManager
+    participant StorageManager
+    participant SceneManager
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over User,SceneManager: 1. Load at boot
+    SceneManager->>SceneBoot: isReady() (polled every frame)
+    activate SceneBoot
+    opt DataManager.isDatabaseLoaded() && StorageManager.forageKeysUpdated()
+        SceneBoot->>SceneBoot: onDatabaseLoaded()
+        activate SceneBoot
+        SceneBoot->>SceneBoot: loadPlayerData()
+        activate SceneBoot
+        Note right of SceneBoot: also DataManager.loadGlobalInfo()
+        SceneBoot->>ConfigManager: load()
+        activate ConfigManager
+        ConfigManager->>StorageManager: loadObject("config")
+        activate StorageManager
+        Note right of StorageManager: loadZip → zipToJson → jsonToObject<br/>config.rmmzsave or localforage key<br/>(see datamanager-save-load.mmd)
+        StorageManager--)ConfigManager: Promise resolved (config or null)
+        deactivate StorageManager
+        alt resolved
+            ConfigManager->>ConfigManager: applyData(config or {})
+            activate ConfigManager
+            ConfigManager->>ConfigManager: readFlag(config, "alwaysDash", false)
+            ConfigManager->>ConfigManager: readFlag(config, "commandRemember", false)
+            ConfigManager->>ConfigManager: readFlag(config, "touchUI", true)
+            ConfigManager->>ConfigManager: readVolume(config, "bgmVolume") ... "seVolume"
+            Note right of ConfigManager: Number(value).clamp(0, 100), default 100
+            ConfigManager->>AudioManager: bgmVolume / bgsVolume / meVolume / seVolume = value
+            Note right of AudioManager: volume setters store _bgmVolume etc.<br/>and update the playing buffer
+            deactivate ConfigManager
+        else rejected (missing or corrupt file)
+            Note right of ConfigManager: .catch(() => 0), defaults are kept
+        end
+        Note right of ConfigManager: _isLoaded = true
+        deactivate ConfigManager
+        deactivate SceneBoot
+        deactivate SceneBoot
+    end
+    SceneBoot->>SceneBoot: isPlayerDataLoaded()
+    Note right of SceneBoot: DataManager.isGlobalInfoLoaded() && ConfigManager.isLoaded()
+    deactivate SceneBoot
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over User,SceneManager: 2. Edit in the Options screen
+    SceneManager->>SceneOptions: create()
+    activate SceneOptions
+    SceneOptions->>SceneOptions: createOptionsWindow()
+    SceneOptions->>WinOptions: <<create>> new Window_Options(rect)
+    activate WinOptions
+    WinOptions->>WinOptions: makeCommandList()
+    Note right of WinOptions: addGeneralOptions(): alwaysDash, commandRemember, touchUI<br/>addVolumeOptions(): bgmVolume, bgsVolume, meVolume, seVolume
+    WinOptions->>ConfigManager: getConfigValue(symbol) → ConfigManager[symbol] (drawItem)
+    deactivate WinOptions
+    SceneOptions->>WinOptions: setHandler("cancel", popScene)
+    deactivate SceneOptions
+
+    alt Player presses Right
+        User->>WinOptions: cursorRight()
+        activate WinOptions
+        alt isVolumeSymbol(symbol) (symbol includes "Volume")
+            WinOptions->>WinOptions: changeVolume(symbol, true, false)
+            Note right of WinOptions: value = last + volumeOffset() (20), clamp(0, 100)
+        else boolean option
+            WinOptions->>WinOptions: changeValue(symbol, true)
+        end
+        deactivate WinOptions
+    else Player presses Left
+        User->>WinOptions: cursorLeft()
+        Note right of WinOptions: changeVolume(symbol, false, false) or changeValue(symbol, false)
+    else Player presses OK
+        User->>WinOptions: processOk()
+        Note right of WinOptions: volume: changeVolume(symbol, true, true), wraps above 100 to 0<br/>flag: changeValue(symbol, !getConfigValue(symbol))
+    end
+
+    WinOptions->>WinOptions: changeValue(symbol, value)
+    activate WinOptions
+    WinOptions->>ConfigManager: getConfigValue(symbol)
+    ConfigManager-->>WinOptions: lastValue
+    opt lastValue !== value
+        WinOptions->>WinOptions: setConfigValue(symbol, value)
+        WinOptions->>ConfigManager: ConfigManager[symbol] = value
+        activate ConfigManager
+        opt volume symbol
+            ConfigManager->>AudioManager: e.g. bgmVolume = value
+            activate AudioManager
+            AudioManager->>AudioManager: updateBgmParameters(_currentBgm)
+            Note right of AudioManager: new volume is heard immediately<br/>(see audio-playback.mmd)
+            deactivate AudioManager
+        end
+        deactivate ConfigManager
+        WinOptions->>WinOptions: redrawItem(findSymbol(symbol))
+        WinOptions->>WinOptions: playCursorSound()
+    end
+    deactivate WinOptions
+    Note right of ConfigManager: alwaysDash is read by Game_Player,<br/>commandRemember by Window_ActorCommand,<br/>touchUI by Scene_MenuBase / Scene_Battle and input windows
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over User,SceneManager: 3. Save when leaving the Options screen
+    User->>WinOptions: cancel
+    WinOptions->>SceneOptions: popScene()
+    SceneOptions->>SceneManager: pop()
+    Note right of SceneManager: changeScene() later calls terminate()<br/>(see scenemanager-scene-change.mmd)
+    SceneManager->>SceneOptions: terminate()
+    activate SceneOptions
+    SceneOptions->>SceneOptions: Scene_MenuBase.prototype.terminate.call(this) (Scene_Base.terminate)
+    SceneOptions->>ConfigManager: save()
+    activate ConfigManager
+    ConfigManager->>ConfigManager: makeData()
+    Note right of ConfigManager: { alwaysDash, commandRemember, touchUI,<br/>bgmVolume, bgsVolume, meVolume, seVolume }
+    ConfigManager->>StorageManager: saveObject("config", config)
+    activate StorageManager
+    Note right of StorageManager: objectToJson → jsonToZip → saveZip<br/>(see datamanager-save-load.mmd)
+    StorageManager--)ConfigManager: Promise (not awaited)
+    deactivate StorageManager
+    deactivate ConfigManager
+    deactivate SceneOptions
+    end
