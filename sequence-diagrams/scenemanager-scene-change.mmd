@@ -1,0 +1,91 @@
+sequenceDiagram
+    title RPG Maker MZ — Scene change (SceneManager.goto / push / pop)
+
+    participant Caller as Current scene / Game_Interpreter
+    participant SceneManager
+    participant OldScene as Old scene (Scene_Base)
+    participant NewScene as New scene (Scene_Base)
+    participant Graphics
+
+    alt goto(sceneClass)
+        Caller->>SceneManager: goto(sceneClass)
+    else push(sceneClass)
+        Caller->>SceneManager: push(sceneClass)
+        activate SceneManager
+        Note right of SceneManager: _stack.push(_scene.constructor)
+        SceneManager->>SceneManager: goto(sceneClass)
+        deactivate SceneManager
+    else pop()
+        Caller->>SceneManager: pop()
+        activate SceneManager
+        alt _stack.length > 0
+            SceneManager->>SceneManager: goto(_stack.pop())
+        else empty stack
+            SceneManager->>SceneManager: exit()
+            Note right of SceneManager: goto(null), _exiting = true
+        end
+        deactivate SceneManager
+    end
+
+    activate SceneManager
+    Note over SceneManager: inside goto(sceneClass)
+    SceneManager->>NewScene: <<create>> new sceneClass()
+    activate NewScene
+    NewScene->>NewScene: initialize()
+    deactivate NewScene
+    Note right of SceneManager: _nextScene = new scene
+    SceneManager->>OldScene: stop()
+    activate OldScene
+    Note right of OldScene: _active = false<br/>subclasses usually start a fade-out here
+    deactivate OldScene
+    deactivate SceneManager
+
+    loop every frame — SceneManager.updateMain()
+        SceneManager->>SceneManager: changeScene()
+        activate SceneManager
+        SceneManager->>SceneManager: isSceneChanging()
+        SceneManager->>SceneManager: isCurrentSceneBusy()
+        SceneManager->>OldScene: isBusy()
+        Note right of OldScene: isFading() — true while the fade-out runs
+        opt isSceneChanging() && !isCurrentSceneBusy()
+            SceneManager->>OldScene: terminate()
+            SceneManager->>SceneManager: onSceneTerminate()
+            activate SceneManager
+            Note right of SceneManager: _previousScene = _scene<br/>_previousClass = _scene.constructor
+            SceneManager->>Graphics: setStage(null)
+            deactivate SceneManager
+            Note right of SceneManager: _scene = _nextScene<br/>_nextScene = null
+            SceneManager->>NewScene: create()
+            Note right of NewScene: builds windows/sprites,<br/>requests images and data
+            SceneManager->>SceneManager: onSceneCreate()
+            activate SceneManager
+            SceneManager->>Graphics: startLoading()
+            deactivate SceneManager
+            opt _exiting
+                SceneManager->>SceneManager: terminate()
+            end
+        end
+        deactivate SceneManager
+
+        SceneManager->>SceneManager: updateScene()
+        activate SceneManager
+        alt !_scene.isStarted() && _scene.isReady()
+            SceneManager->>NewScene: isReady()
+            Note right of NewScene: ImageManager / EffectManager / FontManager.isReady()
+            SceneManager->>SceneManager: onBeforeSceneStart()
+            activate SceneManager
+            SceneManager->>OldScene: destroy()
+            Note right of SceneManager: _previousScene = null
+            deactivate SceneManager
+            SceneManager->>NewScene: start()
+            Note right of NewScene: _started = true, _active = true<br/>subclasses usually startFadeIn() here
+            SceneManager->>SceneManager: onSceneStart()
+            activate SceneManager
+            SceneManager->>Graphics: endLoading()
+            SceneManager->>Graphics: setStage(_scene)
+            deactivate SceneManager
+        else _scene.isStarted() && isGameActive()
+            SceneManager->>NewScene: update()
+        end
+        deactivate SceneManager
+    end
