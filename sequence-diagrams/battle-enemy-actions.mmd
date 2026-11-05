@@ -1,0 +1,167 @@
+sequenceDiagram
+    title RPG Maker MZ — How enemies (and auto battle / confused actors) choose actions
+
+    participant BattleManager
+    participant GameTroop as $gameTroop
+    participant Enemy as Game_Enemy
+    participant Action as Game_Action
+    participant GameParty as $gameParty
+    participant PartyActor as Game_Actor (auto / confused)
+    participant TargetUnit as Game_Unit (target side)
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over BattleManager,TargetUnit: when actions are made
+    Note over BattleManager,GameTroop: turn-based: startInput() → $gameParty.makeActions() + $gameTroop.makeActions() (see battle-turn.mmd)<br/>TPB: Game_Battler.startTpbTurn() → makeTpbActions() → makeActions() per battler (see battle-tpb.mmd)
+    BattleManager->>GameTroop: makeActions()
+    Note right of GameTroop: Game_Unit.makeActions() → member.makeActions()
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over BattleManager,TargetUnit: Game_Enemy.makeActions()
+    GameTroop->>Enemy: makeActions()
+    activate Enemy
+    Enemy->>Enemy: Game_Battler.makeActions()
+    activate Enemy
+    Enemy->>Enemy: clearActions()
+    opt canMove()
+        Enemy->>Enemy: makeActionTimes()
+        Note right of Enemy: 1 + one extra per "Action Times +" trait<br/>that passes its Math.random() check
+        loop actionTimes
+            Enemy->>Action: new Game_Action(this)
+            Note right of Action: _item empty, _targetIndex = -1
+        end
+    end
+    deactivate Enemy
+
+    opt numActions() > 0
+        Note right of Enemy: enemy().actions = action patterns from the database<br/>{ skillId, conditionType, conditionParam1, conditionParam2, rating }
+        loop each pattern a — filter isActionValid(a)
+            Enemy->>Enemy: isActionValid(a)
+            activate Enemy
+            Enemy->>Enemy: meetsCondition(a)
+            activate Enemy
+            alt conditionType 0 — Always
+                Note right of Enemy: true
+            else 1 — Turn
+                Enemy->>Enemy: meetsTurnCondition(param1, param2)
+                Note right of Enemy: n = turnCount() ($gameTroop.turnCount() + 1,<br/>or _tpbTurnCount in TPB)<br/>param2 0 → n === param1<br/>else n >= param1 and n % param2 === param1 % param2
+            else 2 — HP
+                Enemy->>Enemy: meetsHpCondition(param1, param2)
+                Note right of Enemy: param1 <= hpRate() <= param2
+            else 3 — MP
+                Enemy->>Enemy: meetsMpCondition(param1, param2)
+                Note right of Enemy: param1 <= mpRate() <= param2
+            else 4 — State
+                Enemy->>Enemy: meetsStateCondition(param1)
+                Note right of Enemy: isStateAffected(param1)
+            else 5 — Party Level
+                Enemy->>GameParty: highestLevel()
+                GameParty-->>Enemy: level >= param1
+            else 6 — Switch
+                Note right of Enemy: $gameSwitches.value(param1)
+            end
+            deactivate Enemy
+            Enemy->>Enemy: canUse($dataSkills[a.skillId])
+            Note right of Enemy: MP / TP cost, seals, occasion<br/>(see skill-cost-and-usability.mmd)
+            deactivate Enemy
+        end
+
+        opt actionList.length > 0
+            Enemy->>Enemy: selectAllActions(actionList)
+            activate Enemy
+            Note right of Enemy: ratingMax = highest rating<br/>ratingZero = ratingMax - 3<br/>keep only patterns with rating > ratingZero
+            loop i < numActions()
+                Enemy->>Enemy: selectAction(actionList, ratingZero)
+                Note right of Enemy: weighted random: weight = rating - ratingZero<br/>(best rating weighs 3, ratingMax - 1 weighs 2,<br/>ratingMax - 2 weighs 1, lower never chosen)
+                Enemy->>Action: action(i).setEnemyAction(pattern)
+                activate Action
+                alt pattern chosen
+                    Action->>Action: setSkill(pattern.skillId)
+                else null
+                    Action->>Action: clear()
+                    Note right of Action: no item → isValid() false later,<br/>the enemy does nothing for that slot
+                end
+                deactivate Action
+            end
+            deactivate Enemy
+        end
+    end
+    Note right of Enemy: setActionState("waiting")<br/>no target is chosen here (_targetIndex stays -1)
+    deactivate Enemy
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over BattleManager,TargetUnit: actors that cannot be commanded — Game_Actor.makeActions()
+    GameParty->>PartyActor: makeActions()
+    activate PartyActor
+    PartyActor->>PartyActor: Game_Battler.makeActions()
+    Note right of PartyActor: setActionState("undecided" or "waiting")
+    alt isAutoBattle() (Auto Battle special flag)
+        PartyActor->>PartyActor: makeAutoBattleActions()
+        activate PartyActor
+        loop i < numActions()
+            PartyActor->>PartyActor: makeActionList()
+            Note right of PartyActor: attack + one Game_Action per usableSkills()
+            loop each candidate action
+                PartyActor->>Action: evaluate()
+                activate Action
+                Action->>Action: itemTargetCandidates()
+                loop each candidate target
+                    Action->>Action: evaluateWithTarget(target)
+                    Note right of Action: HP effects only: damage / target.hp,<br/>or recovered HP / mhp for friends<br/>single target → keeps best _targetIndex
+                end
+                Action-->>PartyActor: value * numRepeats() (+ random tie breaker)
+                deactivate Action
+            end
+            Note right of PartyActor: setAction(i, highest value action)
+        end
+        Note right of PartyActor: setActionState("waiting")
+        deactivate PartyActor
+    else isConfused() (restriction 1 to 3)
+        PartyActor->>PartyActor: makeConfusionActions()
+        PartyActor->>Action: action(i).setConfusion()
+        Note right of Action: setAttack() — target picked later in makeTargets()
+    end
+    deactivate PartyActor
+    Note over GameParty,PartyActor: Game_Battler.canInput() is false for both, so no command window opens for them
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over BattleManager,TargetUnit: when the battler acts — processTurn() → startAction() (see battle-turn.mmd)
+    BattleManager->>Action: prepare()
+    Note right of Action: subject confused and not forced → setConfusion()
+    BattleManager->>Action: isValid()
+    Note right of Action: _forcing && item, or subject.canUse(item)<br/>(rechecked: MP may have run out)
+    BattleManager->>Action: makeTargets()
+    activate Action
+    alt !_forcing && subject.isConfused()
+        Action->>Action: confusionTarget()
+        Note right of Action: confusionLevel 1 → random opponent<br/>2 → opponent or friend (50 percent)<br/>3 → random friend
+    else isForEveryone()
+        Action->>TargetUnit: aliveMembers() of both sides
+    else isForOpponent()
+        Action->>Action: targetsForOpponents()
+        alt isForRandom()
+            Action->>TargetUnit: randomTarget() x numTargets()
+        else single target
+            Action->>Action: targetsForAlive(opponentsUnit())
+            alt _targetIndex < 0 (enemies, as no target was set)
+                Action->>TargetUnit: randomTarget()
+                Note right of TargetUnit: weighted by tgr (Target Rate)<br/>over aliveMembers()
+            else _targetIndex set (player input, auto battle, forced)
+                Action->>TargetUnit: smoothTarget(_targetIndex)
+                Note right of TargetUnit: that member, or first alive one if dead
+            end
+        else all
+            Action->>TargetUnit: aliveMembers()
+        end
+    else isForFriend()
+        Action->>Action: targetsForFriends()
+        Note right of Action: user / dead (smoothDeadTarget) / alive / both
+    end
+    Action->>Action: repeatTargets(targets)
+    Note right of Action: each target repeated numRepeats() times
+    Action-->>BattleManager: targets
+    deactivate Action
+    Note over Action,TargetUnit: decideRandomTarget() is only used by Game_Battler.forceAction() with target "Random"<br/>(see battle-forced-action.mmd): randomDeadTarget / randomTarget → _targetIndex
+    end
