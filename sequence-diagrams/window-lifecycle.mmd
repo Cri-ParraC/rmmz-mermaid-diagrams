@@ -1,0 +1,179 @@
+sequenceDiagram
+    title RPG Maker MZ — Window lifecycle (creation, windowskin, open/close, drawing, WindowLayer rendering)
+
+    participant Scene as Scene_Title (Scene_Base)
+    participant Layer as WindowLayer
+    participant WinCmd as Window_TitleCommand / Window_Command
+    participant WinSel as Window_Selectable
+    participant WinBase as Window_Base
+    participant WinCore as Window (rmmz_core)
+    participant ImageManager
+    participant Skin as Bitmap (windowskin)
+    participant Contents as Bitmap (contents / contentsBack)
+    participant Graphics as Graphics / PIXI renderer
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Scene,Graphics: creation — Scene_Title.create() (other scenes do the same in their create())
+    Scene->>Scene: createWindowLayer()
+    activate Scene
+    Scene->>Layer: <<create>> new WindowLayer()
+    Note right of Layer: x = (Graphics.width - boxWidth) / 2<br/>y = (Graphics.height - boxHeight) / 2<br/>added with addChild(_windowLayer)
+    deactivate Scene
+    Scene->>Scene: createCommandWindow()
+    activate Scene
+    Note right of Scene: rect = commandWindowRect() (a Rectangle)
+    Scene->>WinCmd: <<create>> new Window_TitleCommand(rect)
+    activate WinCmd
+    WinCmd->>WinSel: Window_Command.initialize(rect) → Window_Selectable.initialize(rect)
+    activate WinSel
+    WinSel->>WinBase: Window_Scrollable.initialize(rect) → Window_Base.initialize(rect)
+    activate WinBase
+    WinBase->>WinCore: Window.prototype.initialize()
+    activate WinCore
+    Note right of WinCore: PIXI.Container.call(this)<br/>_isWindow = true, _openness = 255<br/>_padding = 12, _margin = 4, _cursorRect = new Rectangle()
+    WinCore->>WinCore: _createAllParts()
+    activate WinCore
+    Note right of WinCore: _createContainer() → _container (PIXI.Container)<br/>_createBackSprite() → Sprite + TilingSprite<br/>_createFrameSprite() → 8 child Sprites<br/>_createClientArea() → Sprite with AlphaFilter<br/>_createContentsBackSprite(), _createCursorSprite() (9 parts)<br/>_createContentsSprite(), _createArrowSprites(), _createPauseSignSprites()
+    deactivate WinCore
+    Note right of WinCore: origin = new Point(), active = true
+    deactivate WinCore
+    WinBase->>WinBase: loadWindowskin()
+    activate WinBase
+    WinBase->>ImageManager: loadSystem("Window")
+    ImageManager-->>WinBase: bitmap (cached, maybe still loading — see imagemanager-load-bitmap.mmd)
+    WinBase->>WinCore: windowskin = bitmap (setter)
+    WinCore->>Skin: addLoadListener(_onWindowskinLoad)
+    Note right of Skin: already loaded → called at once<br/>otherwise when the PNG finishes loading
+    deactivate WinBase
+    WinBase->>WinBase: checkRectObject(rect)
+    Note right of WinBase: throws "Argument must be a Rectangle"<br/>if rect has no x (MV-style plugin call)
+    WinBase->>WinCore: move(rect.x, rect.y, rect.width, rect.height)
+    WinCore->>WinCore: _refreshAllParts() (size changed)
+    WinBase->>WinBase: updatePadding(), updateBackOpacity(), updateTone()
+    Note right of WinBase: $gameSystem.windowPadding() / windowOpacity() / windowTone()<br/>padding setter → _refreshAllParts(), setTone() → _refreshBack()
+    WinBase->>WinBase: createContents()
+    activate WinBase
+    Note right of WinBase: width = contentsWidth() (innerWidth)<br/>height = contentsHeight() (innerHeight)<br/>destroyContents() first
+    WinBase->>Contents: <<create>> new Bitmap(width, height) ×2
+    Note right of Contents: contents → _contentsSprite.bitmap<br/>contentsBack → _contentsBackSprite.bitmap
+    WinBase->>WinBase: resetFontSettings()
+    Note right of WinBase: fontFace / fontSize from $gameSystem<br/>resetTextColor()
+    deactivate WinBase
+    Note right of WinBase: _opening = false, _closing = false, _dimmerSprite = null
+    deactivate WinBase
+    Note right of WinSel: _index = -1, _handlers = {}<br/>Window_Scrollable set _scrollX/_scrollY
+    WinSel->>WinSel: deactivate()
+    deactivate WinSel
+    WinCmd->>WinCmd: refresh() (Window_Command)
+    activate WinCmd
+    WinCmd->>WinCmd: clearCommandList(), makeCommandList()
+    Note right of WinCmd: addCommand() fills _list<br/>(New Game, Continue, Options)
+    WinCmd->>WinSel: Window_Selectable.refresh() → paint()
+    activate WinSel
+    WinSel->>Contents: contents.clear(), contentsBack.clear()
+    WinSel->>WinSel: drawAllItems()
+    activate WinSel
+    loop i in 0 until maxVisibleItems(), index = topIndex() + i below maxItems()
+        WinSel->>WinSel: drawItemBackground(index)
+        Note right of WinSel: itemRect(index) → drawBackgroundRect(rect)<br/>contentsBack.gradientFillRect() + strokeRect()<br/>ColorManager.itemBackColor1/2()
+        WinSel->>WinCmd: drawItem(index)
+        activate WinCmd
+        WinCmd->>WinSel: itemLineRect(index)
+        Note right of WinSel: itemRect(index): col = index % maxCols(), row = index / maxCols()<br/>x = col * itemWidth() + colSpacing() / 2 - scrollBaseX()<br/>y = row * itemHeight() + rowSpacing() / 2 - scrollBaseY()<br/>→ itemRectWithPadding() → itemLineRect()
+        WinSel-->>WinCmd: rect
+        WinCmd->>WinCmd: resetTextColor(), changePaintOpacity(isCommandEnabled(index))
+        WinCmd->>Contents: drawText(commandName(index), rect.x, rect.y, rect.width, align)
+        deactivate WinCmd
+    end
+    deactivate WinSel
+    deactivate WinSel
+    deactivate WinCmd
+    WinCmd->>WinSel: select(0) → refreshCursor() → setCursorRect(itemRect)
+    WinSel->>WinCore: setCursorRect(x, y, width, height)
+    WinCore->>WinCore: _refreshCursor() (if size changed)
+    WinCmd->>WinSel: activate()
+    Note right of WinCmd: Window_TitleCommand: openness = 0 (starts closed)<br/>openness setter: _container.scale.y = openness / 255<br/>_container.y = height / 2 * (1 - openness / 255)
+    WinCmd->>WinCmd: selectLast()
+    deactivate WinCmd
+    Scene->>Scene: addWindow(_commandWindow)
+    Scene->>Layer: addChild(window)
+    deactivate Scene
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Scene,Graphics: windowskin load finishes (asynchronous)
+    Skin-)WinCore: _onWindowskinLoad()
+    activate WinCore
+    WinCore->>WinCore: _refreshAllParts()
+    activate WinCore
+    WinCore->>WinCore: _refreshBack()
+    Note right of WinCore: _backSprite.bitmap = _windowskin, frame (0, 0, 95, 95)<br/>scaled to width/height minus _margin * 2<br/>TilingSprite frame (0, 96, 96, 96) for the pattern<br/>setColorTone(_colorTone)
+    WinCore->>WinCore: _refreshFrame()
+    Note right of WinCore: srect (96, 0, 96, 96), corner size 24<br/>_setRectPartsGeometry(_frameSprite, srect, drect, m)
+    WinCore->>WinCore: _refreshCursor()
+    Note right of WinCore: srect (96, 96, 48, 48), m = 4<br/>9 parts sized to _cursorRect
+    WinCore->>WinCore: _refreshArrows(), _refreshPauseSign()
+    deactivate WinCore
+    deactivate WinCore
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Scene,Graphics: every frame — SceneManager.updateScene() → Scene_Title.update()
+    opt !isBusy() (Scene_Title)
+        Scene->>WinBase: open()
+        Note right of WinBase: if !isOpen() → _opening = true<br/>_closing = false
+    end
+    Scene->>Scene: Scene_Base.update() → updateChildren()
+    Scene->>Layer: update()
+    activate Layer
+    loop each child window
+        Layer->>WinSel: update() (Window_Selectable → Window_Scrollable)
+        activate WinSel
+        Note right of WinSel: processCursorMove / processHandling / processTouch<br/>(see window-selectable-input.mmd)
+        WinSel->>WinBase: Window_Scrollable.update() → Window_Base.update()
+        Note right of WinSel: afterwards Window_Scrollable runs processWheelScroll()<br/>updateSmoothScroll(), updateArrows(), updateOrigin()
+        activate WinBase
+        WinBase->>WinCore: Window.update()
+        Note right of WinCore: if active → _animationCount++<br/>child.update() for each child
+        WinBase->>WinBase: updateTone()
+        WinBase->>WinBase: updateOpen()
+        alt _opening
+            Note right of WinBase: openness += 32 (open in 8 frames)<br/>isOpen() (openness ≥ 255) → _opening = false
+        end
+        WinBase->>WinBase: updateClose()
+        alt _closing
+            Note right of WinBase: openness -= 32<br/>isClosed() (openness ≤ 0) → _closing = false
+        end
+        WinBase->>WinBase: updateBackgroundDimmer()
+        deactivate WinBase
+        deactivate WinSel
+    end
+    deactivate Layer
+    Note over Scene,WinBase: on a command: Scene_Title.commandNewGame() → _commandWindow.close()<br/>close(): if !isClosed() → _closing = true, _opening = false<br/>isBusy() stays true while isClosing()
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Scene,Graphics: rendering — Graphics._onTick() → _app.render() with the scene as stage (see scenemanager-gameloop.mmd)
+    Graphics->>WinCore: updateTransform() (PIXI walks the display tree)
+    activate WinCore
+    Note right of WinCore: _updateClientArea(): move by padding - origin, visible only when isOpen()<br/>_updateFrame(), _updateContentsBack(), _updateContents()<br/>_updateCursor(): alpha from _makeCursorAlpha() (blink every 40 frames)<br/>_updateArrows(), _updatePauseSign()<br/>then PIXI.Container.updateTransform() and _updateFilterArea()
+    deactivate WinCore
+    Graphics->>Layer: render(renderer)
+    activate Layer
+    Note right of Layer: if !visible → return<br/>renderer.framebuffer.forceStencil(), gl.enable(STENCIL_TEST)
+    loop win = children.pop() (front-most window first)
+        opt win._isWindow and win.visible and win.openness above 0
+            Note right of Layer: stencilFunc(EQUAL, 0) → draw only where no window was drawn yet
+            Layer->>WinCore: render(renderer)
+            Note right of WinCore: PIXI.Container render of _container (back + frame)<br/>_clientArea (contentsBack, cursor, contents) and arrows / pause sign
+            Layer->>WinCore: drawShape(graphics)
+            Note right of WinCore: white rect of width × (height × openness / 255)<br/>centered vertically
+            Note right of Layer: stencilFunc(ALWAYS, 1), blendFunc(ZERO, ONE)<br/>graphics.render() writes the shape into the stencil only<br/>→ windows behind are masked out (no overlapping)
+        end
+    end
+    Note right of Layer: gl.disable(STENCIL_TEST), clear the stencil buffer
+    loop each child that is not a window and is visible
+        Layer->>Graphics: child.render(renderer)
+    end
+    deactivate Layer
+    end
