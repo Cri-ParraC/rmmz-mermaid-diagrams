@@ -1,0 +1,171 @@
+sequenceDiagram
+    title RPG Maker MZ — Effekseer setup and per-frame use (runtime, context, EffectManager, rendering)
+
+    participant Main as main.js (Main)
+    participant EfkRuntime as effekseer (global, effekseer.min.js)
+    participant SceneManager
+    participant Graphics
+    participant Context as Graphics.effekseer (EffekseerContext)
+    participant Scene as Scene_Base
+    participant EffectManager
+    participant SpriteAnim as Sprite_Animation
+    participant Renderer as PIXI renderer (WebGL)
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Main,Renderer: start-up — main.js loads "js/libs/effekseer.min.js" with the other scripts (see main-bootstrap.mmd)
+    Main->>Main: onWindowLoad()
+    activate Main
+    alt no XHR, randomized path, or a script error
+        Main->>Main: printError(...)
+    else
+        Main->>Main: initEffekseerRuntime()
+        Main->>EfkRuntime: initRuntime("js/libs/effekseer.wasm", onLoad, onError)
+        Note right of EfkRuntime: downloads and compiles the WebAssembly runtime
+    end
+    deactivate Main
+    alt wasm loaded
+        EfkRuntime-)Main: onEffekseerLoad()
+        activate Main
+        Main->>Main: eraseLoadingSpinner()
+        Main->>SceneManager: run(Scene_Boot)
+        deactivate Main
+    else wasm failed
+        EfkRuntime-)Main: onEffekseerError()
+        Note right of Main: printError("Failed to load", effekseerWasmUrl)
+    end
+
+    SceneManager->>SceneManager: initialize() → initGraphics()
+    activate SceneManager
+    SceneManager->>Graphics: initialize()
+    activate Graphics
+    Note right of Graphics: _effekseer = null<br/>_createAllElements(), _setupEventHandlers()
+    Graphics->>Graphics: _createPixiApp()
+    Note right of Graphics: new PIXI.Application({view: _canvas, autoStart: false})<br/>ticker → _onTick
+    Graphics->>Graphics: _createEffekseerContext()
+    activate Graphics
+    opt _app and window.effekseer
+        Graphics->>EfkRuntime: createContext()
+        EfkRuntime-->>Graphics: _effekseer
+        opt _effekseer
+            Graphics->>Context: init(_app.renderer.gl)
+            Note right of Context: shares the PIXI WebGL context
+            Graphics->>Context: setRestorationOfStatesFlag(false)
+            Note right of Context: Effekseer does not restore GL state<br/>→ Sprite_Animation.onAfterRender() resets PIXI instead
+        end
+        Note right of Graphics: on exception → _app = null<br/>→ initialize() returns false → "Failed to initialize graphics."
+    end
+    deactivate Graphics
+    Graphics-->>SceneManager: !!_app
+    deactivate Graphics
+    SceneManager->>Graphics: setTickHandler(SceneManager.update)
+    deactivate SceneManager
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Main,Renderer: loading an effect — Spriteset createAnimationSprite() → Sprite_Animation.setup() (see animation-playback.mmd)
+    SpriteAnim->>EffectManager: load(animation.effectName)
+    activate EffectManager
+    alt empty filename
+        EffectManager-->>SpriteAnim: null (sprite starts at once without an effect)
+    else
+        EffectManager->>EffectManager: makeUrl(filename)
+        Note right of EffectManager: "effects/" + Utils.encodeURI(filename) + ".efkefc"
+        opt !_cache[url] and Graphics.effekseer
+            EffectManager->>EffectManager: startLoading(url)
+            activate EffectManager
+            EffectManager->>Context: loadEffect(url, 1, onLoad, onError)
+            Context-->>EffectManager: effect (isLoaded = false)
+            Note right of EffectManager: _cache[url] = effect
+            deactivate EffectManager
+        end
+        EffectManager-->>SpriteAnim: _cache[url]
+    end
+    deactivate EffectManager
+    Note right of SpriteAnim: _effect = effect, _playing = true
+
+    par asynchronous effect load
+        Context-)EffectManager: onLoad(url)
+        Note right of EffectManager: empty hook, effect.isLoaded becomes true
+    and load error
+        Context-)EffectManager: onError(url)
+        Note right of EffectManager: _errorUrls.push(url)
+    end
+
+    loop scene start-up — SceneManager.updateScene() until isReady()
+        SceneManager->>Scene: isReady()
+        activate Scene
+        Scene->>EffectManager: isReady()
+        activate EffectManager
+        EffectManager->>EffectManager: checkErrors()
+        opt url = _errorUrls.shift()
+            EffectManager->>EffectManager: throwLoadError(url)
+            Note right of EffectManager: throw ["LoadError", url, retry]<br/>retry = () => startLoading(url)<br/>→ SceneManager.catchLoadError() (see scenemanager-gameloop.mmd)
+        end
+        Note right of EffectManager: false while any _cache effect is !isLoaded
+        EffectManager-->>Scene: true / false
+        deactivate EffectManager
+        Note right of Scene: also ImageManager.isReady() and FontManager.isReady()
+        deactivate Scene
+    end
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Main,Renderer: every frame — SceneManager.updateMain()
+    SceneManager->>SceneManager: updateEffekseer()
+    activate SceneManager
+    opt Graphics.effekseer and isGameActive()
+        SceneManager->>Context: update()
+        Note right of Context: advances every playing handle one frame<br/>(paused while the game window is inactive)
+    end
+    deactivate SceneManager
+    SceneManager->>SceneManager: changeScene(), updateScene()
+    SceneManager->>SpriteAnim: update() (via Spriteset)
+    activate SpriteAnim
+    alt _delay above 0
+        Note right of SpriteAnim: _delay--
+    else _playing and !_started and canStart()
+        alt _effect and _effect.isLoaded
+            SpriteAnim->>Context: play(_effect)
+            Context-->>SpriteAnim: _handle
+            Note right of SpriteAnim: _started = true
+        else _effect not loaded yet
+            SpriteAnim->>EffectManager: checkErrors()
+        else no _effect
+            Note right of SpriteAnim: _started = true (sound / flash timings only)
+        end
+    end
+    opt _started
+        SpriteAnim->>SpriteAnim: updateEffectGeometry()
+        Note right of SpriteAnim: _handle.setLocation(0, 0, 0), setRotation(rx, ry, rz)<br/>setScale(scale), setSpeed(speed / 100)
+        SpriteAnim->>SpriteAnim: updateMain(), updateFlash()
+        Note right of SpriteAnim: checkEnd(): _playing = false when timings are done<br/>and !_handle.exists
+    end
+    deactivate SpriteAnim
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Main,Renderer: rendering — Graphics._onTick() → _app.render() → PIXI calls Sprite_Animation._render(renderer)
+    Renderer->>SpriteAnim: _render(renderer)
+    activate SpriteAnim
+    opt _targets.length above 0 and _handle and _handle.exists
+        SpriteAnim->>SpriteAnim: onBeforeRender(renderer)
+        SpriteAnim->>Renderer: batch.flush(), geometry.reset()
+        SpriteAnim->>SpriteAnim: setProjectionMatrix(renderer)
+        SpriteAnim->>Context: setProjectionMatrix([...])
+        Note right of Context: x = -1 when _mirror, y = -1<br/>p = -(_viewportSize / renderer.view.height)
+        SpriteAnim->>SpriteAnim: setCameraMatrix(renderer)
+        SpriteAnim->>Context: setCameraMatrix([...])
+        SpriteAnim->>SpriteAnim: setViewport(renderer)
+        Note right of SpriteAnim: targetPosition(): screen center if displayType 2<br/>else average of targetSpritePosition(target)<br/>gl.viewport(offsetX - 2048 + pos.x, offsetY - 2048 + pos.y, 4096, 4096)
+        SpriteAnim->>Context: beginDraw()
+        SpriteAnim->>Context: drawHandle(_handle)
+        SpriteAnim->>Context: endDraw()
+        SpriteAnim->>SpriteAnim: resetViewport(renderer)
+        Note right of Renderer: gl.viewport(0, 0, view.width, view.height)
+        SpriteAnim->>SpriteAnim: onAfterRender(renderer)
+        SpriteAnim->>Renderer: texture / geometry / state / shader / framebuffer .reset()
+    end
+    deactivate SpriteAnim
+    end
+
+    Note over SceneManager,EffectManager: cleanup: SceneManager.onBeforeSceneStart() → Graphics.effekseer.stopAll()<br/>Scene_Map.onTransfer() and SceneManager.onUnload() → EffectManager.clear()<br/>→ releaseEffect() for every cached effect, _cache = {}<br/>Sprite_Animation.destroy() → _handle.stop()
