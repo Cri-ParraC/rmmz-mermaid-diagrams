@@ -61,8 +61,11 @@ sequenceDiagram
                 activate WindowMessage
                 WindowMessage->>WindowMessage: startInput()
                 Note right of WindowMessage: opens choice / number / item window if needed
-                WindowMessage->>WindowMessage: startPause()
-                Note right of WindowMessage: startWait(10), pause = true<br/>_textState = null
+                opt startInput() returned false and !_pauseSkip
+                    WindowMessage->>WindowMessage: startPause()
+                    Note right of WindowMessage: startWait(10), pause = true
+                end
+                Note right of WindowMessage: _textState = null
                 deactivate WindowMessage
             end
             deactivate WindowMessage

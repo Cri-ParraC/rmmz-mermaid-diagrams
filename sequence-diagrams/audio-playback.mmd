@@ -215,7 +215,7 @@ sequenceDiagram
 
     rect rgba(127, 127, 127, 0.1)
     Note over Interpreter,SceneManager: Load error check (every frame, see scenemanager-gameloop.mmd)
-    SceneBase->>AudioManager: update() → checkErrors()
+    SceneBase->>AudioManager: checkErrors() (called from Scene_Base.update())
     activate AudioManager
     loop _bgmBuffer, _bgsBuffer, _meBuffer, _seBuffers, _staticBuffers
         opt buffer && buffer.isError()

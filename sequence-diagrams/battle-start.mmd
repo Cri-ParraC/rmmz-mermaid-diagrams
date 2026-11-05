@@ -23,9 +23,11 @@ sequenceDiagram
             GamePlayer->>BattleManager: onEncounter()
             Note right of BattleManager: rolls _preemptive / _surprise
         end
-        GamePlayer-->>SceneMap: true
+        GamePlayer-->>SceneMap: true if a battle was set up
         deactivate GamePlayer
-        SceneMap->>SceneManager: push(Scene_Battle)
+        opt executeEncounter() returned true
+            SceneMap->>SceneManager: push(Scene_Battle)
+        end
         deactivate SceneMap
     else Battle Processing event command
         Interpreter->>Interpreter: command301(params)
@@ -60,7 +62,7 @@ sequenceDiagram
     activate SceneMap
     SceneMap->>BattleManager: saveBgmAndBgs()
     SceneMap->>SceneMap: stopAudioOnBattleStart()
-    Note right of SceneMap: SoundManager.playBattleStart()
+    Note right of SceneMap: stops BGM (unless it is the battle BGM), BGS, ME, SE<br/>then launchBattle() calls SoundManager.playBattleStart()
     SceneMap->>SceneMap: startEncounterEffect()
     Note right of SceneMap: _spriteset.hideCharacters()<br/>_encounterEffectDuration = 60
     deactivate SceneMap

@@ -23,8 +23,9 @@ sequenceDiagram
     opt !_categoryWindow.needsSelection() (only one category)
         Note right of SceneItem: enlarge item window, hide and deactivate category window,<br/>then onCategoryOk() right away
     end
-    SceneItem->>ActorWindow: createActorWindow()
-    Note right of ActorWindow: new Window_MenuActor(rect), hidden<br/>setHandler("ok", onActorOk), setHandler("cancel", onActorCancel)
+    SceneItem->>SceneItem: createActorWindow()
+    SceneItem->>ActorWindow: <<create>> new Window_MenuActor(rect)
+    Note right of ActorWindow: hidden<br/>setHandler("ok", onActorOk), setHandler("cancel", onActorCancel)
     deactivate SceneItem
 
     loop every frame while the category window is active
@@ -131,10 +132,11 @@ sequenceDiagram
                 Action->>Target: result().clear()
                 Note right of Action: result.used = testApply(target), hit/evade rolls
                 opt result.isHit()
-                    Action->>Target: executeDamage() if damage.type > 0
-                    Action->>Target: applyItemEffect(target, effect) for each effect
-                    Note right of Target: e.g. itemEffectRecoverHp → gainHp(value)
-                    Action->>UserActor: applyItemUserEffect() → gainSilentTp()
+                    Action->>Action: executeDamage(target, value) if damage.type > 0
+                    Action->>Action: applyItemEffect(target, effect) for each effect
+                    Action->>Target: e.g. itemEffectRecoverHp → target.gainHp(value)
+                    Action->>Action: applyItemUserEffect(target)
+                    Action->>UserActor: gainSilentTp(item.tpGain * tcr)
                 end
                 deactivate Action
             end

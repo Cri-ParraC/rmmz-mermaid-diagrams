@@ -19,8 +19,8 @@ sequenceDiagram
     activate Spriteset
     Spriteset->>Spriteset: Spriteset_Base.initialize()
     Note right of Spriteset: setFrame(0, 0, Graphics.width, Graphics.height)
-    Spriteset->>ImageManager: loadSystemImages()
-    Note right of ImageManager: loadSystem("Balloon"), loadSystem("Shadow1")
+    Spriteset->>Spriteset: loadSystemImages()
+    Spriteset->>ImageManager: loadSystem("Balloon"), loadSystem("Shadow1")
     Spriteset->>Spriteset: createLowerLayer()
     activate Spriteset
     Spriteset->>Spriteset: createBaseSprite(), createBaseFilters()
@@ -73,7 +73,8 @@ sequenceDiagram
     Spriteset->>Spriteset: createUpperLayer()
     Note right of Spriteset: createPictures() (Sprite_Picture x maxPictures),<br/>createTimer(), createOverallFilters()
     deactivate Spriteset
-    SceneMap->>Spriteset: addChild(_spriteset), update()
+    SceneMap->>SceneMap: addChild(_spriteset)
+    SceneMap->>Spriteset: update()
     deactivate SceneMap
     end
 
@@ -100,8 +101,8 @@ sequenceDiagram
         end
         SpriteChar->>SpriteChar: updateFrame()
         Note right of SpriteChar: updateCharacterFrame(): sx from characterBlockX() + pattern(),<br/>sy from characterBlockY() + (direction() - 2) / 2,<br/>bush depth → _upperBody / _lowerBody
-        SpriteChar->>Character: updatePosition()
-        Character-->>SpriteChar: screenX(), screenY(), screenZ()
+        SpriteChar->>SpriteChar: updatePosition()
+        SpriteChar->>Character: screenX(), screenY(), screenZ()
         Note right of SpriteChar: x, y, z set from the character
         SpriteChar->>SpriteChar: updateOther(), updateVisibility()
         Note right of SpriteChar: opacity, blendMode, _bushDepth, hidden if transparent
@@ -117,8 +118,8 @@ sequenceDiagram
     Note right of Spriteset: _tileset !== $gameMap.tileset() → loadTileset()
     Spriteset->>Spriteset: updateParallax()
     Note right of Spriteset: origin = $gameMap.parallaxOx() / parallaxOy() modulo bitmap size
-    Spriteset->>Tilemap: updateTilemap()
-    Note right of Tilemap: origin.x = $gameMap.displayX() * tileWidth()<br/>origin.y = $gameMap.displayY() * tileHeight()
+    Spriteset->>Spriteset: updateTilemap()
+    Note right of Spriteset: _tilemap.origin.x = $gameMap.displayX() * tileWidth()<br/>_tilemap.origin.y = $gameMap.displayY() * tileHeight()
     Spriteset->>Spriteset: updateShadow(), updateWeather()
     Note right of Spriteset: airship shadow position, weather type / power / origin
     Spriteset->>Spriteset: updateAnimations(), updateBalloons()

@@ -16,7 +16,7 @@ sequenceDiagram
     Note right of Window: _handlers[symbol] = method<br/>Window_Command also maps command symbols (e.g. "item", "save")
     Scene->>Window: setHandler("cancel", this.popScene.bind(this))
     Scene->>Window: setHelpWindow(_helpWindow) (optional)
-    Scene->>WindowLayer: addWindow(window) → _windowLayer.addChild(window)
+    Scene->>WindowLayer: addChild(window) (via Scene_Base.addWindow())
     Scene->>Window: activate()
     activate Window
     Note right of Window: Window_Base.activate(): active = true<br/>reselect(): select(_index), ensureCursorVisible(true), cursorVisible = true

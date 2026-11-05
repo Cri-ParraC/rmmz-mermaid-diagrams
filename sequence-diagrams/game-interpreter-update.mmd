@@ -94,10 +94,12 @@ sequenceDiagram
         end
         deactivate Interpreter
 
-        opt !_interpreter.isRunning() && _interpreter.eventId() > 0
-            GameMap->>GameMap: unlockEvent(eventId)
-            GameMap->>GameEvent: unlock()
-            GameMap->>Interpreter: clear()
+        opt !_interpreter.isRunning()
+            opt _interpreter.eventId() > 0
+                GameMap->>GameMap: unlockEvent(eventId)
+                GameMap->>GameEvent: unlock()
+                GameMap->>Interpreter: clear()
+            end
             GameMap->>GameMap: setupStartingEvent()
             Note right of GameMap: next starting event, if any
         end

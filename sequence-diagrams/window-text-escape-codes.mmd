@@ -51,8 +51,9 @@ sequenceDiagram
                 WindowBase->>WindowBase: processEscapeCharacter(code, textState)
                 activate WindowBase
                 alt "C"
-                    WindowBase->>ColorManager: textColor(obtainEscapeParam())
-                    WindowBase->>WindowBase: processColorChange() → changeTextColor()
+                    WindowBase->>WindowBase: processColorChange(obtainEscapeParam())
+                    WindowBase->>ColorManager: textColor(colorIndex)
+                    WindowBase->>WindowBase: changeTextColor(color)
                     Note right of WindowBase: contents.textColor = color
                 else "I"
                     WindowBase->>WindowBase: processDrawIcon(iconIndex, textState)

@@ -66,6 +66,7 @@ sequenceDiagram
         SceneBoot->>DataManager: setupEventTest()
         SceneBoot->>SceneManager: goto(Scene_Map)
     else DataManager.isTitleSkip()
+        SceneBoot->>SceneBoot: checkPlayerLocation()
         SceneBoot->>DataManager: setupNewGame()
         SceneBoot->>SceneManager: goto(Scene_Map)
     else normal start
@@ -90,7 +91,7 @@ sequenceDiagram
     DataManager->>DataManager: createGameObjects()
     Note right of DataManager: $gameTemp, $gameSystem, ..., $gameMap, $gamePlayer
     DataManager->>DataManager: selectSavefileForNewGame()
-    Note right of DataManager: $gameParty.setupStartingMembers()
+    Note right of DataManager: $gameSystem.setSavefileId(empty or earliest slot)<br/>then $gameParty.setupStartingMembers()
     DataManager->>GamePlayer: setupForNewGame()
     activate GamePlayer
     GamePlayer->>GamePlayer: reserveTransfer(startMapId, startX, startY, 2, 0)

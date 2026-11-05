@@ -80,7 +80,8 @@ sequenceDiagram
                             Note right of Battler: makeActions()<br/>canInput() (actor, charged) → setActionState("undecided")<br/>else startTpbCasting(), setActionState("waiting")
                         end
                         deactivate Battler
-                        BattleManager->>LogWindow: displayBattlerStatus(battler, false)
+                        BattleManager->>BattleManager: displayBattlerStatus(battler, false)
+                        BattleManager->>LogWindow: displayAutoAffectedStatus(), displayRegeneration()
                         Note right of LogWindow: states, regeneration popup (see damage-popup.mmd)
                     else battler.isTpbReady()
                         BattleManager->>Battler: startTpbAction()
@@ -89,7 +90,8 @@ sequenceDiagram
                     else battler.isTpbTimeout()
                         BattleManager->>Battler: onTpbTimeout()
                         Note right of Battler: onAllActionsEnd(), _tpbTurnEnd = true
-                        BattleManager->>LogWindow: displayBattlerStatus(battler, true)
+                        BattleManager->>BattleManager: displayBattlerStatus(battler, true)
+                        BattleManager->>LogWindow: displayAutoAffectedStatus(), displayCurrentState(), displayRegeneration()
                     end
                     deactivate BattleManager
                 end
@@ -130,7 +132,8 @@ sequenceDiagram
         opt _phase "turnEnd"
             BattleManager->>BattleManager: updateTurnEnd()
             Note right of BattleManager: TPB: startTurn() right away (no endAllBattlersTurn())
-            BattleManager->>GameTroop: startTurn() → increaseTurn()
+            BattleManager->>BattleManager: startTurn()
+            BattleManager->>GameTroop: increaseTurn()
             Note right of GameTroop: _turnCount++ for troop event conditions,<br/>_phase = "turn", no makeActionOrders() in TPB
         end
 

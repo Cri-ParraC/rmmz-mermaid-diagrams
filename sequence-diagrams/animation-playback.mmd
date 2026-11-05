@@ -120,8 +120,8 @@ sequenceDiagram
                 end
             end
             opt _started
-                SpriteAnim->>Effekseer: updateEffectGeometry()
-                Note right of Effekseer: _handle.setLocation / setRotation /<br/>setScale(scale / 100) / setSpeed(speed / 100)
+                SpriteAnim->>SpriteAnim: updateEffectGeometry()
+                Note right of SpriteAnim: _handle.setLocation / setRotation /<br/>setScale(scale / 100) / setSpeed(speed / 100)
                 SpriteAnim->>SpriteAnim: updateMain()
                 Note right of SpriteAnim: processSoundTimings() → AudioManager.playSe()<br/>processFlashTimings(), _frameIndex++<br/>checkEnd(): past _maxTimingFrames, no flash,<br/>!_handle.exists → _playing = false
                 SpriteAnim->>SpriteAnim: updateFlash()
@@ -130,7 +130,7 @@ sequenceDiagram
         end
         deactivate SpriteAnim
         Note over SpriteAnim,Effekseer: SceneManager.updateEffekseer() calls Graphics.effekseer.update() each frame
-        SpriteAnim->>Effekseer: _render(renderer)
+        SpriteAnim->>SpriteAnim: _render(renderer) (PIXI render pass)
         activate Effekseer
         Note right of SpriteAnim: setProjectionMatrix() (mirror flips x), setCameraMatrix(),<br/>setViewport() centred on targetPosition()
         SpriteAnim->>Effekseer: beginDraw(), drawHandle(_handle), endDraw()
