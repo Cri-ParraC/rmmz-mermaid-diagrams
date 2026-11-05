@@ -1,0 +1,85 @@
+sequenceDiagram
+    title RPG Maker MZ — Autosave (Scene_Base.requestAutosave → DataManager.saveGame(0))
+
+    participant SceneMap as Scene_Map
+    participant SceneBattle as Scene_Battle
+    participant Scene as Scene_Base (this)
+    participant GameSystem as $gameSystem
+    participant DataManager
+    participant SceneFile as Scene_Save / Scene_Load
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneMap,SceneFile: Who requests an autosave
+    alt after a map transfer
+        SceneMap->>SceneMap: start()
+        activate SceneMap
+        opt _transfer
+            SceneMap->>SceneMap: fadeInForTransfer()
+            SceneMap->>SceneMap: onTransferEnd()
+            activate SceneMap
+            Note right of SceneMap: _mapNameWindow.open(), $gameMap.autoplay()
+            SceneMap->>SceneMap: shouldAutosave()
+            Note right of SceneMap: !_lastMapWasNull<br/>(Scene_Map.create() sets _lastMapWasNull = !$dataMap,<br/>so the first map loaded after boot is not autosaved)
+            opt shouldAutosave()
+                SceneMap->>Scene: requestAutosave()
+            end
+            deactivate SceneMap
+        end
+        deactivate SceneMap
+    else after a battle
+        SceneBattle->>SceneBattle: terminate()
+        activate SceneBattle
+        Note right of SceneBattle: $gameParty.onBattleEnd(), $gameTroop.onBattleEnd(),<br/>AudioManager.stopMe()
+        SceneBattle->>SceneBattle: shouldAutosave()
+        Note right of SceneBattle: SceneManager.isNextScene(Scene_Map)<br/>(not after Game Over or a battle test)
+        opt shouldAutosave()
+            SceneBattle->>Scene: requestAutosave()
+        end
+        deactivate SceneBattle
+    end
+    Note right of SceneFile: Open Save Screen (command352) only does<br/>SceneManager.push(Scene_Save), it does not autosave
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneMap,SceneFile: Scene_Base autosave logic
+    activate Scene
+    Scene->>Scene: isAutosaveEnabled()
+    activate Scene
+    Scene->>DataManager: isBattleTest(), isEventTest()
+    DataManager-->>Scene: false, false
+    Scene->>GameSystem: isAutosaveEnabled()
+    GameSystem-->>Scene: $dataSystem.optAutosave (database option)
+    Scene->>GameSystem: isSaveEnabled()
+    GameSystem-->>Scene: _saveEnabled (Change Save Access, command134)
+    deactivate Scene
+    alt all checks pass
+        Scene->>Scene: executeAutosave()
+        activate Scene
+        Scene->>GameSystem: onBeforeSave()
+        Note right of GameSystem: _saveCount++, _versionId,<br/>_framesOnSave, _bgmOnSave, _bgsOnSave
+        Scene->>DataManager: saveGame(0)
+        activate DataManager
+        Note right of DataManager: slot 0 is the autosave file ("file0")<br/>makeSaveContents() → StorageManager.saveObject()<br/>→ _globalInfo[0] → saveGlobalInfo()<br/>see datamanager-save-load.mmd
+        DataManager-->>Scene: Promise
+        deactivate DataManager
+        Note right of Scene: the scene does not wait,<br/>the save finishes asynchronously
+        deactivate Scene
+        alt Promise resolved
+            Scene->>Scene: onAutosaveSuccess()
+            Note right of Scene: empty by default (hook for plugins)
+        else Promise rejected
+            Scene->>Scene: onAutosaveFailure()
+            Note right of Scene: empty by default (hook for plugins)
+        end
+    else disabled
+        Note right of Scene: nothing happens
+    end
+    deactivate Scene
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneMap,SceneFile: How slot 0 appears in the file screens
+    SceneFile->>SceneFile: needsAutosave()
+    SceneFile->>GameSystem: isAutosaveEnabled()
+    Note right of SceneFile: _listWindow.setMode(mode(), needsAutosave())<br/>Window_SavefileList shows an "Autosave" row for id 0,<br/>enabled in load mode only (isEnabled: save mode needs id > 0)
+    end
