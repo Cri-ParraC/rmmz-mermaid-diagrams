@@ -36,7 +36,7 @@ All diagrams are based on the v1.10.0 engine code in [`Corescript/js/`](Corescri
 | [scene-menu](sequence-diagrams/scene-menu.mmd) | Calling the menu from the map, personal commands to Skill / Equip / Status, and `popScene` |
 | [scene-item-use](sequence-diagrams/scene-item-use.mmd) | Choosing and using an item on actors in `Scene_Item`, including common event reservation |
 | [scene-equip](sequence-diagrams/scene-equip.mmd) | Slot and item selection, status preview with a temp actor, and `Game_Actor.changeEquip` |
-| [comprar-un-objeto](sequence-diagrams/comprar-un-objeto.mmd) | `Scene_Shop` purchase: how the bought item lands in `$gameParty` (Spanish) |
+| [scene-shop-buy](sequence-diagrams/scene-shop-buy.mmd) | `Scene_Shop` purchase: how the bought item lands in `$gameParty` |
 | [gameover-and-title](sequence-diagrams/gameover-and-title.mmd) | Routes to `Scene_Gameover` and back to `Scene_Title` |
 | [window-selectable-input](sequence-diagrams/window-selectable-input.mmd) | How `Window_Selectable` turns keyboard, gamepad and touch input into handler calls |
 
