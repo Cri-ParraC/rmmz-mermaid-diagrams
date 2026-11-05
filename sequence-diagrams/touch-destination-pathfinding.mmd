@@ -1,0 +1,166 @@
+sequenceDiagram
+    title RPG Maker MZ — Touch / click destination and pathfinding (Scene_Map → Game_Player.findDirectionTo)
+
+    actor User as Player
+    participant TouchInput
+    participant SceneMap as Scene_Map
+    participant GameTemp as $gameTemp
+    participant SpriteDest as Sprite_Destination
+    participant GamePlayer as $gamePlayer
+    participant GameMap as $gameMap
+    participant GameEvent as Game_Event
+
+    User->>TouchInput: click / tap on the map
+    Note right of TouchInput: mouse and touch events update _x, _y,<br/>isTriggered(), isPressed() (see input-polling.mmd)
+
+    Note over SceneMap: every frame in Scene_Map.update() (see scene-map-update.mmd)
+    SceneMap->>SceneMap: updateDestination()
+    activate SceneMap
+    SceneMap->>SceneMap: isMapTouchOk()
+    Note right of SceneMap: isActive() and $gamePlayer.canMove()<br/>canMove(): no event running, no message,<br/>no forced route, no follower gathering, no vehicle boarding
+    alt map touch allowed
+        SceneMap->>SceneMap: processMapTouch()
+        activate SceneMap
+        opt TouchInput.isTriggered() or _touchCount > 0
+            alt TouchInput.isPressed() and !isAnyButtonPressed()
+                opt _touchCount === 0 or _touchCount >= 15
+                    Note right of SceneMap: first frame of the press, then every frame<br/>after 15 frames of holding (drag to steer)
+                    SceneMap->>SceneMap: onMapTouch()
+                    activate SceneMap
+                    SceneMap->>GameMap: canvasToMapX(TouchInput.x) / canvasToMapY(TouchInput.y)
+                    GameMap-->>SceneMap: map tile x, y (adds _displayX/_displayY, roundX/roundY)
+                    SceneMap->>GameTemp: setDestination(x, y)
+                    Note right of GameTemp: _destinationX = x, _destinationY = y
+                    deactivate SceneMap
+                end
+                SceneMap->>SceneMap: _touchCount++
+            else released or the menu button is pressed
+                SceneMap->>SceneMap: _touchCount = 0
+            end
+        end
+        deactivate SceneMap
+    else not allowed
+        SceneMap->>GameTemp: clearDestination()
+        SceneMap->>SceneMap: _touchCount = 0
+    end
+    deactivate SceneMap
+
+    Note over SpriteDest: created by Spriteset_Map.createDestination() on the tilemap (z = 9)
+    SpriteDest->>SpriteDest: update()
+    activate SpriteDest
+    SpriteDest->>GameTemp: isDestinationValid()
+    alt destination set
+        SpriteDest->>SpriteDest: updatePosition()
+        Note right of SpriteDest: x = ($gameMap.adjustX(destinationX()) + 0.5) * tileWidth
+        SpriteDest->>SpriteDest: updateAnimation()
+        Note right of SpriteDest: 20-frame cycle, opacity fades from 120,<br/>scale grows from 1 to 2, additive blend white square
+    else no destination
+        SpriteDest->>SpriteDest: visible = false, _frameCount = 0
+    end
+    deactivate SpriteDest
+
+    SceneMap->>GamePlayer: update(sceneActive)
+    activate GamePlayer
+    GamePlayer->>GamePlayer: updateDashing()
+    Note right of GamePlayer: _dashing is also true while isDestinationValid()<br/>(touch movement always dashes unless dashing is disabled on the map)
+    GamePlayer->>GamePlayer: moveByInput()
+    activate GamePlayer
+    opt !isMoving() and canMove()
+        GamePlayer->>GamePlayer: getInputDirection()
+        Note right of GamePlayer: Input.dir4 (keyboard / gamepad)
+        alt direction > 0 (key pressed)
+            GamePlayer->>GameTemp: clearDestination()
+            Note right of GameTemp: keyboard input cancels touch movement
+        else $gameTemp.isDestinationValid()
+            GamePlayer->>GameTemp: destinationX() / destinationY()
+            GamePlayer->>GamePlayer: findDirectionTo(x, y)
+            activate GamePlayer
+            Note right of GamePlayer: Game_Character.findDirectionTo()<br/>returns 0 when already on the goal
+            GamePlayer->>GamePlayer: searchLimit()
+            Note right of GamePlayer: 12 steps (Game_Character default)
+            Note right of GamePlayer: start node: g = 0, f = $gameMap.distance(start, goal)<br/>nodeList / openList / closedList, best = start
+            loop while nodeList is not empty (A* search)
+                GamePlayer->>GamePlayer: pick the node with the lowest f
+                Note right of GamePlayer: move it from openList to closedList
+                break current is the goal
+                    GamePlayer->>GamePlayer: best = current
+                end
+                opt g1 < searchLimit
+                    loop direction 2, 4, 6, 8
+                        GamePlayer->>GameMap: roundXWithDirection / roundYWithDirection
+                        opt pos2 not in closedList
+                            GamePlayer->>GamePlayer: canPass(x1, y1, direction)
+                            Note right of GamePlayer: same check as normal movement,<br/>see map-passability.mmd
+                            opt passable and (new node or shorter g2 = g1 + 1)
+                                GamePlayer->>GameMap: distance(x2, y2, goalX, goalY)
+                                Note right of GamePlayer: neighbor.f = g2 + distance, parent = current<br/>best = the node with the smallest heuristic (f - g)
+                            end
+                        end
+                    end
+                end
+            end
+            GamePlayer->>GamePlayer: walk best.parent back to the first step after start
+            GamePlayer->>GameMap: deltaX(node.x, start.x) / deltaY(node.y, start.y)
+            alt first step found
+                Note right of GamePlayer: returns 2, 4, 6 or 8 toward that step
+            else no step (goal unreachable within searchLimit)
+                GamePlayer->>GamePlayer: deltaXFrom(goalX) / deltaYFrom(goalY)
+                Note right of GamePlayer: fall back to the straight direction<br/>along the larger axis, or 0
+            end
+            deactivate GamePlayer
+        end
+        opt direction > 0
+            GamePlayer->>GamePlayer: executeMove(direction)
+            GamePlayer->>GamePlayer: moveStraight(direction)
+            Note right of GamePlayer: canPass() → _followers.updateMove()<br/>then Game_CharacterBase.moveStraight()<br/>blocked → checkEventTriggerTouchFront(d)<br/>→ checkEventTriggerTouch(x2, y2) for Player Touch events
+        end
+    end
+    deactivate GamePlayer
+
+    GamePlayer->>GamePlayer: Game_Character.prototype.update()
+    Note right of GamePlayer: updateMove() slides _realX/_realY one step per path node,<br/>findDirectionTo() is recomputed after every step
+
+    opt !isMoving()
+        GamePlayer->>GamePlayer: updateNonmoving(wasMoving, sceneActive)
+        activate GamePlayer
+        opt !$gameMap.isEventRunning()
+            opt wasMoving
+                Note right of GamePlayer: $gameParty.onPlayerWalk()<br/>checkEventTriggerHere([1, 2]) and setupStartingEvent()
+            end
+            opt sceneActive
+                GamePlayer->>GamePlayer: triggerAction()
+                activate GamePlayer
+                Note right of GamePlayer: triggerButtonAction() first (OK key)
+                GamePlayer->>GamePlayer: triggerTouchAction()
+                activate GamePlayer
+                opt $gameTemp.isDestinationValid()
+                    Note right of GamePlayer: compare destination with x1,y1 (own tile),<br/>x2,y2 (one tile ahead) and x3,y3 (two tiles ahead)
+                    alt destination is the player's own tile
+                        GamePlayer->>GamePlayer: triggerTouchActionD1(x1, y1)
+                        Note right of GamePlayer: airship here and TouchInput.isTriggered() → getOnOffVehicle()<br/>else checkEventTriggerHere([0])
+                    else destination is the tile in front
+                        GamePlayer->>GamePlayer: triggerTouchActionD2(x2, y2)
+                        Note right of GamePlayer: boat or ship there → getOnVehicle(),<br/>in boat or ship → getOffVehicle(),<br/>else checkEventTriggerThere([0, 1, 2])
+                    else destination is two tiles ahead
+                        GamePlayer->>GamePlayer: triggerTouchActionD3(x2, y2)
+                        Note right of GamePlayer: only if $gameMap.isCounter(x2, y2)<br/>→ checkEventTriggerThere([0, 1, 2]) (talk over a counter)
+                    end
+                    GamePlayer->>GamePlayer: startMapEvent(x, y, triggers, normal)
+                    GamePlayer->>GameEvent: start()
+                    Note right of GameEvent: matching events start, see common-events.mmd<br/>and game-interpreter-update.mmd
+                    GamePlayer->>GameMap: setupStartingEvent()
+                end
+                deactivate GamePlayer
+                deactivate GamePlayer
+            end
+            alt wasMoving
+                GamePlayer->>GamePlayer: updateEncounterCount()
+                Note right of GamePlayer: see encounter-steps.mmd
+            else player stood still this frame
+                GamePlayer->>GameTemp: clearDestination()
+                Note right of GameTemp: arrival, or blocked with no way forward:<br/>the destination marker disappears
+            end
+        end
+        deactivate GamePlayer
+    end
+    deactivate GamePlayer
