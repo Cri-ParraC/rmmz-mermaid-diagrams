@@ -1,0 +1,96 @@
+sequenceDiagram
+    title RPG Maker MZ — Actor parameters and traits (param / xparam / sparam ← traitObjects)
+
+    participant Caller as Caller (window, Game_Action, refresh)
+    participant GameActor as Game_Actor
+    participant BattlerBase as Game_BattlerBase
+    participant DataClass as $dataClasses[_classId]
+    participant Equips as equips() (weapons / armors)
+    participant TraitObjs as trait objects
+
+    Caller->>GameActor: actor.atk
+    Note right of Caller: getters defined on Game_BattlerBase.prototype:<br/>mhp mmp atk def mat mdf agi luk → param(0..7)<br/>hit eva cri cev mev mrf cnt hrg mrg trg → xparam(0..9)<br/>tgr grd rec pha mcr tcr pdr mdr fdr exr → sparam(0..9)
+    GameActor->>BattlerBase: param(2)
+    activate BattlerBase
+
+    BattlerBase->>BattlerBase: paramBasePlus(paramId)
+    activate BattlerBase
+    BattlerBase->>GameActor: paramBase(paramId)
+    activate GameActor
+    GameActor->>DataClass: params[paramId][_level]
+    Note right of DataClass: the class parameter curve,<br/>one value per level (Game_Enemy uses $dataEnemies params)
+    DataClass-->>GameActor: base value
+    deactivate GameActor
+    BattlerBase->>GameActor: paramPlus(paramId)
+    activate GameActor
+    GameActor->>BattlerBase: Game_Battler.prototype.paramPlus(paramId)
+    Note right of BattlerBase: _paramPlus[paramId]<br/>raised by addParam() (Change Parameter command317,<br/>items with a Grow effect)
+    loop each item in equips() that is not null
+        GameActor->>Equips: item.params[paramId]
+        Equips-->>GameActor: equip bonus
+    end
+    Note right of GameActor: equips() maps _equips Game_Item slots to<br/>$dataWeapons / $dataArmors (see scene-equip.mmd)
+    deactivate GameActor
+    Note right of BattlerBase: Math.max(0, paramBase + paramPlus)
+    deactivate BattlerBase
+
+    BattlerBase->>BattlerBase: paramRate(paramId)
+    activate BattlerBase
+    BattlerBase->>BattlerBase: traitsPi(TRAIT_PARAM = 21, paramId)
+    Note right of BattlerBase: product of all matching trait values<br/>(e.g. 110% × 90% = 0.99), 1 when none
+    deactivate BattlerBase
+
+    BattlerBase->>BattlerBase: paramBuffRate(paramId)
+    Note right of BattlerBase: _buffs[paramId] * 0.25 + 1.0<br/>buff level -2..+2 → 0.5..1.5
+
+    BattlerBase->>BattlerBase: value = paramBasePlus × paramRate × paramBuffRate
+    BattlerBase->>BattlerBase: paramMin(paramId) / paramMax(paramId)
+    Note right of BattlerBase: paramMin: 1 for MHP, 0 otherwise<br/>paramMax: Infinity (not overridden by Game_Actor in MZ)
+    BattlerBase-->>GameActor: Math.round(value.clamp(minValue, maxValue))
+    deactivate BattlerBase
+    GameActor-->>Caller: final parameter
+
+    Note over BattlerBase,TraitObjs: Trait collection, used by every trait query
+    BattlerBase->>BattlerBase: traitsWithId(code, id)
+    activate BattlerBase
+    BattlerBase->>BattlerBase: allTraits()
+    activate BattlerBase
+    BattlerBase->>GameActor: traitObjects()
+    activate GameActor
+    GameActor->>BattlerBase: Game_Battler.prototype.traitObjects()
+    BattlerBase->>BattlerBase: states()
+    Note right of BattlerBase: _states mapped to $dataStates[id]
+    BattlerBase-->>GameActor: [states...]
+    GameActor->>GameActor: objects.push(actor(), currentClass())
+    Note right of GameActor: $dataActors[_actorId] and $dataClasses[_classId]
+    loop each non-null item in equips()
+        GameActor->>GameActor: objects.push(item)
+    end
+    GameActor-->>BattlerBase: [states, actor, class, weapons, armors]
+    deactivate GameActor
+    BattlerBase->>TraitObjs: obj.traits for each object
+    TraitObjs-->>BattlerBase: concatenated { code, dataId, value } list
+    deactivate BattlerBase
+    BattlerBase->>BattlerBase: filter trait.code === code and trait.dataId === id
+    deactivate BattlerBase
+    Note right of BattlerBase: nothing is cached: allTraits() is rebuilt<br/>on every call, so equip or state changes apply at once
+
+    Note over BattlerBase: Aggregators built on allTraits()
+    BattlerBase->>BattlerBase: traits(code)
+    Note right of BattlerBase: allTraits() filtered by code only
+    BattlerBase->>BattlerBase: traitsPi(code, id)
+    Note right of BattlerBase: multiply values, start 1<br/>paramRate, sparam, elementRate, debuffRate, stateRate
+    BattlerBase->>BattlerBase: traitsSum(code, id) / traitsSumAll(code)
+    Note right of BattlerBase: add values, start 0<br/>xparam, attackStatesRate, attackSpeed, attackTimesAdd
+    BattlerBase->>BattlerBase: traitsSet(code)
+    Note right of BattlerBase: collect dataIds<br/>stateResistSet, attackElements, addedSkillTypes,<br/>equip types, partyAbility uses traits(code).some()
+
+    Note over BattlerBase: Ex-Parameters and Sp-Parameters
+    Caller->>BattlerBase: actor.hit / actor.cri
+    BattlerBase->>BattlerBase: xparam(xparamId)
+    Note right of BattlerBase: traitsSum(TRAIT_XPARAM = 22, xparamId)<br/>additive rates, e.g. HIT +95% from the class + 5% from a weapon
+    Caller->>BattlerBase: actor.tgr / actor.exr
+    BattlerBase->>BattlerBase: sparam(sparamId)
+    Note right of BattlerBase: traitsPi(TRAIT_SPARAM = 23, sparamId)<br/>multiplicative rates, 1.0 when no trait<br/>exr feeds Game_Actor.finalExpRate() (see exp-and-level-up.mmd)
+
+    Note over Caller,GameActor: After a level, equip or state change, refresh()<br/>clamps _hp/_mp/_tp to the new mhp/mmp/maxTp()<br/>and erases states found in stateResistSet()
