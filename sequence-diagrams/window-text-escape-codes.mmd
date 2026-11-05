@@ -1,0 +1,139 @@
+sequenceDiagram
+    title RPG Maker MZ — Text escape codes (Window_Base.drawTextEx and Window_Message)
+
+    participant Caller as Window_Help / Window_NameBox / ...
+    participant WindowBase as Window_Base
+    participant WindowMessage as Window_Message
+    participant GameData as $gameVariables / $gameActors / $gameParty
+    participant ColorManager
+    participant ImageManager
+    participant Contents as contents (Bitmap)
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Caller,Contents: drawTextEx(text, x, y, width) — draws everything in one call
+    Caller->>WindowBase: drawTextEx(text, x, y, width)
+    activate WindowBase
+    WindowBase->>WindowBase: resetFontSettings()
+    Note right of WindowBase: mainFontFace(), mainFontSize(),<br/>resetTextColor() → ColorManager.normalColor()
+    WindowBase->>WindowBase: createTextState(text, x, y, width)
+    activate WindowBase
+    Note right of WindowBase: rtl = Utils.containsArabic(text)
+    WindowBase->>WindowBase: convertEscapeCharacters(text)
+    activate WindowBase
+    Note right of WindowBase: every backslash becomes ESC (\x1b),<br/>a doubled backslash becomes one literal backslash
+    loop while text matches \V[n] (nested variables allowed)
+        WindowBase->>GameData: $gameVariables.value(n)
+    end
+    WindowBase->>GameData: \N[n] → actorName(n) → $gameActors.actor(n).name()
+    WindowBase->>GameData: \P[n] → partyMemberName(n) → $gameParty.members()[n - 1].name()
+    Note right of WindowBase: \G → TextManager.currencyUnit
+    deactivate WindowBase
+    Note right of WindowBase: textState = {text, index: 0, x, y, width, height,<br/>startX, startY, rtl, buffer, drawing: true,<br/>outputWidth, outputHeight}<br/>height = calcTextHeight() (scans \{ \} \FS on the line)
+    deactivate WindowBase
+
+    WindowBase->>WindowBase: processAllText(textState)
+    activate WindowBase
+    loop while textState.index below text.length
+        WindowBase->>WindowBase: processCharacter(textState)
+        activate WindowBase
+        alt c.charCodeAt(0) below 0x20 (control character)
+            WindowBase->>WindowBase: flushTextState(textState)
+            WindowBase->>Contents: drawText(buffer, x, y, width, height)
+            Note right of WindowBase: x += textWidth(buffer), buffer cleared,<br/>outputWidth / outputHeight updated
+            WindowBase->>WindowBase: processControlCharacter(textState, c)
+            activate WindowBase
+            alt c is line feed
+                WindowBase->>WindowBase: processNewLine(textState)
+                Note right of WindowBase: x = startX, y += height,<br/>height = calcTextHeight()
+            else c is ESC
+                WindowBase->>WindowBase: obtainEscapeCode(textState)
+                Note right of WindowBase: one symbol from the set dollar . pipe caret ! braces,<br/>backslash-greater-than, backslash-less-than,<br/>or a run of letters, upper-cased
+                WindowBase->>WindowBase: processEscapeCharacter(code, textState)
+                activate WindowBase
+                alt "C"
+                    WindowBase->>ColorManager: textColor(obtainEscapeParam())
+                    WindowBase->>WindowBase: processColorChange() → changeTextColor()
+                    Note right of WindowBase: contents.textColor = color
+                else "I"
+                    WindowBase->>WindowBase: processDrawIcon(iconIndex, textState)
+                    opt textState.drawing
+                        WindowBase->>ImageManager: drawIcon() → loadSystem("IconSet")
+                        WindowBase->>Contents: blt(iconSet, sx, sy, pw, ph, x, y)
+                    end
+                    Note right of WindowBase: x += standardIconWidth + 4
+                else "PX" / "PY"
+                    Note right of WindowBase: textState.x / textState.y = obtainEscapeParam()
+                else "FS"
+                    Note right of WindowBase: contents.fontSize = obtainEscapeParam()
+                else "{"
+                    WindowBase->>WindowBase: makeFontBigger()
+                    Note right of WindowBase: +12 while fontSize is 96 or less
+                else "}"
+                    WindowBase->>WindowBase: makeFontSmaller()
+                    Note right of WindowBase: -12 while fontSize is 24 or more
+                end
+                deactivate WindowBase
+            end
+            deactivate WindowBase
+        else printable character
+            Note right of WindowBase: textState.buffer += c
+        end
+        deactivate WindowBase
+    end
+    WindowBase->>WindowBase: flushTextState(textState)
+    WindowBase->>Contents: drawText(remaining buffer)
+    deactivate WindowBase
+    WindowBase-->>Caller: textState.outputWidth
+    deactivate WindowBase
+    Note over Caller,WindowBase: textSizeEx(text) runs the same steps with drawing = false<br/>to measure width and height only
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over WindowMessage,Contents: Window_Message — same textState, but drawn a little every frame (see show-text-message.mmd)
+    WindowMessage->>WindowBase: startMessage() → createTextState($gameMessage.allText(), 0, 0, 0)
+    Note right of WindowMessage: escape codes converted once here, then newPage()
+    loop every frame — updateMessage()
+        loop until isEndOfText() or shouldBreakHere()
+            opt needsNewPage(textState)
+                WindowMessage->>WindowMessage: newPage(textState)
+            end
+            WindowMessage->>WindowMessage: updateShowFast()
+            Note right of WindowMessage: ok / cancel / touch → _showFast = true
+            WindowMessage->>WindowBase: processCharacter(textState)
+            activate WindowBase
+            WindowBase->>WindowMessage: processControlCharacter(textState, c)
+            activate WindowMessage
+            Note right of WindowMessage: calls Window_Base version first,<br/>form feed → processNewPage() → startPause()
+            WindowMessage->>WindowMessage: processEscapeCharacter(code, textState)
+            activate WindowMessage
+            alt "$"
+                Note right of WindowMessage: _goldWindow.open()
+            else "."
+                WindowMessage->>WindowMessage: startWait(15)
+            else "|"
+                WindowMessage->>WindowMessage: startWait(60)
+            else "!"
+                WindowMessage->>WindowMessage: startPause()
+                Note right of WindowMessage: startWait(10), pause = true,<br/>waits for ok / cancel input
+            else backslash-greater-than
+                Note right of WindowMessage: _lineShowFast = true (rest of line at once)
+            else backslash-less-than
+                Note right of WindowMessage: _lineShowFast = false
+            else "^"
+                Note right of WindowMessage: _pauseSkip = true (no pause at end of text)
+            else any other code
+                WindowMessage->>WindowBase: Window_Base.prototype.processEscapeCharacter(code, textState)
+                Note right of WindowBase: \C, \I, \PX, \PY, \FS, \{ and \} as above
+            end
+            deactivate WindowMessage
+            deactivate WindowMessage
+            deactivate WindowBase
+            Note right of WindowMessage: canBreakHere() and not _showFast / _lineShowFast,<br/>or isWaiting() → break (one character per frame)
+        end
+        WindowMessage->>WindowBase: flushTextState(textState)
+        opt isEndOfText() && !isWaiting()
+            WindowMessage->>WindowMessage: onEndOfText()
+            Note right of WindowMessage: startInput() or startPause(),<br/>or terminateMessage() when _pauseSkip
+        end
+    end
+    end
