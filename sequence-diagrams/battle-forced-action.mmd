@@ -1,0 +1,118 @@
+sequenceDiagram
+    title RPG Maker MZ — Force Action event command (command339) and the "action" wait mode
+
+    participant Interpreter as Game_Interpreter ($gameTroop._interpreter)
+    participant GameTroop as $gameTroop
+    participant BattleManager
+    participant Battler as Game_Battler (forced)
+    participant Action as Game_Action (forcing)
+    participant Subject as Game_Battler (current _subject)
+    participant LogWindow as Window_BattleLog
+
+    Note over Interpreter,LogWindow: troop battle events run from BattleManager.updateEventMain() → $gameTroop.updateInterpreter() (see battle-turn.mmd)
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,LogWindow: Force Action — params [battler type, id or index, skillId, targetIndex]
+    GameTroop->>Interpreter: update()
+    activate Interpreter
+    Interpreter->>Interpreter: executeCommand() → command339(params)
+    activate Interpreter
+    Interpreter->>Interpreter: iterateBattler(params[0], params[1], callback)
+    Note right of Interpreter: only if $gameParty.inBattle()<br/>params[0] 0 → iterateEnemyIndex (index, -1 = all enemies)<br/>else iterateActorId (actorId, 0 = whole party)
+    loop each battler
+        opt !battler.isDeathStateAffected()
+            Interpreter->>Battler: forceAction(skillId, targetIndex)
+            activate Battler
+            Battler->>Battler: clearActions()
+            Note right of Battler: queued actions are dropped
+            Battler->>Action: new Game_Action(this, true)
+            Note right of Action: _forcing = true
+            Battler->>Action: setSkill(skillId)
+            alt targetIndex -2 (Last Target)
+                Battler->>Action: setTarget(_lastTargetIndex)
+            else targetIndex -1 (Random)
+                Battler->>Action: decideRandomTarget()
+                Note right of Action: randomDeadTarget() or randomTarget()<br/>of the matching unit → _targetIndex
+            else index 0 and up
+                Battler->>Action: setTarget(targetIndex)
+            end
+            Note right of Battler: _actions.push(action) if action.item()
+            deactivate Battler
+            Interpreter->>BattleManager: forceAction(battler)
+            activate BattleManager
+            opt battler.numActions() > 0
+                Note right of BattleManager: _actionForcedBattler = battler<br/>_actionBattlers.remove(battler)<br/>(it will not act again in this turn)
+            end
+            deactivate BattleManager
+            Interpreter->>Interpreter: setWaitMode("action")
+        end
+    end
+    deactivate Interpreter
+    Interpreter->>Interpreter: updateWait() → updateWaitMode()
+    Note right of Interpreter: "action": waiting = BattleManager.isActionForced()<br/>→ the event stops here and update() returns
+    deactivate Interpreter
+    Note over Interpreter,BattleManager: one battler at a time: with several battlers in the loop<br/>only the last one stays in _actionForcedBattler
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,LogWindow: next frame — BattleManager.update() → updateEvent()
+    BattleManager->>BattleManager: updateEvent()
+    activate BattleManager
+    Note right of BattleManager: only in _phase "start", "turn" or "turnEnd"
+    BattleManager->>BattleManager: isActionForced()
+    Note right of BattleManager: !!_actionForcedBattler<br/>&& !$gameParty.isAllDead() && !$gameTroop.isAllDead()
+    BattleManager->>BattleManager: processForcedAction()
+    activate BattleManager
+    opt _subject (a battler is in the middle of its actions)
+        BattleManager->>Subject: endBattlerActions(_subject)
+        Note right of Subject: setActionState("done" or "undecided" in TPB)<br/>onAllActionsEnd(), clearTpbChargeTime()<br/>its remaining actions are skipped
+    end
+    Note right of BattleManager: _subject = _actionForcedBattler<br/>_actionForcedBattler = null
+    BattleManager->>BattleManager: startAction()
+    activate BattleManager
+    Note right of BattleManager: no prepare() / isValid() here
+    BattleManager->>Battler: currentAction()
+    Battler-->>BattleManager: forced action
+    BattleManager->>Action: makeTargets()
+    Note right of Action: _forcing skips the confusion target<br/>uses the _targetIndex set above
+    Action-->>BattleManager: targets
+    Note right of BattleManager: _phase = "action"
+    BattleManager->>Battler: useItem(action.item())
+    Note right of Battler: cost is still paid (see skill-cost-and-usability.mmd)<br/>_forcing makes isValid() ignore canUse()
+    BattleManager->>Action: applyGlobal()
+    BattleManager->>LogWindow: startAction(subject, action, targets)
+    deactivate BattleManager
+    BattleManager->>Battler: removeCurrentAction()
+    deactivate BattleManager
+    BattleManager-->>BattleManager: updateEvent() returns true (updatePhase skipped)
+    deactivate BattleManager
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,LogWindow: _phase "action" — same as a normal action (see battle-turn.mmd)
+    loop each target
+        BattleManager->>BattleManager: updateAction() → invokeAction(subject, target)
+        Note right of BattleManager: updateEvent() only runs checkAbort() in "action",<br/>so the troop event stays paused
+    end
+    BattleManager->>BattleManager: endAction()
+    activate BattleManager
+    BattleManager->>LogWindow: endAction(subject)
+    Note right of BattleManager: _phase = "turn"
+    opt subject.numActions() === 0
+        BattleManager->>Battler: endBattlerActions(subject)
+        Note right of BattleManager: _subject = null
+    end
+    deactivate BattleManager
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,LogWindow: event resumes
+    BattleManager->>BattleManager: updateEvent() → updateEventMain()
+    BattleManager->>GameTroop: updateInterpreter()
+    GameTroop->>Interpreter: update()
+    activate Interpreter
+    Interpreter->>Interpreter: updateWaitMode()
+    Note right of Interpreter: isActionForced() false → _waitMode = ""<br/>next command runs
+    deactivate Interpreter
+    Note over BattleManager,Subject: turn-based: updateTurn() goes on with getNextSubject()<br/>TPB: the next ready battler (see battle-tpb.mmd)
+    end
