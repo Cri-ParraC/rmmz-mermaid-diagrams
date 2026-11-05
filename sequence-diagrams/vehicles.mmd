@@ -1,0 +1,166 @@
+sequenceDiagram
+    title RPG Maker MZ — Vehicles — Getting on, driving and getting off
+
+    actor User as Player
+    participant Input
+    participant GamePlayer as $gamePlayer
+    participant GameMap as $gameMap
+    participant Vehicle as Game_Vehicle
+    participant Followers as Game_Followers
+    participant GameSystem as $gameSystem
+    participant AudioManager
+
+    Note over GameMap,Vehicle: Game_Map.createVehicles() made boat, ship and airship once,<br/>each loadSystemSettings() from $dataSystem (start map, x, y, image)
+
+    User->>Input: press OK
+    Note over GamePlayer: updateNonmoving() → triggerAction() → triggerButtonAction()<br/>(see scene-map-update.mmd)
+    GamePlayer->>Input: isTriggered("ok")
+    GamePlayer->>GamePlayer: getOnOffVehicle()
+    activate GamePlayer
+    Note right of GamePlayer: also reached from command206 (Get on/off Vehicle)<br/>and triggerTouchActionD1 / D2 (mouse / touch)
+    alt isInVehicle()
+        GamePlayer->>GamePlayer: getOffVehicle()
+        Note right of GamePlayer: see "Getting off" below
+    else walking
+        GamePlayer->>GamePlayer: getOnVehicle()
+        activate GamePlayer
+        Note right of GamePlayer: (x1, y1) = player tile, (x2, y2) = tile in front
+        alt $gameMap.airship().pos(x1, y1)
+            Note right of GamePlayer: _vehicleType = "airship"
+        else $gameMap.ship().pos(x2, y2)
+            Note right of GamePlayer: _vehicleType = "ship"
+        else $gameMap.boat().pos(x2, y2)
+            Note right of GamePlayer: _vehicleType = "boat"
+        end
+        opt isInVehicle()
+            Note right of GamePlayer: _vehicleGettingOn = true
+            opt !isInAirship()
+                GamePlayer->>GamePlayer: forceMoveForward()
+                Note right of GamePlayer: setThrough(true), moveForward(), setThrough(false)<br/>→ walks onto the boat / ship tile
+            end
+            GamePlayer->>Followers: gatherFollowers() → gather()
+            Note right of Followers: _gathering = true (see followers.mmd)
+        end
+        deactivate GamePlayer
+    end
+    deactivate GamePlayer
+
+    loop every frame — Game_Player.update() → updateVehicle()
+        Note right of GamePlayer: canMove() is false while _vehicleGettingOn / Off,<br/>isStopping() is false too
+        opt isInVehicle() and !areFollowersGathering()
+            alt _vehicleGettingOn
+                GamePlayer->>GamePlayer: updateVehicleGetOn()
+                activate GamePlayer
+                opt !areFollowersGathering() and !isMoving()
+                    GamePlayer->>Vehicle: direction(), moveSpeed()
+                    GamePlayer->>GamePlayer: setDirection(vehicle dir), setMoveSpeed(vehicle speed)
+                    Note right of GamePlayer: _vehicleGettingOn = false<br/>setTransparent(true), airship → setThrough(true)
+                    GamePlayer->>Vehicle: getOn()
+                    activate Vehicle
+                    Note right of Vehicle: _driving = true<br/>setWalkAnime(true), setStepAnime(true)
+                    Vehicle->>GameSystem: saveWalkingBgm()
+                    GameSystem->>AudioManager: saveBgm()
+                    Note right of GameSystem: _walkingBgm = current map BGM
+                    Vehicle->>Vehicle: playBgm()
+                    Vehicle->>AudioManager: playBgm(_bgm || vehicle().bgm)
+                    deactivate Vehicle
+                end
+                deactivate GamePlayer
+            else _vehicleGettingOff
+                GamePlayer->>GamePlayer: updateVehicleGetOff()
+                Note right of GamePlayer: see "Getting off" below
+            else driving
+                GamePlayer->>Vehicle: syncWithPlayer()
+                Note right of Vehicle: copyPosition($gamePlayer), refreshBushDepth()
+            end
+        end
+    end
+
+    Note over GameMap,Vehicle: Every frame $gameMap.updateVehicles() → vehicle.update()
+    GameMap->>Vehicle: update()
+    activate Vehicle
+    Vehicle->>Vehicle: Game_Character.update()
+    opt isAirship()
+        Vehicle->>Vehicle: updateAirship()
+        Note right of Vehicle: updateAirshipAltitude(): _driving → _altitude++ up to 48,<br/>not driving → _altitude-- down to 0<br/>setStepAnime(isHighest()), setPriorityType(isLowest() ? 0 : 2)
+    end
+    deactivate Vehicle
+
+    Note over User,Vehicle: Driving — movement passability comes from the vehicle
+    User->>Input: arrow keys
+    GamePlayer->>GamePlayer: moveByInput()
+    activate GamePlayer
+    Note right of GamePlayer: canMove(): in an airship only when vehicle().canMove(),<br/>which is isHighest()
+    GamePlayer->>GamePlayer: executeMove(d) → moveStraight(d)
+    GamePlayer->>GamePlayer: canPass(x, y, d)
+    activate GamePlayer
+    Note right of GamePlayer: map bounds, isThrough() → true (airship)
+    GamePlayer->>GamePlayer: isMapPassable(x, y, d)
+    GamePlayer->>GamePlayer: vehicle()
+    GamePlayer->>GameMap: vehicle(_vehicleType)
+    GameMap-->>GamePlayer: Game_Vehicle
+    GamePlayer->>Vehicle: isMapPassable(x, y, d)
+    activate Vehicle
+    alt isBoat()
+        Vehicle->>GameMap: isBoatPassable(x2, y2)
+    else isShip()
+        Vehicle->>GameMap: isShipPassable(x2, y2)
+    else isAirship()
+        Note right of Vehicle: true
+    end
+    deactivate Vehicle
+    GamePlayer->>GamePlayer: isCollidedWithCharacters(x2, y2)
+    deactivate GamePlayer
+    Note right of GamePlayer: on success _followers.updateMove() then<br/>Game_Character.moveStraight(d)
+    deactivate GamePlayer
+    Note right of GamePlayer: in an airship canStartLocalEvents() is false and<br/>canEncounter() is false, a ship halves encounter progress
+
+    Note over User,Vehicle: Getting off
+    User->>Input: press OK
+    GamePlayer->>GamePlayer: getOnOffVehicle() → getOffVehicle()
+    activate GamePlayer
+    GamePlayer->>Vehicle: isLandOk(x, y, direction())
+    activate Vehicle
+    alt isAirship()
+        Vehicle->>GameMap: isAirshipLandOk(x, y), eventsXy(x, y)
+        Note right of Vehicle: ok when the tile allows landing and has no event
+    else boat / ship
+        Vehicle->>GameMap: isValid(x2, y2), isPassable(x2, y2, reverseDir(d))
+        Vehicle->>Vehicle: isCollidedWithCharacters(x2, y2)
+    end
+    Vehicle-->>GamePlayer: landOk
+    deactivate Vehicle
+    opt landOk
+        opt isInAirship()
+            GamePlayer->>GamePlayer: setDirection(2)
+        end
+        GamePlayer->>Followers: synchronize(x, y, direction())
+        GamePlayer->>Vehicle: getOff()
+        activate Vehicle
+        Note right of Vehicle: _driving = false<br/>setWalkAnime(false), setStepAnime(false), resetDirection()
+        Vehicle->>GameSystem: replayWalkingBgm()
+        GameSystem->>AudioManager: playBgm(_walkingBgm)
+        deactivate Vehicle
+        opt !isInAirship()
+            GamePlayer->>GamePlayer: forceMoveForward()
+            GamePlayer->>GamePlayer: setTransparent(false)
+        end
+        Note right of GamePlayer: _vehicleGettingOff = true<br/>setMoveSpeed(4), setThrough(false)
+        GamePlayer->>GamePlayer: makeEncounterCount()
+        GamePlayer->>Followers: gatherFollowers() → gather()
+    end
+    deactivate GamePlayer
+
+    loop every frame while _vehicleGettingOff
+        GamePlayer->>GamePlayer: updateVehicleGetOff()
+        activate GamePlayer
+        opt !areFollowersGathering() and vehicle().isLowest()
+            Note right of GamePlayer: airship waits until _altitude reaches 0
+            Note right of GamePlayer: _vehicleGettingOff = false<br/>_vehicleType = "walk", setTransparent(false)
+        end
+        deactivate GamePlayer
+    end
+
+    Note over GameMap,AudioManager: Vehicle BGM settings
+    Note over Vehicle: command140 (Change Vehicle BGM) → $gameMap.vehicle(params[0]).setBgm(params[1]) → _bgm
+    Note over GameMap: Game_Map.autoplay() on map entry: if isInVehicle() → $gameSystem.saveWalkingBgm2()<br/>(_walkingBgm = $dataMap.bgm, so it plays after getting off), else AudioManager.playBgm($dataMap.bgm)
