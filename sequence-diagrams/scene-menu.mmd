@@ -1,0 +1,133 @@
+sequenceDiagram
+    title RPG Maker MZ — Main menu (Scene_Map.callMenu → Scene_Menu → personal command → popScene)
+
+    actor User as Player
+    participant Input as Input / TouchInput
+    participant SceneMap as Scene_Map
+    participant SceneManager
+    participant SceneMenu as Scene_Menu
+    participant CommandWindow as Window_MenuCommand
+    participant StatusWindow as Window_MenuStatus
+    participant GameParty as $gameParty
+    participant SubScene as Scene_Skill / Scene_Equip / Scene_Status
+
+    Note over SceneMap: Scene_Map.update() → updateScene() only when isSceneChangeOk()<br/>(see scene-map-update.mmd)
+    User->>Input: presses Esc / X or right-clicks
+    SceneMap->>SceneMap: updateCallMenu()
+    activate SceneMap
+    SceneMap->>SceneMap: isMenuEnabled()
+    Note right of SceneMap: $gameSystem.isMenuEnabled() && !$gameMap.isEventRunning()
+    alt menu enabled
+        SceneMap->>SceneMap: isMenuCalled()
+        SceneMap->>Input: Input.isTriggered("menu") / TouchInput.isCancelled()
+        Input-->>SceneMap: true
+        Note right of SceneMap: menuCalling = true
+        opt menuCalling && !$gamePlayer.isMoving()
+            SceneMap->>SceneMap: callMenu()
+            activate SceneMap
+            SceneMap->>SceneMap: SoundManager.playOk()
+            SceneMap->>SceneManager: push(Scene_Menu)
+            Note right of SceneManager: _stack.push(Scene_Map), goto(Scene_Menu)<br/>(see scenemanager-scene-change.mmd)
+            SceneMap->>CommandWindow: Window_MenuCommand.initCommandPosition()
+            Note right of CommandWindow: _lastCommandSymbol = null
+            SceneMap->>SceneMap: $gameTemp.clearDestination(), _mapNameWindow.hide()
+            Note right of SceneMap: _waitCount = 2 → isBusy() for 2 frames
+            deactivate SceneMap
+        end
+    else menu disabled
+        Note right of SceneMap: menuCalling = false
+    end
+    deactivate SceneMap
+
+    SceneManager->>SceneMap: terminate()
+    activate SceneMap
+    SceneMap->>SceneManager: snapForBackground()
+    Note right of SceneManager: _backgroundBitmap = snap() of the map
+    deactivate SceneMap
+
+    SceneManager->>SceneMenu: create()
+    activate SceneMenu
+    Note right of SceneMenu: Scene_MenuBase.create(): createBackground()<br/>(blurred SceneManager.backgroundBitmap()),<br/>updateActor(), createWindowLayer(), createButtons()
+    SceneMenu->>CommandWindow: <<create>> new Window_MenuCommand(rect)
+    Note right of CommandWindow: makeCommandList(), selectLast()
+    SceneMenu->>CommandWindow: setHandler("item", commandItem)
+    SceneMenu->>CommandWindow: setHandler("skill" / "equip" / "status", commandPersonal)
+    SceneMenu->>CommandWindow: setHandler("formation" / "options" / "save" / "gameEnd", ...)
+    SceneMenu->>CommandWindow: setHandler("cancel", popScene)
+    SceneMenu->>SceneMenu: createGoldWindow()
+    SceneMenu->>StatusWindow: <<create>> new Window_MenuStatus(rect)
+    deactivate SceneMenu
+    SceneManager->>SceneMenu: start()
+    SceneMenu->>StatusWindow: refresh()
+
+    loop every frame — Scene_Menu.update() → updateChildren() → each window.update()
+        Note over CommandWindow: active window handles input<br/>(see window-selectable-input.mmd)
+        User->>Input: chooses a command (OK)
+        CommandWindow->>CommandWindow: processOk()
+        activate CommandWindow
+        Note right of CommandWindow: _lastCommandSymbol = currentSymbol()<br/>then Window_Selectable.processOk(): deactivate()
+        CommandWindow->>CommandWindow: callOkHandler()
+        Note right of CommandWindow: Window_Command calls the handler of currentSymbol()
+        alt symbol "item"
+            CommandWindow->>SceneMenu: commandItem()
+            SceneMenu->>SceneManager: push(Scene_Item)
+            Note right of SceneManager: see scene-item-use.mmd
+        else symbol "skill" / "equip" / "status"
+            CommandWindow->>SceneMenu: commandPersonal()
+            activate SceneMenu
+            SceneMenu->>StatusWindow: setFormationMode(false)
+            SceneMenu->>StatusWindow: selectLast()
+            StatusWindow->>GameParty: menuActor()
+            Note right of StatusWindow: smoothSelect(menuActor().index() or 0)
+            SceneMenu->>StatusWindow: activate()
+            SceneMenu->>StatusWindow: setHandler("ok", onPersonalOk)
+            SceneMenu->>StatusWindow: setHandler("cancel", onPersonalCancel)
+            deactivate SceneMenu
+        else symbol "formation"
+            CommandWindow->>SceneMenu: commandFormation()
+            Note right of SceneMenu: same as commandPersonal() with setFormationMode(true)<br/>onFormationOk() calls $gameParty.swapOrder(index, pendingIndex)
+        else symbol "options" / "save" / "gameEnd"
+            CommandWindow->>SceneMenu: commandOptions() / commandSave() / commandGameEnd()
+            SceneMenu->>SceneManager: push(Scene_Options / Scene_Save / Scene_GameEnd)
+        end
+        deactivate CommandWindow
+
+        opt StatusWindow active (personal command)
+            User->>Input: picks an actor
+            alt OK
+                StatusWindow->>StatusWindow: processOk()
+                activate StatusWindow
+                StatusWindow->>StatusWindow: Window_StatusBase.processOk() → deactivate()
+                StatusWindow->>SceneMenu: callOkHandler() → onPersonalOk()
+                activate SceneMenu
+                SceneMenu->>CommandWindow: currentSymbol()
+                CommandWindow-->>SceneMenu: "skill" / "equip" / "status"
+                SceneMenu->>SceneManager: push(Scene_Skill / Scene_Equip / Scene_Status)
+                deactivate SceneMenu
+                StatusWindow->>GameParty: setMenuActor(actor(index()))
+                Note right of GameParty: _menuActorId = actor.actorId()<br/>(set right after the handler, before the new scene is created)
+                deactivate StatusWindow
+            else Cancel
+                StatusWindow->>SceneMenu: processCancel() → onPersonalCancel()
+                SceneMenu->>StatusWindow: deselect()
+                SceneMenu->>CommandWindow: activate()
+            end
+        end
+    end
+
+    SceneManager->>SubScene: create()
+    activate SubScene
+    SubScene->>SubScene: Scene_MenuBase.updateActor()
+    SubScene->>GameParty: menuActor()
+    GameParty-->>SubScene: actor chosen in the status window
+    Note right of SubScene: Scene_Equip flow: see scene-equip.mmd
+    deactivate SubScene
+    User->>Input: Cancel in the sub scene
+    SubScene->>SceneManager: popScene() → pop()
+    Note right of SceneManager: goto(_stack.pop()) → a new Scene_Menu<br/>Window_MenuCommand.selectLast() restores _lastCommandSymbol
+
+    User->>Input: Cancel in Scene_Menu
+    CommandWindow->>CommandWindow: processCancel()
+    CommandWindow->>SceneMenu: callCancelHandler() → popScene()
+    SceneMenu->>SceneManager: pop()
+    Note right of SceneManager: goto(Scene_Map) → the map scene is recreated
