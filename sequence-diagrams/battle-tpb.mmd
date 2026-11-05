@@ -1,0 +1,177 @@
+sequenceDiagram
+    title RPG Maker MZ — Time Progress Battle (BattleManager.isTpb())
+
+    actor User as Player
+    participant SceneBattle as Scene_Battle
+    participant BattleManager
+    participant GameParty as $gameParty
+    participant GameTroop as $gameTroop
+    participant Battler as Game_Battler (actor / enemy)
+    participant LogWindow as Window_BattleLog
+
+    Note over SceneBattle,LogWindow: isTpb(): $dataSystem.battleSystem 1 (active) or 2 (wait), 0 is turn-based (see battle-turn.mmd)
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneBattle,LogWindow: battle start (see battle-start.mmd)
+    BattleManager->>GameParty: onBattleStart(_preemptive)
+    BattleManager->>GameTroop: onBattleStart(_surprise)
+    GameTroop->>Battler: onBattleStart(advantageous) for each member
+    activate Battler
+    Battler->>Battler: initTpbChargeTime(advantageous)
+    Note right of Battler: _tpbState = "charging"<br/>_tpbChargeTime = 1 if advantageous,<br/>else tpbRelativeSpeed() * random * 0.5 (0 if restricted)
+    Battler->>Battler: initTpbTurn()
+    Note right of Battler: _tpbTurnEnd = false, _tpbTurnCount = 0, _tpbIdleTime = 0
+    deactivate Battler
+    BattleManager->>BattleManager: updateStart()
+    Note right of BattleManager: TPB skips startInput(): _phase = "turn" at once
+    end
+
+    loop every frame — Scene_Battle.updateBattleProcess() → BattleManager.update(isTimeActive())
+        Note over SceneBattle,BattleManager: isTimeActive(): active TPB → time stops only in skill / item windows,<br/>wait TPB → time stops while any input window is active
+        opt !isBusy() && !updateEvent()
+            BattleManager->>BattleManager: updatePhase(timeActive) → updateTurn(timeActive)
+            activate BattleManager
+            Note right of BattleManager: $gameParty.requestMotionRefresh()
+            opt timeActive
+                BattleManager->>BattleManager: updateTpb()
+                activate BattleManager
+                BattleManager->>GameParty: updateTpb()
+                BattleManager->>GameTroop: updateTpb()
+                Note right of GameTroop: Game_Unit.updateTpb() → member.updateTpb()
+                GameTroop->>Battler: updateTpb()
+                activate Battler
+                opt canMove()
+                    Battler->>Battler: updateTpbChargeTime()
+                    activate Battler
+                    Note right of Battler: "charging": _tpbChargeTime += tpbAcceleration()<br/>tpbAcceleration() = tpbRelativeSpeed() / tpbReferenceTime()<br/>(sqrt(agi) + 1 relative to the party base speed,<br/>reference 240 frames active, 60 wait)
+                    opt _tpbChargeTime reaches 1
+                        Battler->>Battler: onTpbCharged()
+                        alt shouldDelayTpbCharge()
+                            Note right of Battler: wait mode while $gameParty.canInput():<br/>stays at 1 until the input is done
+                        else
+                            Battler->>Battler: finishTpbCharge()
+                            Note right of Battler: _tpbState = "charged"<br/>_tpbTurnEnd = true, _tpbIdleTime = 0
+                        end
+                    end
+                    deactivate Battler
+                    Battler->>Battler: updateTpbCastTime()
+                    Note right of Battler: "casting": _tpbCastTime += tpbAcceleration()<br/>until tpbRequiredCastTime() (from negative item speed)<br/>→ _tpbState = "ready"
+                    Battler->>Battler: updateTpbAutoBattle()
+                    Note right of Battler: charged, auto battle → makeTpbActions()
+                end
+                opt isAlive()
+                    Battler->>Battler: updateTpbIdleTime()
+                    Note right of Battler: grows while !canMove() or charged without input
+                end
+                deactivate Battler
+
+                BattleManager->>BattleManager: updateAllTpbBattlers()
+                loop each battler in allBattleMembers()
+                    BattleManager->>BattleManager: updateTpbBattler(battler)
+                    activate BattleManager
+                    alt battler.isTpbTurnEnd()
+                        BattleManager->>Battler: onTurnEnd()
+                        Note right of Battler: clearResult(), regenerateAll(),<br/>Game_BattlerBase.updateStateTurns() / updateBuffTurns(),<br/>removeStatesAuto(2)
+                        BattleManager->>Battler: startTpbTurn()
+                        activate Battler
+                        Note right of Battler: _tpbTurnEnd = false, _tpbTurnCount++<br/>(turnCount() returns _tpbTurnCount in TPB)
+                        opt numActions() === 0
+                            Battler->>Battler: makeTpbActions()
+                            Note right of Battler: makeActions()<br/>canInput() (actor, charged) → setActionState("undecided")<br/>else startTpbCasting(), setActionState("waiting")
+                        end
+                        deactivate Battler
+                        BattleManager->>LogWindow: displayBattlerStatus(battler, false)
+                        Note right of LogWindow: states, regeneration popup (see damage-popup.mmd)
+                    else battler.isTpbReady()
+                        BattleManager->>Battler: startTpbAction()
+                        Note right of Battler: _tpbState = "acting"
+                        BattleManager->>BattleManager: _actionBattlers.push(battler)
+                    else battler.isTpbTimeout()
+                        BattleManager->>Battler: onTpbTimeout()
+                        Note right of Battler: onAllActionsEnd(), _tpbTurnEnd = true
+                        BattleManager->>LogWindow: displayBattlerStatus(battler, true)
+                    end
+                    deactivate BattleManager
+                end
+
+                BattleManager->>BattleManager: checkTpbTurnEnd()
+                opt $gameTroop.isTpbTurnEnd()
+                    Note right of GameTroop: max member turnCount() above troop _turnCount
+                    BattleManager->>BattleManager: endTurn()
+                    Note right of BattleManager: _phase = "turnEnd"
+                end
+                deactivate BattleManager
+            end
+
+            opt !_subject
+                BattleManager->>BattleManager: getNextSubject()
+                Note right of BattleManager: _actionBattlers.shift(), alive battle member
+            end
+            opt _subject
+                BattleManager->>BattleManager: processTurn()
+                Note right of BattleManager: currentAction().prepare(), isValid() → startAction(),<br/>_phase = "action", then updateAction() per target<br/>(same as turn-based, see battle-turn.mmd)
+            end
+            Note right of BattleManager: no subject in TPB → no endTurn() here
+            deactivate BattleManager
+        end
+
+        opt _phase "action" finished — endAction()
+            BattleManager->>LogWindow: endAction(subject)
+            Note right of BattleManager: _phase = "turn"
+            opt subject.numActions() === 0
+                BattleManager->>BattleManager: endBattlerActions(subject)
+                BattleManager->>Battler: setActionState("undecided"), onAllActionsEnd()
+                BattleManager->>Battler: clearTpbChargeTime()
+                Note right of Battler: _tpbState = "charging", _tpbChargeTime = 0<br/>(the time gauge starts again)
+                Note right of BattleManager: _subject = null
+            end
+        end
+
+        opt _phase "turnEnd"
+            BattleManager->>BattleManager: updateTurnEnd()
+            Note right of BattleManager: TPB: startTurn() right away (no endAllBattlersTurn())
+            BattleManager->>GameTroop: startTurn() → increaseTurn()
+            Note right of GameTroop: _turnCount++ for troop event conditions,<br/>_phase = "turn", no makeActionOrders() in TPB
+        end
+
+        BattleManager->>BattleManager: updateTpbInput()
+        activate BattleManager
+        alt _inputting
+            BattleManager->>BattleManager: checkTpbInputClose()
+            Note right of BattleManager: !isPartyTpbInputtable() or needsActorInputCancel()<br/>→ cancelActorInput(), _currentActor = null, _inputting = false
+        else
+            BattleManager->>BattleManager: checkTpbInputOpen()
+            activate BattleManager
+            opt isPartyTpbInputtable()
+                Note right of BattleManager: $gameParty.canInput() (an actor is charged)<br/>and _phase is turn / turnEnd / action
+                alt _tpbNeedsPartyCommand (first time only)
+                    Note right of BattleManager: _inputting = true → party command window
+                else
+                    BattleManager->>BattleManager: selectNextCommand() → selectNextActor()
+                    BattleManager->>BattleManager: changeCurrentActor(true)
+                    BattleManager->>BattleManager: startActorInput()
+                    BattleManager->>Battler: setActionState("inputting")
+                    Note right of BattleManager: _inputting = true
+                end
+            end
+            deactivate BattleManager
+        end
+        deactivate BattleManager
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneBattle,LogWindow: actor input while time keeps running (active) or stops (wait)
+    SceneBattle->>SceneBattle: changeInputWindow() → startActorCommandSelection()
+    User->>SceneBattle: Attack / Skill / Guard / Item and target
+    SceneBattle->>BattleManager: inputtingAction() then selectNextCommand()
+    activate BattleManager
+    BattleManager->>BattleManager: finishActorInput()
+    BattleManager->>Battler: startTpbCasting()
+    Note right of Battler: _tpbState = "casting", _tpbCastTime = 0
+    BattleManager->>Battler: setActionState("waiting")
+    BattleManager->>BattleManager: selectNextActor()
+    Note right of BattleManager: TPB: changeCurrentActor(true) again,<br/>never startTurn() as in turn-based mode
+    deactivate BattleManager
+    Note over Battler,LogWindow: the battler casts, becomes "ready", is pushed to _actionBattlers<br/>by updateTpbBattler() and acts via processTurn()
+    Note over SceneBattle,GameParty: Escape failure: Game_Actor.onEscapeFailure() → applyTpbPenalty()<br/>(_tpbChargeTime -= 1), no startTurn() in TPB<br/>Window_StatusBase.placeTimeGauge() shows tpbChargeTime() as the "time" gauge
+    end
