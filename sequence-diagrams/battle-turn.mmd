@@ -1,0 +1,166 @@
+sequenceDiagram
+    title RPG Maker MZ — Battle turn (turn-based mode, BattleManager phases)
+
+    actor User as Player
+    participant SceneBattle as Scene_Battle
+    participant BattleManager
+    participant GameTroop as $gameTroop
+    participant GameParty as $gameParty
+    participant Subject as Game_Battler (subject)
+    participant Action as Game_Action
+    participant Target as Game_Battler (target)
+    participant LogWindow as Window_BattleLog
+
+    loop every frame — Scene_Battle.update()
+        SceneBattle->>SceneBattle: updateVisibility()
+        Note right of SceneBattle: updateInputWindowVisibility() →<br/>changeInputWindow() when BattleManager.isInputting() changes
+        opt isActive() && !isBusy()
+            SceneBattle->>SceneBattle: updateBattleProcess()
+            SceneBattle->>BattleManager: update(isTimeActive())
+            activate BattleManager
+            BattleManager->>BattleManager: isBusy()
+            Note right of BattleManager: $gameMessage / Spriteset_Battle / Window_BattleLog busy
+            BattleManager->>BattleManager: updateEvent()
+            activate BattleManager
+            Note right of BattleManager: phases start / turn / turnEnd only
+            BattleManager->>GameTroop: updateInterpreter()
+            BattleManager->>BattleManager: checkBattleEnd()
+            BattleManager->>GameTroop: setupBattleEvent()
+            Note right of GameTroop: troop event pages whose conditions are met
+            deactivate BattleManager
+            BattleManager->>BattleManager: updatePhase(timeActive)
+            Note right of BattleManager: switch (_phase) — only when not busy<br/>and no battle event is running
+            deactivate BattleManager
+        end
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneBattle,LogWindow: _phase "start" → input
+    BattleManager->>BattleManager: updateStart()
+    BattleManager->>BattleManager: startInput()
+    activate BattleManager
+    Note right of BattleManager: _phase = "input", _inputting = true
+    BattleManager->>GameParty: makeActions()
+    BattleManager->>GameTroop: makeActions()
+    Note right of GameTroop: enemies pick actions from their action patterns
+    opt _surprise || !$gameParty.canInput()
+        BattleManager->>BattleManager: startTurn()
+    end
+    deactivate BattleManager
+
+    SceneBattle->>SceneBattle: changeInputWindow() → startPartyCommandSelection()
+    User->>SceneBattle: Fight
+    SceneBattle->>SceneBattle: commandFight() → selectNextCommand()
+    SceneBattle->>BattleManager: selectNextCommand()
+    BattleManager->>BattleManager: selectNextActor() → changeCurrentActor(true)
+    loop each actor that canInput()
+        SceneBattle->>SceneBattle: changeInputWindow() → startActorCommandSelection()
+        User->>SceneBattle: Attack / Skill / Guard / Item
+        SceneBattle->>BattleManager: inputtingAction()
+        BattleManager-->>SceneBattle: Game_Action
+        Note right of SceneBattle: e.g. commandAttack() → action.setAttack()<br/>onEnemyOk() → action.setTarget(enemyIndex())
+        SceneBattle->>SceneBattle: selectNextCommand()
+        SceneBattle->>BattleManager: selectNextCommand()
+        Note right of BattleManager: finishActorInput() → selectNextActor()
+    end
+    Note right of BattleManager: no actor left → startTurn()
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneBattle,LogWindow: startTurn() → _phase "turn"
+    activate BattleManager
+    BattleManager->>GameTroop: increaseTurn()
+    BattleManager->>BattleManager: makeActionOrders()
+    Note right of BattleManager: party + troop, battler.makeSpeed(),<br/>sorted by speed() → _actionBattlers
+    BattleManager->>LogWindow: startTurn()
+    Note right of BattleManager: _inputting = false
+    deactivate BattleManager
+
+    loop each battler in _actionBattlers
+        BattleManager->>BattleManager: updateTurn(timeActive)
+        activate BattleManager
+        BattleManager->>BattleManager: getNextSubject()
+        Note right of BattleManager: next alive battle member
+        BattleManager->>BattleManager: processTurn()
+        activate BattleManager
+        BattleManager->>Subject: currentAction()
+        Subject-->>BattleManager: action
+        BattleManager->>Action: prepare()
+        opt action.isValid()
+            BattleManager->>BattleManager: startAction()
+            activate BattleManager
+            BattleManager->>Action: makeTargets()
+            Action-->>BattleManager: targets
+            Note right of BattleManager: _phase = "action"
+            BattleManager->>Subject: useItem(action.item())
+            Note right of Subject: pays MP / TP or consumes the item
+            BattleManager->>Action: applyGlobal()
+            Note right of Action: common event effects
+            BattleManager->>LogWindow: startAction(subject, action, targets)
+            Note right of LogWindow: queues motion, animation and "%1 attacks!"
+            deactivate BattleManager
+        end
+        BattleManager->>Subject: removeCurrentAction()
+        deactivate BattleManager
+        deactivate BattleManager
+
+        loop _phase "action" — one target per frame, after LogWindow is not busy
+            BattleManager->>BattleManager: updateAction()
+            activate BattleManager
+            alt target = _targets.shift()
+                BattleManager->>BattleManager: invokeAction(subject, target)
+                activate BattleManager
+                alt Math.random() < itemCnt(target)
+                    BattleManager->>BattleManager: invokeCounterAttack(subject, target)
+                else Math.random() < itemMrf(target)
+                    BattleManager->>BattleManager: invokeMagicReflection(subject, target)
+                else
+                    BattleManager->>BattleManager: invokeNormalAction(subject, target)
+                    activate BattleManager
+                    BattleManager->>BattleManager: applySubstitute(target)
+                    BattleManager->>Action: apply(realTarget)
+                    activate Action
+                    Note right of Action: itemHit / itemEva → missed / evaded<br/>itemCri → makeDamageValue() → executeDamage()<br/>applyItemEffect() per effect
+                    Action->>Target: gainHp(-value) / addState(...)
+                    deactivate Action
+                    BattleManager->>LogWindow: displayActionResults(subject, realTarget)
+                    deactivate BattleManager
+                end
+                deactivate BattleManager
+            else no targets left
+                BattleManager->>BattleManager: endAction()
+                Note right of BattleManager: _phase = "turn"<br/>numActions() === 0 → _subject = null
+            end
+            deactivate BattleManager
+        end
+    end
+
+    BattleManager->>BattleManager: updateTurn() → endTurn()
+    Note right of BattleManager: no subject left → _phase = "turnEnd"
+    BattleManager->>BattleManager: updateTurnEnd()
+    Note right of BattleManager: endAllBattlersTurn() — regen, state turns<br/>_phase = "start" → next round of input
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneBattle,LogWindow: battle end — checked in updateEvent() every frame
+    BattleManager->>BattleManager: checkBattleEnd()
+    activate BattleManager
+    alt $gameParty.isEscaped()
+        BattleManager->>BattleManager: processPartyEscape()
+    else $gameParty.isAllDead()
+        BattleManager->>BattleManager: processDefeat()
+    else $gameTroop.isAllDead()
+        BattleManager->>BattleManager: processVictory()
+        Note right of BattleManager: performVictory(), playVictoryMe(),<br/>makeRewards(), displayRewards(), gainRewards()
+    end
+    BattleManager->>BattleManager: endBattle(result)
+    Note right of BattleManager: _phase = "battleEnd"<br/>_eventCallback(result) for Battle Processing
+    deactivate BattleManager
+    BattleManager->>BattleManager: updateBattleEnd()
+    alt defeat && !_canLose
+        BattleManager->>SceneBattle: SceneManager.goto(Scene_Gameover)
+    else victory / escape / defeat with canLose
+        BattleManager->>SceneBattle: SceneManager.pop()
+        Note right of SceneBattle: back to Scene_Map (stored by push)
+    end
+    end
