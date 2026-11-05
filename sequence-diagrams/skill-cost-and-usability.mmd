@@ -1,0 +1,124 @@
+sequenceDiagram
+    title RPG Maker MZ — Skill / item usability (canUse) and paying the cost (useItem)
+
+    actor User as Player
+    participant CmdWindow as Window_ActorCommand
+    participant ListWindow as Window_SkillList / Window_ItemList
+    participant Scene as Scene_Battle / Scene_ItemBase
+    participant GameParty as $gameParty
+    participant Battler as Game_Actor / Game_Enemy
+    participant BattleManager
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over CmdWindow,BattleManager: where canUse() is asked
+    CmdWindow->>CmdWindow: makeCommandList()
+    activate CmdWindow
+    CmdWindow->>Battler: canAttack()
+    Note right of Battler: canUse($dataSkills[attackSkillId()])
+    CmdWindow->>Battler: skillTypes()
+    Note right of CmdWindow: one "skill" command per added skill type, always enabled
+    CmdWindow->>Battler: canGuard()
+    Note right of Battler: canUse($dataSkills[guardSkillId()])
+    Note right of CmdWindow: "item" command always enabled
+    deactivate CmdWindow
+
+    ListWindow->>ListWindow: drawItem(index)
+    activate ListWindow
+    alt Window_SkillList
+        ListWindow->>ListWindow: isEnabled(skill)
+        ListWindow->>Battler: _actor.canUse(skill)
+        ListWindow->>Battler: skillTpCost(skill) / skillMpCost(skill)
+        Note right of ListWindow: drawSkillCost(): TP cost shown first,<br/>else MP cost
+    else Window_ItemList (menu) and Window_BattleItem
+        ListWindow->>ListWindow: isEnabled(item)
+        ListWindow->>GameParty: canUse(item)
+        GameParty->>Battler: members().some(actor.canUse(item))
+        Note right of ListWindow: Window_BattleItem.includes() also uses<br/>$gameParty.canUse(), so unusable items are not listed
+    end
+    Note right of ListWindow: changePaintOpacity(isEnabled) greys out the row
+    deactivate ListWindow
+    User->>ListWindow: OK
+    ListWindow->>ListWindow: processOk() → isCurrentItemEnabled()
+    alt enabled
+        ListWindow->>Scene: callOkHandler() → onSkillOk() / onItemOk()
+    else
+        ListWindow->>ListWindow: playBuzzerSound()
+    end
+    Note over Battler,BattleManager: other callers: Game_Enemy.isActionValid() (see battle-enemy-actions.mmd),<br/>Game_Actor.usableSkills() for auto battle, Game_Action.isValid() before acting,<br/>Scene_ItemBase.canUse() in the menu (see scene-item-use.mmd)
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over CmdWindow,BattleManager: Game_BattlerBase.canUse(item)
+    Scene->>Battler: canUse(item)
+    activate Battler
+    alt !item
+        Battler-->>Scene: false
+    else DataManager.isSkill(item)
+        Battler->>Battler: meetsSkillConditions(skill)
+        activate Battler
+        Battler->>Battler: meetsUsableItemConditions(skill)
+        activate Battler
+        Note right of Battler: Game_Actor override: in battle, an item / skill with the<br/>Escape special effect is refused when !BattleManager.canEscape()
+        Battler->>Battler: canMove()
+        Note right of Battler: isAppeared() && restriction() < 4
+        Battler->>Battler: isOccasionOk(skill)
+        Note right of Battler: occasion 0 Always, 1 Battle Screen (inBattle),<br/>2 Menu Screen (not in battle), 3 Never
+        deactivate Battler
+        Battler->>Battler: isSkillWtypeOk(skill)
+        Note right of Battler: Game_Actor: both required weapon types 0, or requiredWtypeId1<br/>or requiredWtypeId2 equipped (isWtypeEquipped), always true for enemies
+        Battler->>Battler: canPaySkillCost(skill)
+        activate Battler
+        Battler->>Battler: skillTpCost(skill)
+        Note right of Battler: skill.tpCost
+        Battler->>Battler: skillMpCost(skill)
+        Note right of Battler: Math.floor(skill.mpCost * mcr)<br/>mcr = MP Cost Rate sp-parameter
+        Note right of Battler: _tp >= tpCost && _mp >= mpCost
+        deactivate Battler
+        Battler->>Battler: isSkillSealed(skill.id)
+        Note right of Battler: TRAIT_SKILL_SEAL from states / equipment / class
+        Battler->>Battler: isSkillTypeSealed(skill.stypeId)
+        Note right of Battler: TRAIT_STYPE_SEAL (e.g. Silence seals Magic)
+        deactivate Battler
+        Battler-->>Scene: all conditions true
+    else DataManager.isItem(item)
+        Battler->>Battler: meetsItemConditions(item)
+        activate Battler
+        Battler->>Battler: meetsUsableItemConditions(item)
+        Note right of Battler: canMove() && isOccasionOk(item)
+        Battler->>GameParty: hasItem(item)
+        GameParty-->>Battler: count > 0
+        deactivate Battler
+        Battler-->>Scene: result
+    else weapon / armor
+        Battler-->>Scene: false
+    end
+    deactivate Battler
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over CmdWindow,BattleManager: paying the cost — Game_Battler.useItem(item)
+    alt battle
+        BattleManager->>BattleManager: processTurn() → action.prepare()
+        BattleManager->>BattleManager: action.isValid()
+        Note right of BattleManager: (_forcing && item) || subject.canUse(item)<br/>MP may have run out since input
+        opt action.isValid()
+            BattleManager->>BattleManager: startAction()
+            BattleManager->>Battler: useItem(action.item())
+        end
+    else menu (Scene_Item / Scene_Skill)
+        Scene->>Scene: onActorOk() → canUse() → useItem()
+        Note right of Scene: Scene_ItemBase.canUse(): user.canUse(item)<br/>&& isItemEffectsValid()
+        Scene->>Battler: user().useItem(item)
+    end
+    activate Battler
+    alt DataManager.isSkill(item)
+        Battler->>Battler: paySkillCost(skill)
+        Note right of Battler: _mp -= skillMpCost(skill)<br/>_tp -= skillTpCost(skill)
+    else DataManager.isItem(item)
+        Battler->>Battler: consumeItem(item)
+        Battler->>GameParty: consumeItem(item)
+        Note right of GameParty: item.consumable → loseItem(item, 1)
+    end
+    deactivate Battler
+    Note over Battler,BattleManager: cost is paid once per action, before any target is hit (see battle-turn.mmd)
+    end

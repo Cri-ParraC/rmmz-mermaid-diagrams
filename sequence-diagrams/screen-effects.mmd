@@ -1,0 +1,106 @@
+sequenceDiagram
+    title RPG Maker MZ — Screen effects (Tint, Flash, Shake, Weather)
+
+    participant Interpreter as Game_Interpreter
+    participant GameScreen as $gameScreen
+    participant Scene as Scene_Map / Scene_Battle
+    participant Spriteset as Spriteset_Base
+    participant SpritesetMap as Spriteset_Map
+    participant ColorFilter
+    participant Weather
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,Weather: Event commands set targets on $gameScreen
+    alt Tint Screen (command223)
+        Interpreter->>GameScreen: startTint(tone, duration)
+        Note right of GameScreen: _toneTarget = tone.clone(), _toneDuration = duration<br/>duration 0 → _tone = _toneTarget immediately
+        opt params[2] (wait)
+            Interpreter->>Interpreter: wait(duration)
+        end
+    else Flash Screen (command224)
+        Interpreter->>GameScreen: startFlash(color, duration)
+        Note right of GameScreen: _flashColor = color.clone() [r, g, b, a],<br/>_flashDuration = duration
+        opt params[2] (wait)
+            Interpreter->>Interpreter: wait(duration)
+        end
+    else Shake Screen (command225)
+        Interpreter->>GameScreen: startShake(power, speed, duration)
+        Note right of GameScreen: _shakePower, _shakeSpeed, _shakeDuration
+        opt params[3] (wait)
+            Interpreter->>Interpreter: wait(duration)
+        end
+    else Set Weather Effect (command236)
+        alt !$gameParty.inBattle()
+            Interpreter->>GameScreen: changeWeather(type, power, duration)
+            Note right of GameScreen: type "none" | "rain" | "storm" | "snow"<br/>_weatherPowerTarget = power (0 for "none"),<br/>_weatherDuration = duration<br/>(type is kept until fade-out ends when "none")
+            opt params[3] (wait)
+                Interpreter->>Interpreter: wait(duration)
+            end
+        else in battle
+            Note right of Interpreter: command is ignored
+        end
+    end
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,Weather: Every frame — Game_Screen interpolates
+    Scene->>GameScreen: update()
+    Note right of Scene: Scene_Map.updateMain() / Scene_Battle.update()
+    activate GameScreen
+    GameScreen->>GameScreen: updateFadeOut(), updateFadeIn()
+    Note right of GameScreen: _brightness for Fadeout / Fadein Screen<br/>(see scene-map-transfer.mmd)
+    GameScreen->>GameScreen: updateTone()
+    Note right of GameScreen: _tone[i] = (_tone[i] * (d - 1) + _toneTarget[i]) / d
+    GameScreen->>GameScreen: updateFlash()
+    Note right of GameScreen: _flashColor[3] (alpha) *= (d - 1) / d
+    GameScreen->>GameScreen: updateShake()
+    Note right of GameScreen: _shake += power * speed * direction / 10,<br/>bounces at ±power * 2, returns to 0 at the end
+    GameScreen->>GameScreen: updateZoom()
+    GameScreen->>GameScreen: updateWeather()
+    Note right of GameScreen: _weatherPower eases to _weatherPowerTarget,<br/>target 0 reached → _weatherType = "none"
+    GameScreen->>GameScreen: updatePictures()
+    Note right of GameScreen: see show-picture.mmd
+    deactivate GameScreen
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,Weather: Every frame — the spriteset reads $gameScreen
+    Scene->>SpritesetMap: update() (via Scene_Base.updateChildren())
+    Note right of Scene: in battle Spriteset_Battle.update()<br/>runs the same Spriteset_Base part
+    activate SpritesetMap
+    SpritesetMap->>Spriteset: Spriteset_Base.prototype.update()
+    activate Spriteset
+    Spriteset->>Spriteset: Sprite.prototype.update()
+    Note right of Spriteset: updates every child first,<br/>including the Weather sprite on the map
+    opt Spriteset_Map only
+        Spriteset->>Weather: update()
+        activate Weather
+        Weather->>Weather: _updateDimmer()
+        Note right of Weather: _dimmerSprite.opacity = floor(power * 6)
+        Weather->>Weather: _updateAllSprites()
+        Note right of Weather: keeps floor(power * 10) particle sprites,<br/>_addSprite() / _removeSprite() / _updateSprite()
+        deactivate Weather
+    end
+    Spriteset->>Spriteset: updateBaseFilters()
+    Spriteset->>GameScreen: tone()
+    Spriteset->>ColorFilter: _baseColorFilter.setColorTone(tone)
+    Note right of ColorFilter: base filter tints only _baseSprite<br/>(map / battleback, characters),<br/>not pictures or the timer
+    Spriteset->>Spriteset: updateOverallFilters()
+    Spriteset->>GameScreen: flashColor(), brightness()
+    Spriteset->>ColorFilter: _overallColorFilter.setBlendColor(flashColor)
+    Spriteset->>ColorFilter: _overallColorFilter.setBrightness(brightness)
+    Note right of ColorFilter: overall filter covers the whole spriteset,<br/>so the flash is a blend color, not a ScreenSprite
+    Spriteset->>Spriteset: updatePosition()
+    Spriteset->>GameScreen: zoomScale(), zoomX(), zoomY(), shake()
+    Note right of Spriteset: scale = zoomScale,<br/>x = -zoomX * (scale - 1) + round(shake())<br/>(shake moves the spriteset horizontally)
+    Spriteset->>Spriteset: updateAnimations()
+    deactivate Spriteset
+    SpritesetMap->>SpritesetMap: updateTileset(), updateParallax(), updateTilemap(), updateShadow()
+    SpritesetMap->>SpritesetMap: updateWeather()
+    activate SpritesetMap
+    SpritesetMap->>GameScreen: weatherType(), weatherPower()
+    SpritesetMap->>Weather: type = weatherType, power = weatherPower
+    Note right of Weather: origin = $gameMap.displayX/Y() * tile size<br/>(used by the next Weather.update())<br/>Spriteset_Battle has no Weather
+    deactivate SpritesetMap
+    deactivate SpritesetMap
+    end

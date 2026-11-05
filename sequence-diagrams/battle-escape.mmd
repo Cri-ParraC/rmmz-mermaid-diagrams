@@ -1,0 +1,125 @@
+sequenceDiagram
+    title RPG Maker MZ — Party escape (Escape command, escape ratio, success / failure)
+
+    actor User as Player
+    participant SceneBattle as Scene_Battle
+    participant PartyCmd as Window_PartyCommand
+    participant BattleManager
+    participant GameParty as $gameParty
+    participant PartyActor as Game_Actor (party member)
+    participant GameTroop as $gameTroop
+    participant GameMessage as $gameMessage
+    participant GameSystem as $gameSystem
+    participant SceneManager
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneBattle,SceneManager: setup — escape ratio (see battle-start.mmd)
+    BattleManager->>BattleManager: setup(troopId, canEscape, canLose)
+    activate BattleManager
+    Note right of BattleManager: _canEscape = canEscape (Battle Processing option)<br/>_escapeRatio = 0, _escaped = false (initMembers)
+    BattleManager->>BattleManager: makeEscapeRatio()
+    activate BattleManager
+    BattleManager->>GameParty: agility()
+    GameParty-->>BattleManager: average agi of members (min 1)
+    BattleManager->>GameTroop: agility()
+    GameTroop-->>BattleManager: average agi of members (min 1)
+    Note right of BattleManager: _escapeRatio = 0.5 * party agility / troop agility
+    deactivate BattleManager
+    deactivate BattleManager
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneBattle,SceneManager: party command — Fight / Escape (see battle-turn.mmd for Fight)
+    SceneBattle->>PartyCmd: setup()
+    activate PartyCmd
+    PartyCmd->>PartyCmd: makeCommandList()
+    PartyCmd->>BattleManager: canEscape()
+    BattleManager-->>PartyCmd: _canEscape
+    Note right of PartyCmd: addCommand(TextManager.escape, "escape", canEscape)<br/>disabled when the event forbids escape
+    deactivate PartyCmd
+    User->>PartyCmd: choose Escape
+    PartyCmd->>SceneBattle: handler "escape" → commandEscape()
+    activate SceneBattle
+    SceneBattle->>BattleManager: processEscape()
+    activate BattleManager
+    BattleManager->>GameParty: performEscape()
+    GameParty->>PartyActor: performEscape()
+    Note right of PartyActor: canMove() → requestMotion("escape")
+    BattleManager->>BattleManager: SoundManager.playEscape()
+    Note right of BattleManager: success = _preemptive || Math.random() < _escapeRatio
+
+    alt success
+        BattleManager->>BattleManager: onEscapeSuccess()
+        activate BattleManager
+        BattleManager->>BattleManager: displayEscapeSuccessMessage()
+        BattleManager->>GameMessage: add(TextManager.escapeStart.format(party name))
+        Note right of BattleManager: _escaped = true<br/>Sprite_Actor.updateTargetPosition() → retreat()
+        BattleManager->>BattleManager: processAbort()
+        activate BattleManager
+        BattleManager->>GameParty: removeBattleStates()
+        Note right of BattleManager: _logWindow.clear(), replayBgmAndBgs()
+        BattleManager->>BattleManager: endBattle(1)
+        activate BattleManager
+        Note right of BattleManager: _phase = "battleEnd"<br/>cancelActorInput(), _inputting = false<br/>_eventCallback(1) → "Escape" branch of Battle Processing
+        BattleManager->>GameSystem: onBattleEscape()
+        Note right of GameSystem: _escapeCount++
+        Note right of BattleManager: $gameTemp.clearCommonEventReservation()
+        deactivate BattleManager
+        deactivate BattleManager
+        deactivate BattleManager
+    else failure
+        BattleManager->>BattleManager: onEscapeFailure()
+        activate BattleManager
+        BattleManager->>GameParty: onEscapeFailure()
+        GameParty->>PartyActor: onEscapeFailure()
+        activate PartyActor
+        opt BattleManager.isTpb()
+            PartyActor->>PartyActor: applyTpbPenalty()
+            Note right of PartyActor: _tpbState = "charging"<br/>_tpbChargeTime -= 1
+        end
+        PartyActor->>PartyActor: clearActions()
+        PartyActor->>PartyActor: requestMotionRefresh()
+        deactivate PartyActor
+        BattleManager->>BattleManager: displayEscapeFailureMessage()
+        BattleManager->>GameMessage: add(escapeStart) + add("\\." + escapeFailure)
+        Note right of BattleManager: _escapeRatio += 0.1 (next try is easier)
+        alt turn-based
+            BattleManager->>BattleManager: startTurn()
+            Note right of BattleManager: _phase = "turn", enemies act this turn,<br/>actors have no actions (see battle-turn.mmd)
+        else TPB
+            Note right of BattleManager: no startTurn() — the penalty empties the gauges,<br/>updateTpbInput() closes the input when no actor<br/>is charged (see battle-tpb.mmd)
+        end
+        deactivate BattleManager
+    end
+    BattleManager-->>SceneBattle: success
+    deactivate BattleManager
+    SceneBattle->>SceneBattle: changeInputWindow()
+    Note right of SceneBattle: isInputting() false → endCommandSelection()
+    deactivate SceneBattle
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneBattle,SceneManager: other escape paths
+    Note over BattleManager,GameParty: Escape special effect on all actors → Game_Battler.escape() hides them →<br/>$gameParty.isEscaped() (all dead + hidden members) → checkBattleEnd() → processPartyEscape()<br/>→ _escaped = true → processAbort() → endBattle(1)
+    Note over BattleManager,GameParty: Abort Battle command → BattleManager.abort() → _phase = "aborting" →<br/>updateEvent() → checkAbort() → processAbort() (result 1, but _escaped stays false)
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneBattle,SceneManager: _phase "battleEnd" — after the message window is closed
+    SceneBattle->>BattleManager: update(timeActive)
+    activate BattleManager
+    Note right of BattleManager: isBusy() waits for $gameMessage
+    BattleManager->>BattleManager: updatePhase() → updateBattleEnd()
+    alt isBattleTest()
+        BattleManager->>SceneManager: exit()
+    else !_escaped && $gameParty.isAllDead()
+        Note right of BattleManager: defeat path (canLose → pop, else Scene_Gameover)
+    else escaped
+        BattleManager->>SceneManager: pop()
+        Note right of SceneManager: back to Scene_Map (see scenemanager-scene-change.mmd)
+    end
+    Note right of BattleManager: _phase = ""
+    deactivate BattleManager
+    SceneManager->>SceneBattle: stop() → terminate()
+    Note right of SceneBattle: $gameParty.onBattleEnd(), $gameTroop.onBattleEnd()<br/>requestAutosave() when the next scene is Scene_Map
+    end

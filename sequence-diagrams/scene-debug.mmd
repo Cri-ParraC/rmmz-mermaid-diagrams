@@ -1,0 +1,136 @@
+sequenceDiagram
+    title RPG Maker MZ — Debug screen (F9 in playtest → Scene_Debug → edit switches and variables)
+
+    actor User as Player
+    participant Input
+    participant GameTemp as $gameTemp
+    participant SceneMap as Scene_Map
+    participant SceneManager
+    participant SceneDebug as Scene_Debug
+    participant RangeWindow as Window_DebugRange
+    participant EditWindow as Window_DebugEdit
+    participant HelpWindow as _debugHelpWindow (Window_Base)
+    participant GameSwitches as $gameSwitches
+    participant GameVariables as $gameVariables
+    participant GameMap as $gameMap
+
+    Note over GameTemp: Game_Temp.initialize(): _isPlaytest = Utils.isOptionValid("test")<br/>("test" is in the URL query when the editor runs a playtest)
+    Note over GameTemp: other playtest-only checks:<br/>Game_Player.isDebugThrough() = Input.isPressed("control") && $gameTemp.isPlaytest()<br/>(Ctrl walks through walls and skips encounters)<br/>SceneManager.showDevTools() (F8) needs Utils.isNwjs() && Utils.isOptionValid("test")
+
+    Note over SceneMap: Scene_Map.update() → updateScene() when isSceneChangeOk()<br/>(see scene-map-update.mmd)
+    User->>Input: presses F9
+    Note right of Input: keyMapper[120] = "debug"
+    SceneMap->>SceneMap: updateScene()
+    activate SceneMap
+    Note right of SceneMap: checkGameover(), then each step only if !SceneManager.isSceneChanging():<br/>updateTransferPlayer(), updateEncounter(), updateCallMenu(), updateCallDebug()
+    SceneMap->>SceneMap: updateCallDebug()
+    activate SceneMap
+    SceneMap->>SceneMap: isDebugCalled()
+    SceneMap->>Input: isTriggered("debug")
+    SceneMap->>GameTemp: isPlaytest()
+    GameTemp-->>SceneMap: _isPlaytest
+    alt F9 triggered && playtest
+        SceneMap->>SceneManager: push(Scene_Debug)
+        Note right of SceneManager: _stack.push(Scene_Map), goto(Scene_Debug)<br/>(see scenemanager-scene-change.mmd)
+    else normal game (not playtest)
+        Note right of SceneMap: F9 is ignored
+    end
+    deactivate SceneMap
+    deactivate SceneMap
+
+    SceneManager->>SceneDebug: create()
+    activate SceneDebug
+    Note right of SceneDebug: Scene_MenuBase.create(): blurred map background<br/>needsCancelButton() = false
+    SceneDebug->>SceneDebug: createRangeWindow()
+    SceneDebug->>RangeWindow: <<create>> new Window_DebugRange(rect)
+    activate RangeWindow
+    Note right of RangeWindow: _maxSwitches = ceil(($dataSystem.switches.length - 1) / 10)<br/>_maxVariables = same for variables<br/>one row per block of 10: "S [0001-0010]" ... "V [0001-0010]" ...
+    RangeWindow->>RangeWindow: refresh(), setTopRow(lastTopRow), select(lastIndex), activate()
+    Note right of RangeWindow: static lastTopRow / lastIndex keep the position between visits
+    deactivate RangeWindow
+    SceneDebug->>RangeWindow: setHandler("ok", onRangeOk), ("cancel", popScene)
+    SceneDebug->>SceneDebug: createEditWindow()
+    SceneDebug->>EditWindow: <<create>> new Window_DebugEdit(rect)
+    Note right of EditWindow: _mode = "switch", _topId = 1, 10 rows
+    SceneDebug->>EditWindow: setHandler("cancel", onEditCancel)
+    Note right of EditWindow: no "ok" handler: OK is read directly in update()
+    SceneDebug->>RangeWindow: setEditWindow(_editWindow)
+    SceneDebug->>SceneDebug: createDebugHelpWindow()
+    SceneDebug->>HelpWindow: <<create>> new Window_Base(rect)
+    deactivate SceneDebug
+
+    loop every frame — Window_DebugRange.update()
+        RangeWindow->>EditWindow: setMode(mode(index()))
+        Note right of EditWindow: "switch" if index < _maxSwitches, else "variable"
+        RangeWindow->>EditWindow: setTopId(topId(index()))
+        Note right of EditWindow: refresh() on change → drawItem(index) for 10 ids<br/>itemName(): $dataSystem.switches / variables[id]<br/>itemStatus(): $gameSwitches.value(id) → "[ON]" / "[OFF]"<br/>or String($gameVariables.value(id))
+        opt mode or topId changed → refresh()
+            EditWindow->>GameSwitches: value(dataId)
+            EditWindow->>GameVariables: value(dataId)
+        end
+    end
+
+    alt Cancel or F9 in the range window
+        User->>RangeWindow: Esc / X / F9
+        RangeWindow->>RangeWindow: isCancelTriggered()
+        Note right of RangeWindow: Window_Selectable.isCancelTriggered() || Input.isTriggered("debug")
+        RangeWindow->>RangeWindow: processCancel()
+        Note right of RangeWindow: Window_Selectable.processCancel() first:<br/>playCancel, deactivate(), callCancelHandler()
+        RangeWindow->>SceneDebug: popScene()
+        SceneDebug->>SceneManager: pop()
+        Note right of SceneManager: back to Scene_Map, events see the new values<br/>because setValue() requested a map refresh
+        Note right of RangeWindow: then lastTopRow = topRow(), lastIndex = index()
+    else OK on a range
+        User->>RangeWindow: OK
+        RangeWindow->>SceneDebug: onRangeOk()
+        activate SceneDebug
+        SceneDebug->>EditWindow: activate(), select(0)
+        SceneDebug->>SceneDebug: refreshHelpWindow()
+        SceneDebug->>HelpWindow: drawTextEx(helpText())
+        Note right of HelpWindow: switch: "Enter : ON / OFF"<br/>variable: Left -1, Right +1, Pageup -10, Pagedown +10
+        deactivate SceneDebug
+
+        loop every frame while _editWindow.active — Window_DebugEdit.update()
+            alt _mode is "switch"
+                EditWindow->>EditWindow: updateSwitch()
+                opt Input.isRepeated("ok")
+                    User->>EditWindow: Enter / Z
+                    EditWindow->>EditWindow: switchId = currentId() = _topId + index()
+                    EditWindow->>EditWindow: playCursorSound()
+                    EditWindow->>GameSwitches: setValue(switchId, !value(switchId))
+                    activate GameSwitches
+                    Note right of GameSwitches: 0 < id < $dataSystem.switches.length<br/>_data[switchId] = value
+                    GameSwitches->>GameSwitches: onChange()
+                    GameSwitches->>GameMap: requestRefresh()
+                    deactivate GameSwitches
+                    EditWindow->>EditWindow: redrawCurrentItem()
+                end
+            else _mode is "variable"
+                EditWindow->>EditWindow: updateVariable()
+                EditWindow->>GameVariables: value(currentId())
+                opt value is a number
+                    EditWindow->>EditWindow: deltaForVariable()
+                    Note right of EditWindow: right +1, left -1, pagedown +10, pageup -10 (repeated)
+                    opt value !== newValue
+                        User->>EditWindow: arrow / page keys
+                        EditWindow->>GameVariables: setValue(variableId, value + delta)
+                        activate GameVariables
+                        Note right of GameVariables: Math.floor(value), _data[id] = value
+                        GameVariables->>GameVariables: onChange()
+                        GameVariables->>GameMap: requestRefresh()
+                        deactivate GameVariables
+                        EditWindow->>EditWindow: playCursorSound(), redrawCurrentItem()
+                    end
+                end
+            end
+        end
+
+        User->>EditWindow: Cancel
+        EditWindow->>SceneDebug: onEditCancel()
+        activate SceneDebug
+        SceneDebug->>RangeWindow: activate()
+        SceneDebug->>EditWindow: deselect()
+        SceneDebug->>SceneDebug: refreshHelpWindow()
+        Note right of HelpWindow: cleared (edit window no longer active)
+        deactivate SceneDebug
+    end

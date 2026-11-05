@@ -1,0 +1,127 @@
+sequenceDiagram
+    title RPG Maker MZ — Show / Move / Erase Picture (Game_Screen → Game_Picture → Sprite_Picture)
+
+    participant Interpreter as Game_Interpreter
+    participant GameScreen as $gameScreen
+    participant GamePicture as Game_Picture
+    participant Scene as Scene_Map / Scene_Battle
+    participant Spriteset as Spriteset_Base
+    participant SpritePicture as Sprite_Picture
+    participant ImageManager
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,ImageManager: Setup — the spriteset builds one Sprite_Picture per picture slot
+    Scene->>Spriteset: new Spriteset_Map() / new Spriteset_Battle()
+    activate Spriteset
+    Spriteset->>Spriteset: createUpperLayer()
+    Spriteset->>Spriteset: createPictures()
+    activate Spriteset
+    Spriteset->>GameScreen: maxPictures()
+    GameScreen-->>Spriteset: $dataSystem.advanced.picturesUpperLimit (default 100)
+    Note right of Spriteset: _pictureContainer = new Sprite()<br/>sized by pictureContainerRect()
+    loop i = 1 .. maxPictures()
+        Spriteset->>SpritePicture: <<create>> new Sprite_Picture(i)
+        Note right of SpritePicture: _pictureId = i, _pictureName = ""
+    end
+    deactivate Spriteset
+    deactivate Spriteset
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,ImageManager: Show Picture (command231)
+    Interpreter->>Interpreter: command231(params)
+    activate Interpreter
+    Interpreter->>Interpreter: picturePoint(params)
+    Note right of Interpreter: params[3] === 0 → direct x/y,<br/>otherwise $gameVariables.value(params[4] / params[5])
+    Interpreter->>GameScreen: showPicture(pictureId, name, origin, x, y,<br/>scaleX, scaleY, opacity, blendMode)
+    activate GameScreen
+    GameScreen->>GameScreen: realPictureId(pictureId)
+    Note right of GameScreen: in battle ($gameParty.inBattle())<br/>id = pictureId + maxPictures(),<br/>so battle pictures use a separate range<br/>(erased by eraseBattlePictures() at battle start)
+    GameScreen->>GamePicture: <<create>> new Game_Picture()
+    GameScreen->>GamePicture: show(name, origin, x, y, scaleX, scaleY, opacity, blendMode)
+    activate GamePicture
+    GamePicture->>GamePicture: initTarget(), initTone(), initRotation()
+    Note right of GamePicture: _targetX/_targetY = _x/_y, _duration = 0,<br/>_tone = null, _angle = 0
+    deactivate GamePicture
+    Note right of GameScreen: _pictures[realPictureId] = picture
+    deactivate GameScreen
+    deactivate Interpreter
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,ImageManager: Move Picture (command232)
+    Interpreter->>Interpreter: command232(params)
+    activate Interpreter
+    Interpreter->>Interpreter: picturePoint(params)
+    Interpreter->>GameScreen: movePicture(pictureId, origin, x, y, scaleX, scaleY,<br/>opacity, blendMode, duration, easingType)
+    activate GameScreen
+    GameScreen->>GameScreen: picture(pictureId)
+    Note right of GameScreen: _pictures[realPictureId(pictureId)]
+    opt picture exists
+        GameScreen->>GamePicture: move(origin, x, y, scaleX, scaleY,<br/>opacity, blendMode, duration, easingType)
+        Note right of GamePicture: _targetX/_targetY/_targetScaleX/_targetScaleY/_targetOpacity set,<br/>_duration = _wholeDuration = duration
+    end
+    deactivate GameScreen
+    opt params[11] (wait for completion)
+        Interpreter->>Interpreter: wait(duration)
+    end
+    deactivate Interpreter
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,ImageManager: Erase Picture (command235)
+    Interpreter->>GameScreen: erasePicture(pictureId)
+    activate GameScreen
+    GameScreen->>GameScreen: realPictureId(pictureId)
+    Note right of GameScreen: _pictures[realPictureId] = null
+    deactivate GameScreen
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,ImageManager: Every frame
+    Scene->>GameScreen: update()
+    Note right of Scene: Scene_Map.updateMain() / Scene_Battle.update()
+    activate GameScreen
+    GameScreen->>GameScreen: updatePictures()
+    loop each non-null picture in _pictures
+        GameScreen->>GamePicture: update()
+        activate GamePicture
+        GamePicture->>GamePicture: updateMove()
+        Note right of GamePicture: while _duration > 0, applyEasing()<br/>moves x, y, scale, opacity toward targets
+        GamePicture->>GamePicture: updateTone()
+        GamePicture->>GamePicture: updateRotation()
+        deactivate GamePicture
+    end
+    deactivate GameScreen
+
+    Scene->>Spriteset: update() (via Scene_Base.updateChildren())
+    activate Spriteset
+    loop each Sprite_Picture in _pictureContainer
+        Spriteset->>SpritePicture: update()
+        activate SpritePicture
+        SpritePicture->>SpritePicture: updateBitmap()
+        activate SpritePicture
+        SpritePicture->>GameScreen: picture(_pictureId)
+        GameScreen-->>SpritePicture: Game_Picture or null
+        Note right of GameScreen: picture() also applies realPictureId(),<br/>so sprite i shows battle picture i during battle
+        alt picture exists
+            opt _pictureName !== picture.name()
+                SpritePicture->>SpritePicture: loadBitmap()
+                SpritePicture->>ImageManager: loadPicture(_pictureName)
+                ImageManager-->>SpritePicture: Bitmap (img/pictures/)
+                Note right of ImageManager: see imagemanager-load-bitmap.mmd
+            end
+            Note right of SpritePicture: visible = true
+        else null (never shown or erased)
+            Note right of SpritePicture: _pictureName = "", bitmap = null,<br/>visible = false
+        end
+        deactivate SpritePicture
+        opt visible
+            SpritePicture->>SpritePicture: updateOrigin(), updatePosition(), updateScale()
+            SpritePicture->>SpritePicture: updateTone(), updateOther()
+            Note right of SpritePicture: copies x, y, scale / 100, tone,<br/>opacity, blendMode, angle from Game_Picture
+        end
+        deactivate SpritePicture
+    end
+    deactivate Spriteset
+    end

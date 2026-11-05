@@ -1,7 +1,7 @@
 sequenceDiagram
     title RPG Maker MZ — Game Loop
 
-    actor User as Usuario
+    actor User as Player
     participant PIXIApp as PIXI.Application
     participant Graphics
     participant SceneManager
@@ -31,7 +31,7 @@ sequenceDiagram
             SceneManager->>SceneManager: updateScene()
             deactivate SceneManager
         end
-        break excepción en updateMain() — capturada en update()
+        break exception in updateMain() — caught in update()
             SceneManager->>SceneManager: catchException(e)
             activate SceneManager
             alt e instanceof Error
@@ -42,7 +42,7 @@ sequenceDiagram
                 SceneManager->>SceneManager: console.error(e.stack)
                 deactivate SceneManager
             else e instanceof Array && e[0] === "LoadError"
-                note over SceneManager: LoadError de: ImageManager / FontManager / AudioManager / EffectManager
+                note over SceneManager: LoadError from: ImageManager / FontManager / AudioManager / EffectManager
                 SceneManager->>SceneManager: catchLoadError(e)
                 activate SceneManager
                 SceneManager->>Graphics: printError("Failed to load", url)
@@ -70,7 +70,7 @@ sequenceDiagram
                 User-)Graphics: click
                 activate Graphics
                 Graphics->>Graphics: eraseError()
-                note right of Graphics: onclick → closure de catchLoadError: retry() [e[2]]
+                note right of Graphics: onclick → catchLoadError closure: retry() [e[2]]
                 Graphics->>SceneManager: resume()
                 activate SceneManager
                 SceneManager->>TouchInput: update()
@@ -93,7 +93,7 @@ sequenceDiagram
         deactivate Graphics
     end
 
-    par eventos asíncronos
+    par asynchronous events
         Window-)SceneManager: error
         activate SceneManager
         SceneManager->>SceneManager: onError(event)
@@ -116,6 +116,7 @@ sequenceDiagram
         activate SceneManager
         SceneManager->>SceneManager: onReject(event)
         activate SceneManager
+        note right of SceneManager: event.message = event.reason
         SceneManager->>SceneManager: onError(event)
         activate SceneManager
         SceneManager->>SceneManager: console.error(event.message)

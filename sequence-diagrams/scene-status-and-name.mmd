@@ -1,0 +1,152 @@
+sequenceDiagram
+    title RPG Maker MZ — Status screen (Scene_Status actor switching) and Name Input Processing (Scene_Name)
+
+    actor User as Player
+    participant Input as Input / TouchInput
+    participant SceneManager
+    participant SceneStatus as Scene_Status
+    participant StatusWindow as Window_Status
+    participant SubWindows as Window_Help / Window_StatusParams / Window_StatusEquip
+    participant GameParty as $gameParty
+    participant Interpreter as Game_Interpreter
+    participant SceneName as Scene_Name
+    participant EditWindow as Window_NameEdit
+    participant InputWindow as Window_NameInput
+    participant TargetActor as Game_Actor
+
+    rect rgba(128, 128, 128, 0.08)
+    Note over SceneStatus: Part 1 — Scene_Status, pushed by Scene_Menu.onPersonalOk() for "status"<br/>(see scene-menu.mmd)
+    SceneManager->>SceneStatus: create()
+    activate SceneStatus
+    SceneStatus->>GameParty: menuActor()
+    Note right of SceneStatus: Scene_MenuBase.create() → updateActor()<br/>_actor = $gameParty.menuActor()<br/>needsPageButtons() = true → createPageButtons()<br/>pageup → previousActor, pagedown → nextActor
+    SceneStatus->>SubWindows: <<create>> _profileWindow = new Window_Help(rect)
+    SceneStatus->>StatusWindow: <<create>> new Window_Status(rect)
+    Note right of StatusWindow: initialize() calls activate()
+    SceneStatus->>StatusWindow: setHandler("cancel", popScene)
+    SceneStatus->>StatusWindow: setHandler("pagedown", nextActor), ("pageup", previousActor)
+    SceneStatus->>SubWindows: <<create>> Window_StatusParams, Window_StatusEquip
+    deactivate SceneStatus
+    SceneManager->>SceneStatus: start()
+    activate SceneStatus
+    SceneStatus->>SceneStatus: refreshActor()
+    SceneStatus->>SubWindows: _profileWindow.setText(actor.profile())
+    SceneStatus->>StatusWindow: setActor(actor)
+    SceneStatus->>SubWindows: _statusParamsWindow.setActor(actor), _statusEquipWindow.setActor(actor)
+    Note right of SubWindows: each setActor() refreshes only when the actor changed
+    deactivate SceneStatus
+
+    Note over SceneStatus: the on-screen page buttons call nextActor() / previousActor()<br/>on the scene directly, not through Window_Status
+    loop every frame — Window_Status.update() → processHandling()
+        alt pagedown (W)
+            User->>Input: presses W
+            StatusWindow->>StatusWindow: processPagedown()
+            Note right of StatusWindow: updateInputData(), deactivate()
+            StatusWindow->>SceneStatus: callHandler("pagedown") → nextActor()
+            activate SceneStatus
+            SceneStatus->>GameParty: makeMenuActorNext()
+            Note right of GameParty: index = members().indexOf(menuActor())<br/>setMenuActor(members()[(index + 1) % length])<br/>_menuActorId = actor.actorId()
+            SceneStatus->>SceneStatus: updateActor()
+            SceneStatus->>GameParty: menuActor()
+            SceneStatus->>SceneStatus: onActorChange()
+            activate SceneStatus
+            SceneStatus->>SceneStatus: Scene_MenuBase.onActorChange() → SoundManager.playCursor()
+            SceneStatus->>SceneStatus: refreshActor()
+            Note right of SceneStatus: all four windows redraw for the new actor
+            SceneStatus->>StatusWindow: activate()
+            deactivate SceneStatus
+            deactivate SceneStatus
+        else pageup (Q)
+            User->>Input: presses Q
+            StatusWindow->>SceneStatus: processPageup() → previousActor()
+            SceneStatus->>GameParty: makeMenuActorPrevious()
+            Note right of GameParty: index = (index + length - 1) % length
+            SceneStatus->>SceneStatus: updateActor(), onActorChange()
+        else Cancel
+            User->>Input: Esc / X / right-click
+            StatusWindow->>SceneStatus: processCancel() → popScene()
+            SceneStatus->>SceneManager: pop()
+            Note right of SceneManager: back to Scene_Menu
+        end
+    end
+    end
+
+    rect rgba(128, 128, 128, 0.08)
+    Note over Interpreter: Part 2 — event command 303 "Name Input Processing"<br/>params = [actorId, maxLength]
+    Interpreter->>Interpreter: command303(params)
+    activate Interpreter
+    opt !$gameParty.inBattle() && $dataActors[params[0]]
+        Interpreter->>SceneManager: push(Scene_Name)
+        Note right of SceneManager: see scenemanager-scene-change.mmd
+        Interpreter->>SceneManager: prepareNextScene(params[0], params[1])
+        SceneManager->>SceneName: prepare(actorId, maxLength)
+        Note right of SceneName: _actorId, _maxLength
+    end
+    Interpreter-->>Interpreter: return true
+    deactivate Interpreter
+
+    SceneManager->>SceneName: create()
+    activate SceneName
+    Note right of SceneName: Scene_MenuBase.create()<br/>then _actor = $gameActors.actor(_actorId)
+    SceneName->>EditWindow: <<create>> new Window_NameEdit(rect)
+    SceneName->>EditWindow: setup(_actor, _maxLength)
+    activate EditWindow
+    EditWindow->>TargetActor: name()
+    Note right of EditWindow: _name = actor.name().slice(0, maxLength)<br/>_index = _name.length, _defaultName = _name<br/>ImageManager.loadFace(actor.faceName())
+    deactivate EditWindow
+    SceneName->>InputWindow: <<create>> new Window_NameInput(rect)
+    SceneName->>InputWindow: setEditWindow(_editWindow)
+    Note right of InputWindow: refresh(), updateCursor(), activate()<br/>table(): JAPAN1-3, RUSSIA or LATIN1-2 by $gameSystem language
+    SceneName->>InputWindow: setHandler("ok", onInputOk)
+    deactivate SceneName
+    SceneManager->>SceneName: start()
+    SceneName->>EditWindow: refresh()
+    Note right of EditWindow: face, underlines, current characters, cursor at _index
+
+    loop every frame — Window_NameInput.update()
+        Note over InputWindow: processCursorMove() moves _index over the 90 cells<br/>(88 = page change, 89 = OK), pageup / pagedown switch _page
+        alt Shift
+            User->>InputWindow: Shift
+            InputWindow->>InputWindow: processJump()
+            Note right of InputWindow: _index = 89 (the OK cell)
+        else Cancel (repeated)
+            User->>InputWindow: Esc / X
+            InputWindow->>InputWindow: processBack()
+            InputWindow->>EditWindow: back()
+            Note right of EditWindow: removes the last character, refresh()<br/>true → SoundManager.playCancel()
+        else OK (repeated)
+            User->>InputWindow: Enter / Z
+            InputWindow->>InputWindow: processOk()
+            activate InputWindow
+            alt character() is not empty
+                InputWindow->>InputWindow: onNameAdd()
+                InputWindow->>EditWindow: add(character())
+                Note right of EditWindow: _index < _maxLength → _name += ch, refresh()<br/>OK sound, otherwise buzzer
+            else isPageChange() (_index 88)
+                InputWindow->>InputWindow: playOkSound(), cursorPagedown()
+                Note right of InputWindow: _page = (_page + 1) % table().length, refresh()
+            else isOk() (_index 89)
+                InputWindow->>InputWindow: onNameOk()
+                activate InputWindow
+                InputWindow->>EditWindow: name()
+                alt name is ""
+                    InputWindow->>EditWindow: restoreDefault()
+                    Note right of EditWindow: _name = _defaultName<br/>OK sound if not empty, otherwise buzzer
+                else name not empty
+                    InputWindow->>InputWindow: playOkSound()
+                    InputWindow->>SceneName: callOkHandler() → onInputOk()
+                    activate SceneName
+                    SceneName->>EditWindow: name()
+                    SceneName->>TargetActor: setName(name)
+                    Note right of TargetActor: _name = name
+                    SceneName->>SceneName: popScene()
+                    SceneName->>SceneManager: pop()
+                    Note right of SceneManager: back to Scene_Map, the interpreter continues
+                    deactivate SceneName
+                end
+                deactivate InputWindow
+            end
+            deactivate InputWindow
+        end
+    end
+    end

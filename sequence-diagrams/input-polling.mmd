@@ -1,0 +1,150 @@
+sequenceDiagram
+    title RPG Maker MZ — Input and TouchInput (DOM events → per-frame update → query API)
+
+    actor User as Player
+    participant Document as document / window
+    participant Navigator as navigator (Gamepad API)
+    participant Input
+    participant TouchInput
+    participant Graphics
+    participant SceneManager
+    participant Consumer as Scene / Window_Selectable / Game_Player
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over User,Consumer: Setup (SceneManager.initInput, see scenemanager-run.mmd)
+    SceneManager->>Input: initialize()
+    activate Input
+    Input->>Input: clear()
+    Note right of Input: _currentState = {}, _previousState = {},<br/>_gamepadStates = [], _latestButton = null,<br/>_pressedTime = 0, _dir4 = 0, _dir8 = 0
+    Input->>Document: _setupEventHandlers(): keydown, keyup, blur
+    deactivate Input
+    SceneManager->>TouchInput: initialize()
+    activate TouchInput
+    TouchInput->>TouchInput: clear()
+    Note right of TouchInput: _newState = _currentState = _createNewState()<br/>{ triggered, cancelled, moved, hovered, released, wheelX, wheelY }
+    TouchInput->>Document: _setupEventHandlers(): mousedown/move/up, wheel,<br/>touchstart/move/end/cancel, blur
+    deactivate TouchInput
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over User,Consumer: Asynchronous DOM events (between frames)
+    par Keyboard
+        User->>Document: press a key
+        Document->>Input: _onKeyDown(event)
+        activate Input
+        opt _shouldPreventDefault(keyCode) (tab, page, arrows, backspace)
+            Input->>Document: event.preventDefault()
+        end
+        opt keyCode === 144 (NumLock)
+            Input->>Input: clear()
+        end
+        Input->>Input: buttonName = keyMapper[event.keyCode]
+        Note right of Input: e.g. 13/32/90 → "ok", 27/88 → "escape",<br/>_currentState[buttonName] = true
+        deactivate Input
+        User->>Document: release the key
+        Document->>Input: _onKeyUp(event)
+        Note right of Input: _currentState[buttonName] = false
+    and Mouse
+        User->>Document: left click
+        Document->>TouchInput: _onMouseDown(event)
+        activate TouchInput
+        alt event.button === 0
+            TouchInput->>TouchInput: _onLeftButtonDown(event)
+            TouchInput->>Graphics: pageToCanvasX/Y(pageX, pageY), isInsideCanvas(x, y)
+            Note right of TouchInput: _mousePressed = true, _pressedTime = 0
+            TouchInput->>TouchInput: _onTrigger(x, y)
+            Note right of TouchInput: _newState.triggered = true,<br/>_x/_y = _triggerX/_triggerY = x/y, _moved = false
+        else event.button === 2
+            TouchInput->>TouchInput: _onRightButtonDown(event) → _onCancel(x, y)
+            Note right of TouchInput: _newState.cancelled = true
+        end
+        deactivate TouchInput
+        Document->>TouchInput: _onMouseMove(event)
+        Note right of TouchInput: pressed → _onMove(x, y) (moved after 10 px moveThreshold)<br/>else inside canvas → _onHover(x, y)
+        Document->>TouchInput: _onWheel(event)
+        Note right of TouchInput: _newState.wheelX/wheelY += deltaX/deltaY
+        Document->>TouchInput: _onMouseUp(event)
+        Note right of TouchInput: _mousePressed = false,<br/>_onRelease(x, y) → _newState.released = true
+    and Touch
+        User->>Document: touch the screen
+        Document->>TouchInput: _onTouchStart(event)
+        activate TouchInput
+        loop each changedTouch inside the canvas
+            Note right of TouchInput: _screenPressed = true, _pressedTime = 0
+            alt event.touches.length >= 2
+                TouchInput->>TouchInput: _onCancel(x, y)
+            else
+                TouchInput->>TouchInput: _onTrigger(x, y)
+            end
+        end
+        deactivate TouchInput
+        Document->>TouchInput: _onTouchMove / _onTouchEnd / _onTouchCancel
+        Note right of TouchInput: _onMove(x, y), or _screenPressed = false + _onRelease(x, y)
+    and Focus lost
+        Document->>Input: _onLostFocus() → clear()
+        Document->>TouchInput: _onLostFocus() → clear()
+    end
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over User,Consumer: Every frame (SceneManager.updateMain, see scenemanager-gameloop.mmd)
+    SceneManager->>SceneManager: updateInputData()
+    activate SceneManager
+    SceneManager->>Input: update()
+    activate Input
+    Input->>Input: _pollGamepads()
+    activate Input
+    Input->>Navigator: getGamepads()
+    loop each connected gamepad
+        Input->>Input: _updateGamepadState(gamepad)
+        Note right of Input: buttons[i].pressed, axes beyond 0.5 → buttons 12-15,<br/>changed buttons → _currentState[gamepadMapper[j]],<br/>_gamepadStates[gamepad.index] = newState
+    end
+    deactivate Input
+    alt _currentState[_latestButton] still held
+        Note right of Input: _pressedTime++
+    else released
+        Note right of Input: _latestButton = null
+    end
+    loop each name in _currentState
+        opt pressed now and not in _previousState
+            Note right of Input: _latestButton = name, _pressedTime = 0, _date = Date.now()
+        end
+        Note right of Input: _previousState[name] = _currentState[name]
+    end
+    opt _virtualButton (set by Input.virtualClick from buttons)
+        Note right of Input: _latestButton = _virtualButton, _pressedTime = 0
+    end
+    Input->>Input: _updateDirection()
+    activate Input
+    Input->>Input: _signX() / _signY() (isPressed left/right/up/down)
+    Note right of Input: _dir8 = _makeNumpadDirection(x, y) = 5 - y*3 + x<br/>diagonal → keep only _preferredAxis for _dir4
+    deactivate Input
+    deactivate Input
+
+    SceneManager->>TouchInput: update()
+    activate TouchInput
+    Note right of TouchInput: _currentState = _newState,<br/>_newState = _createNewState(),<br/>_clicked = _currentState.released && !_moved,<br/>if isPressed() then _pressedTime++
+    deactivate TouchInput
+    deactivate SceneManager
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over User,Consumer: Query API used later in the same frame (updateScene)
+    Consumer->>Input: isPressed("shift")
+    Input-->>Consumer: !!_currentState[keyName]
+    Consumer->>Input: isTriggered("ok")
+    Input-->>Consumer: _latestButton === keyName && _pressedTime === 0
+    Consumer->>Input: isRepeated("down")
+    Input-->>Consumer: triggered, or _pressedTime >= keyRepeatWait (24)<br/>and _pressedTime % keyRepeatInterval (6) === 0
+    Consumer->>Input: isLongPressed("ok")
+    Input-->>Consumer: _latestButton === keyName && _pressedTime >= 24
+    Note right of Input: "cancel" and "menu" also answer true for "escape"<br/>(_isEscapeCompatible)
+    Consumer->>Input: dir4 / dir8
+    Input-->>Consumer: _dir4 / _dir8 (2 down, 4 left, 6 right, 8 up, 0 none)
+    Consumer->>TouchInput: isTriggered() / isCancelled() / isReleased() / isClicked()
+    TouchInput-->>Consumer: _currentState.triggered / cancelled / released, _clicked
+    Consumer->>TouchInput: isPressed() / isRepeated() / isLongPressed()
+    TouchInput-->>Consumer: _mousePressed or _screenPressed, plus _pressedTime rules
+    Consumer->>TouchInput: x, y, wheelY
+    TouchInput-->>Consumer: _x, _y, _currentState.wheelY
+    end

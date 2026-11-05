@@ -1,0 +1,157 @@
+sequenceDiagram
+    title RPG Maker MZ — Splash screen and title screen (Scene_Splash → Scene_Title → New Game / Continue / Options)
+
+    actor User as Player
+    participant Input as Input / TouchInput
+    participant SceneManager
+    participant SceneSplash as Scene_Splash
+    participant SceneTitle as Scene_Title
+    participant CommandWindow as Window_TitleCommand
+    participant ImageManager
+    participant AudioManager
+    participant DataManager
+    participant NextScene as Scene_Map / Scene_Load / Scene_Options
+
+    Note over SceneManager: Scene_Boot.startNormalGame(): checkPlayerLocation(), DataManager.setupNewGame(),<br/>Window_TitleCommand.initCommandPosition(), goto(Scene_Splash)<br/>(see scene-boot-new-game.mmd)
+
+    SceneManager->>SceneSplash: <<create>> new Scene_Splash()
+    activate SceneSplash
+    SceneSplash->>SceneSplash: initWaitCount()
+    Note right of SceneSplash: isEnabled() = $dataSystem.optSplashScreen<br/>_waitCount = 120 if enabled, else 0
+    deactivate SceneSplash
+    SceneManager->>SceneSplash: create()
+    activate SceneSplash
+    opt isEnabled()
+        SceneSplash->>SceneSplash: createBackground()
+        SceneSplash->>ImageManager: loadSystem("Splash")
+        Note right of SceneSplash: _backSprite.bitmap = img/system/Splash.png
+    end
+    deactivate SceneSplash
+    Note over SceneManager: updateScene() calls start() only once isReady() (image loaded)<br/>(see scenemanager-scene-change.mmd)
+    SceneManager->>SceneSplash: start()
+    activate SceneSplash
+    opt isEnabled()
+        SceneSplash->>SceneSplash: adjustBackground()
+        Note right of SceneSplash: scaleSprite() + centerSprite()
+        SceneSplash->>SceneSplash: startFadeIn(fadeSpeed(), false)
+    end
+    deactivate SceneSplash
+
+    loop every frame — Scene_Splash.update()
+        SceneSplash->>SceneSplash: Scene_Base.update() (fade, children)
+        opt isActive()
+            SceneSplash->>SceneSplash: updateWaitCount()
+            alt _waitCount > 0
+                Note right of SceneSplash: _waitCount-- → returns true
+            else _waitCount is 0 (also right away when disabled)
+                SceneSplash->>SceneSplash: gotoTitle()
+                SceneSplash->>SceneManager: goto(Scene_Title)
+            end
+            SceneSplash->>SceneSplash: checkSkip()
+            SceneSplash->>Input: Input.isTriggered("ok") / TouchInput.isTriggered()
+            opt player skips
+                User->>Input: OK / click
+                Note right of SceneSplash: _waitCount = 0 → gotoTitle() next frame
+            end
+        end
+    end
+
+    SceneManager->>SceneSplash: stop()
+    activate SceneSplash
+    Note right of SceneSplash: Scene_Base.stop(): _active = false
+    opt isEnabled()
+        SceneSplash->>SceneSplash: startFadeOut(fadeSpeed())
+    end
+    deactivate SceneSplash
+    Note over SceneManager: goto() calls stop() at once, changeScene() swaps scenes<br/>when the old one is no longer busy (fade finished)
+
+    SceneManager->>SceneTitle: create()
+    activate SceneTitle
+    SceneTitle->>SceneTitle: createBackground()
+    SceneTitle->>ImageManager: loadTitle1($dataSystem.title1Name), loadTitle2($dataSystem.title2Name)
+    Note right of SceneTitle: _backSprite1, _backSprite2
+    SceneTitle->>SceneTitle: createForeground()
+    Note right of SceneTitle: _gameTitleSprite with a screen sized Bitmap<br/>$dataSystem.optDrawTitle → drawGameTitle()<br/>(gameTitle, font size 72, black outline)
+    SceneTitle->>SceneTitle: createWindowLayer()
+    SceneTitle->>SceneTitle: createCommandWindow()
+    activate SceneTitle
+    SceneTitle->>CommandWindow: <<create>> new Window_TitleCommand(rect)
+    activate CommandWindow
+    CommandWindow->>CommandWindow: makeCommandList()
+    CommandWindow->>DataManager: isAnySavefileExists()
+    Note right of CommandWindow: "newGame", "continue" (enabled if a save exists), "options"<br/>openness = 0
+    CommandWindow->>CommandWindow: selectLast()
+    Note right of CommandWindow: _lastCommandSymbol if set,<br/>else "continue" when enabled
+    deactivate CommandWindow
+    SceneTitle->>CommandWindow: setBackgroundType($dataSystem.titleCommandWindow.background)
+    SceneTitle->>CommandWindow: setHandler("newGame", commandNewGame)
+    SceneTitle->>CommandWindow: setHandler("continue", commandContinue), ("options", commandOptions)
+    deactivate SceneTitle
+    deactivate SceneTitle
+
+    SceneManager->>SceneTitle: start()
+    activate SceneTitle
+    SceneTitle->>SceneManager: clearStack()
+    Note right of SceneManager: _stack = [] (title is the root scene)
+    SceneTitle->>SceneTitle: adjustBackground()
+    SceneTitle->>SceneTitle: playTitleMusic()
+    activate SceneTitle
+    SceneTitle->>AudioManager: playBgm($dataSystem.titleBgm)
+    SceneTitle->>AudioManager: stopBgs(), stopMe()
+    Note right of AudioManager: see audio-playback.mmd
+    deactivate SceneTitle
+    SceneTitle->>SceneTitle: startFadeIn(fadeSpeed(), false)
+    deactivate SceneTitle
+
+    loop every frame — Scene_Title.update()
+        opt !isBusy()
+            Note right of SceneTitle: isBusy() = commandWindow.isClosing() or fading
+            SceneTitle->>CommandWindow: open()
+        end
+        SceneTitle->>SceneTitle: Scene_Base.update()
+        Note over CommandWindow: input via Window_Selectable<br/>(see window-selectable-input.mmd)
+    end
+
+    User->>CommandWindow: OK on a command
+    CommandWindow->>CommandWindow: processOk()
+    Note right of CommandWindow: Window_TitleCommand._lastCommandSymbol = currentSymbol()<br/>disabled "continue" → buzzer, nothing happens
+    alt "newGame"
+        CommandWindow->>SceneTitle: commandNewGame()
+        activate SceneTitle
+        SceneTitle->>DataManager: setupNewGame()
+        Note right of DataManager: createGameObjects(), setupStartingMembers(),<br/>$gamePlayer.setupForNewGame()
+        SceneTitle->>CommandWindow: close()
+        SceneTitle->>SceneTitle: fadeOutAll()
+        Note right of SceneTitle: fade out BGM / BGS / ME and the screen
+        SceneTitle->>SceneManager: goto(Scene_Map)
+        SceneManager->>NextScene: Scene_Map
+        Note right of NextScene: see scene-boot-new-game.mmd and scene-map-transfer.mmd
+        deactivate SceneTitle
+    else "continue"
+        CommandWindow->>SceneTitle: commandContinue()
+        activate SceneTitle
+        SceneTitle->>CommandWindow: close()
+        SceneTitle->>SceneManager: push(Scene_Load)
+        SceneManager->>NextScene: Scene_Load
+        Note right of NextScene: onSavefileOk() → executeLoad(savefileId)<br/>→ DataManager.loadGame() → onLoadSuccess()<br/>fadeOutAll(), goto(Scene_Map)<br/>(see datamanager-save-load.mmd)
+        deactivate SceneTitle
+    else "options"
+        CommandWindow->>SceneTitle: commandOptions()
+        activate SceneTitle
+        SceneTitle->>CommandWindow: close()
+        SceneTitle->>SceneManager: push(Scene_Options)
+        SceneManager->>NextScene: Scene_Options
+        Note right of NextScene: see config-manager.mmd
+        deactivate SceneTitle
+    end
+
+    opt Cancel in Scene_Load or Scene_Options
+        NextScene->>SceneManager: popScene() → pop()
+        Note right of SceneManager: goto(Scene_Title): a new Scene_Title is created<br/>selectLast() restores _lastCommandSymbol
+    end
+
+    SceneManager->>SceneTitle: terminate()
+    activate SceneTitle
+    SceneTitle->>SceneManager: snapForBackground()
+    SceneTitle->>SceneTitle: _gameTitleSprite.bitmap.destroy()
+    deactivate SceneTitle

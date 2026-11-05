@@ -1,0 +1,110 @@
+sequenceDiagram
+    title RPG Maker MZ — Plugin loading, error check and plugin commands
+
+    participant Main as main (Main)
+    participant PluginManager
+    participant Document as document
+    participant PluginJS as js/plugins/Foo.js
+    participant SceneManager
+    participant Graphics
+    participant Interpreter as Game_Interpreter
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Main,Interpreter: 1. Setup (after the last main script, plugins.js, is loaded)
+    Main->>PluginManager: setup($plugins)
+    activate PluginManager
+    loop for each plugin of $plugins
+        PluginManager->>PluginManager: pluginName = Utils.extractFileName(plugin.name)
+        opt plugin.status && !_scripts.includes(pluginName)
+            PluginManager->>PluginManager: setParameters(pluginName, plugin.parameters)
+            Note right of PluginManager: _parameters[name.toLowerCase()] = parameters
+            PluginManager->>PluginManager: loadScript(plugin.name)
+            activate PluginManager
+            PluginManager->>PluginManager: makeUrl(filename)
+            Note right of PluginManager: "js/plugins/" + Utils.encodeURI(filename) + ".js"
+            PluginManager->>Document: createElement("script") as a script tag
+            Note right of PluginManager: async = false, defer = true,<br/>onerror = onError, _url = url
+            PluginManager->>Document: body.appendChild(script)
+            deactivate PluginManager
+            PluginManager->>PluginManager: _scripts.push(pluginName)
+        end
+    end
+    deactivate PluginManager
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Main,Interpreter: 2. Plugin scripts execute (in $plugins order, before window load)
+    alt script loaded
+        Document->>PluginJS: evaluate plugin code
+        activate PluginJS
+        PluginJS->>PluginManager: parameters("Foo")
+        PluginManager-->>PluginJS: _parameters["foo"] or {}
+        PluginJS->>PluginManager: registerCommand("Foo", "doSomething", func)
+        activate PluginManager
+        Note right of PluginManager: _commands["Foo:doSomething"] = func
+        deactivate PluginManager
+        Note right of PluginJS: usually also aliases engine methods<br/>(e.g. Scene_Map.prototype.update)
+        deactivate PluginJS
+    else 404 / network error
+        Document--)PluginManager: onError(e)
+        activate PluginManager
+        PluginManager->>PluginManager: _errorUrls.push(e.target._url)
+        deactivate PluginManager
+    end
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Main,Interpreter: 3. Error check at boot (see main-bootstrap.mmd and scenemanager-run.mmd)
+    Main->>SceneManager: run(Scene_Boot)
+    activate SceneManager
+    SceneManager->>SceneManager: initialize()
+    activate SceneManager
+    SceneManager->>SceneManager: checkBrowser()
+    SceneManager->>SceneManager: checkPluginErrors()
+    activate SceneManager
+    SceneManager->>PluginManager: checkErrors()
+    activate PluginManager
+    PluginManager->>PluginManager: url = _errorUrls.shift()
+    opt url
+        PluginManager->>PluginManager: throwLoadError(url)
+        break throw new Error("Failed to load: " + url)
+            PluginManager--)SceneManager: Error propagates to run()
+            SceneManager->>SceneManager: catchException(e)
+            SceneManager->>SceneManager: catchNormalError(e)
+            SceneManager->>Graphics: printError(e.name, e.message, e)
+            SceneManager->>SceneManager: stop()
+            Note right of SceneManager: only the first failed plugin is reported,<br/>the game loop never starts
+        end
+    end
+    deactivate PluginManager
+    deactivate SceneManager
+    Note right of SceneManager: no error, continue with initGraphics() ...
+    deactivate SceneManager
+    deactivate SceneManager
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Main,Interpreter: 4. Plugin Command event command (code 357)
+    Interpreter->>Interpreter: executeCommand()
+    activate Interpreter
+    Note right of Interpreter: methodName = "command" + command.code<br/>(see game-interpreter-update.mmd)
+    Interpreter->>Interpreter: command357(params)
+    activate Interpreter
+    Note right of Interpreter: params[0] = plugin name, params[1] = command name,<br/>params[2] = display text, params[3] = args object
+    Interpreter->>Interpreter: pluginName = Utils.extractFileName(params[0])
+    Interpreter->>PluginManager: callCommand(this, pluginName, params[1], params[3])
+    activate PluginManager
+    PluginManager->>PluginManager: func = _commands[pluginName + ":" + commandName]
+    alt typeof func === "function"
+        PluginManager->>PluginJS: func.bind(self)(args)
+        activate PluginJS
+        Note right of PluginJS: "this" is the calling Game_Interpreter,<br/>args values are strings
+        deactivate PluginJS
+    else not registered
+        Note right of PluginManager: silently ignored
+    end
+    deactivate PluginManager
+    Interpreter-->>Interpreter: return true (index advances)
+    deactivate Interpreter
+    deactivate Interpreter
+    end

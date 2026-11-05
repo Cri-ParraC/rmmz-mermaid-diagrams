@@ -1,0 +1,138 @@
+sequenceDiagram
+    title RPG Maker MZ — Random encounter step counter (makeEncounterCount → executeEncounter)
+
+    participant Interpreter as Game_Interpreter
+    participant SceneMap as Scene_Map
+    participant GamePlayer as $gamePlayer
+    participant GameMap as $gameMap
+    participant GameParty as $gameParty
+    participant GameSystem as $gameSystem
+    participant BattleManager
+
+    Note over GamePlayer: _encounterCount = steps left before the next battle (starts at 0)
+
+    rect rgba(128, 128, 128, 0.1)
+        Note over Interpreter,GamePlayer: The counter is re-rolled by makeEncounterCount() when:<br/>locate() (new game, transfer, see scene-map-transfer.mmd),<br/>getOffVehicle() (see vehicles.mmd), Change Encounter (command136),<br/>Battle Processing (command301) and executeEncounter() itself
+        alt Change Encounter (command136)
+            Interpreter->>GameSystem: disableEncounter() / enableEncounter()
+            Note right of GameSystem: _encounterEnabled = false / true
+            Interpreter->>GamePlayer: makeEncounterCount()
+        else Game_Player.locate(x, y)
+            GamePlayer->>GamePlayer: center(x, y)
+            GamePlayer->>GamePlayer: makeEncounterCount()
+        end
+        activate GamePlayer
+        GamePlayer->>GameMap: encounterStep()
+        GameMap-->>GamePlayer: n = $dataMap.encounterStep (map property "Steps Average")
+        GamePlayer->>GamePlayer: _encounterCount = Math.randomInt(n) + Math.randomInt(n) + 1
+        Note right of GamePlayer: two dice → triangular distribution in 1 .. 2n-1,<br/>average about n steps
+        deactivate GamePlayer
+    end
+
+    Note over SceneMap,GamePlayer: each frame: Scene_Map.updateMain() → $gamePlayer.update(sceneActive)<br/>(see scene-map-update.mmd)
+    activate GamePlayer
+    opt !isMoving() after the step finished
+        GamePlayer->>GamePlayer: updateNonmoving(wasMoving, sceneActive)
+        activate GamePlayer
+        opt !$gameMap.isEventRunning()
+            opt wasMoving
+                GamePlayer->>GameParty: onPlayerWalk()
+                Note right of GameParty: state steps, floor damage per step
+                GamePlayer->>GamePlayer: checkEventTriggerHere([1, 2])
+                break $gameMap.setupStartingEvent() started an event
+                    Note right of GamePlayer: no encounter progress on this step
+                end
+            end
+            break sceneActive and triggerAction() (OK key or touch action fired)
+                Note right of GamePlayer: no encounter progress on this step
+            end
+            opt wasMoving
+                GamePlayer->>GamePlayer: updateEncounterCount()
+                activate GamePlayer
+                GamePlayer->>GamePlayer: canEncounter()
+                activate GamePlayer
+                GamePlayer->>GameParty: hasEncounterNone()
+                Note right of GameParty: partyAbility(ABILITY_ENCOUNTER_NONE = 1)<br/>some battleMembers() has the "Encounter None" party ability trait
+                GamePlayer->>GameSystem: isEncounterEnabled()
+                Note right of GameSystem: _encounterEnabled (Change Encounter)
+                GamePlayer->>GamePlayer: !isInAirship() and !isMoveRouteForcing()
+                GamePlayer->>GamePlayer: !isDebugThrough()
+                Note right of GamePlayer: Ctrl held during playtest
+                deactivate GamePlayer
+                opt canEncounter() is true
+                    GamePlayer->>GamePlayer: encounterProgressValue()
+                    activate GamePlayer
+                    GamePlayer->>GameMap: isBush(x, y)
+                    Note right of GameMap: isValid() and checkLayeredTilesFlags(x, y, 0x40)
+                    Note right of GamePlayer: value = bush ? 2 : 1
+                    GamePlayer->>GameParty: hasEncounterHalf()
+                    Note right of GameParty: partyAbility(ABILITY_ENCOUNTER_HALF = 0)
+                    opt encounter half
+                        Note right of GamePlayer: value *= 0.5
+                    end
+                    opt isInShip()
+                        Note right of GamePlayer: value *= 0.5
+                    end
+                    deactivate GamePlayer
+                    GamePlayer->>GamePlayer: _encounterCount -= value
+                end
+                deactivate GamePlayer
+            end
+        end
+        deactivate GamePlayer
+    end
+    deactivate GamePlayer
+    Note right of GamePlayer: walking in a boat counts normally (×1),<br/>an airship never progresses the counter
+
+    SceneMap->>SceneMap: updateScene() → updateEncounter()
+    activate SceneMap
+    Note right of SceneMap: only when isSceneChangeOk() and no scene change yet<br/>(after updateTransferPlayer(), before updateCallMenu())
+    SceneMap->>GamePlayer: executeEncounter()
+    activate GamePlayer
+    alt !$gameMap.isEventRunning() and _encounterCount <= 0
+        GamePlayer->>GamePlayer: makeEncounterCount()
+        Note right of GamePlayer: counter re-rolled before the troop is chosen
+        GamePlayer->>GamePlayer: makeEncounterTroopId()
+        activate GamePlayer
+        GamePlayer->>GameMap: encounterList()
+        GameMap-->>GamePlayer: $dataMap.encounterList [{ troopId, weight, regionSet }]
+        loop each encounter
+            GamePlayer->>GamePlayer: meetsEncounterConditions(encounter)
+            activate GamePlayer
+            GamePlayer->>GameMap: regionId(x, y)
+            Note right of GameMap: tileId(x, y, 5), the region layer
+            Note right of GamePlayer: regionSet.length === 0 (any region)<br/>or regionSet.includes(regionId())
+            deactivate GamePlayer
+            opt condition met
+                GamePlayer->>GamePlayer: encounterList.push(encounter), weightSum += weight
+            end
+        end
+        alt weightSum > 0
+            GamePlayer->>GamePlayer: value = Math.randomInt(weightSum)
+            loop each candidate
+                Note right of GamePlayer: value -= weight, first with value < 0 wins
+            end
+            Note right of GamePlayer: returns encounter.troopId
+        else nothing matches
+            Note right of GamePlayer: returns 0
+        end
+        deactivate GamePlayer
+        alt $dataTroops[troopId] exists
+            GamePlayer->>BattleManager: setup(troopId, true, false)
+            Note right of BattleManager: canEscape = true, canLose = false
+            GamePlayer->>BattleManager: onEncounter()
+            Note right of BattleManager: rolls _preemptive / _surprise from<br/>$gameParty.ratePreemptive / rateSurprise($gameTroop.agility())
+            GamePlayer-->>SceneMap: true
+        else no valid troop (e.g. empty encounter list)
+            GamePlayer-->>SceneMap: false
+            Note right of GamePlayer: counter was still re-rolled, so no battle this cycle
+        end
+    else event running or steps left
+        GamePlayer-->>SceneMap: false
+    end
+    deactivate GamePlayer
+    opt executeEncounter() returned true
+        SceneMap->>SceneMap: SceneManager.push(Scene_Battle)
+        Note right of SceneMap: encounter effect, launchBattle() and Scene_Battle start<br/>are covered in battle-start.mmd
+    end
+    deactivate SceneMap

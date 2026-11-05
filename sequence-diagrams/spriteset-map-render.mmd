@@ -1,0 +1,167 @@
+sequenceDiagram
+    title RPG Maker MZ — Map rendering (Spriteset_Map, Tilemap, Sprite_Character)
+
+    participant SceneMap as Scene_Map
+    participant Spriteset as Spriteset_Map
+    participant ImageManager
+    participant Tilemap
+    participant SpriteChar as Sprite_Character
+    participant Character as Game_CharacterBase
+    participant Layer as Tilemap.Layer
+    participant TileRenderer as Tilemap.Renderer
+    participant Graphics
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneMap,Graphics: creation — Scene_Map.isReady() → onMapLoaded() → createDisplayObjects()
+    SceneMap->>SceneMap: createSpriteset()
+    activate SceneMap
+    SceneMap->>Spriteset: <<create>> new Spriteset_Map()
+    activate Spriteset
+    Spriteset->>Spriteset: Spriteset_Base.initialize()
+    Note right of Spriteset: setFrame(0, 0, Graphics.width, Graphics.height)
+    Spriteset->>Spriteset: loadSystemImages()
+    Spriteset->>ImageManager: loadSystem("Balloon"), loadSystem("Shadow1")
+    Spriteset->>Spriteset: createLowerLayer()
+    activate Spriteset
+    Spriteset->>Spriteset: createBaseSprite(), createBaseFilters()
+    Note right of Spriteset: _baseSprite + _blackScreen, _baseColorFilter (tone)
+    Spriteset->>Spriteset: createParallax()
+    Note right of Spriteset: _parallax = new TilingSprite() in _baseSprite
+    Spriteset->>Spriteset: createTilemap()
+    activate Spriteset
+    Spriteset->>Tilemap: <<create>> new Tilemap()
+    activate Tilemap
+    Tilemap->>Tilemap: _createLayers()
+    Note right of Tilemap: _lowerLayer (z 0) and _upperLayer (z 4) are<br/>Tilemap.CombinedLayer, each with two Tilemap.Layer
+    deactivate Tilemap
+    Spriteset->>Tilemap: setData($gameMap.width(), $gameMap.height(), $gameMap.data())
+    Note right of Tilemap: tileWidth / tileHeight, horizontalWrap / verticalWrap<br/>_effectsContainer = tilemap
+    Spriteset->>Spriteset: loadTileset()
+    activate Spriteset
+    Note right of Spriteset: _tileset = $gameMap.tileset()
+    loop each name in _tileset.tilesetNames
+        Spriteset->>ImageManager: loadTileset(name)
+        ImageManager-->>Spriteset: bitmap (may still be loading)
+    end
+    Spriteset->>Tilemap: setBitmaps(bitmaps)
+    activate Tilemap
+    Note right of Tilemap: bitmap.addLoadListener(_updateBitmaps) for bitmaps<br/>not ready, _needsBitmapsUpdate = true
+    Tilemap->>Tilemap: _updateBitmaps()
+    opt _needsBitmapsUpdate && isReady()
+        Tilemap->>Layer: _lowerLayer.setBitmaps(_bitmaps)
+        Note right of Layer: _images = bitmap.image or canvas<br/>_needsTexturesUpdate = true
+        Note right of Tilemap: _needsRepaint = true
+    end
+    deactivate Tilemap
+    Note right of Spriteset: tilemap.flags = $gameMap.tilesetFlags()
+    deactivate Spriteset
+    deactivate Spriteset
+    Spriteset->>Spriteset: createCharacters()
+    activate Spriteset
+    loop events, vehicles, followers (reversed), $gamePlayer
+        Spriteset->>SpriteChar: <<create>> new Sprite_Character(character)
+        Spriteset->>Tilemap: addChild(sprite)
+    end
+    deactivate Spriteset
+    Spriteset->>Spriteset: createShadow()
+    Note right of Spriteset: _shadowSprite (Shadow1, z 6) added to the tilemap
+    Spriteset->>Spriteset: createDestination()
+    Note right of Spriteset: Sprite_Destination (z 9) added to the tilemap
+    Spriteset->>Spriteset: createWeather()
+    Note right of Spriteset: _weather = new Weather() added to the spriteset
+    deactivate Spriteset
+    Spriteset->>Spriteset: createUpperLayer()
+    Note right of Spriteset: createPictures() (Sprite_Picture x maxPictures),<br/>createTimer(), createOverallFilters()
+    deactivate Spriteset
+    SceneMap->>SceneMap: addChild(_spriteset)
+    SceneMap->>Spriteset: update()
+    deactivate SceneMap
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneMap,Graphics: every frame — update phase (Scene_Base.updateChildren(), see scene-map-update.mmd)
+    SceneMap->>Spriteset: update()
+    activate Spriteset
+    Spriteset->>Spriteset: Spriteset_Base.update()
+    activate Spriteset
+    Spriteset->>Tilemap: Sprite.update() → children update()
+    activate Tilemap
+    Note right of Tilemap: _baseSprite.update() → tilemap.update()<br/>animationCount++, animationFrame = floor(animationCount / 30)
+    loop each child with update()
+        Tilemap->>SpriteChar: update()
+        activate SpriteChar
+        SpriteChar->>SpriteChar: updateBitmap()
+        opt isImageChanged()
+            alt _tileId above 0
+                SpriteChar->>ImageManager: setTileBitmap() → loadTileset(...)
+            else
+                SpriteChar->>ImageManager: setCharacterBitmap() → loadCharacter(_characterName)
+                Note right of SpriteChar: see imagemanager-load-bitmap.mmd
+            end
+        end
+        SpriteChar->>SpriteChar: updateFrame()
+        Note right of SpriteChar: updateCharacterFrame(): sx from characterBlockX() + pattern(),<br/>sy from characterBlockY() + (direction() - 2) / 2,<br/>bush depth → _upperBody / _lowerBody
+        SpriteChar->>SpriteChar: updatePosition()
+        SpriteChar->>Character: screenX(), screenY(), screenZ()
+        Note right of SpriteChar: x, y, z set from the character
+        SpriteChar->>SpriteChar: updateOther(), updateVisibility()
+        Note right of SpriteChar: opacity, blendMode, _bushDepth, hidden if transparent
+        deactivate SpriteChar
+    end
+    deactivate Tilemap
+    Spriteset->>Spriteset: updateBaseFilters(), updateOverallFilters(), updatePosition()
+    Note right of Spriteset: $gameScreen tone, flash, brightness, zoom, shake
+    Spriteset->>Spriteset: updateAnimations()
+    Note right of Spriteset: see animation-playback.mmd
+    deactivate Spriteset
+    Spriteset->>Spriteset: updateTileset()
+    Note right of Spriteset: _tileset !== $gameMap.tileset() → loadTileset()
+    Spriteset->>Spriteset: updateParallax()
+    Note right of Spriteset: origin = $gameMap.parallaxOx() / parallaxOy() modulo bitmap size
+    Spriteset->>Spriteset: updateTilemap()
+    Note right of Spriteset: _tilemap.origin.x = $gameMap.displayX() * tileWidth()<br/>_tilemap.origin.y = $gameMap.displayY() * tileHeight()
+    Spriteset->>Spriteset: updateShadow(), updateWeather()
+    Note right of Spriteset: airship shadow position, weather type / power / origin
+    Spriteset->>Spriteset: updateAnimations(), updateBalloons()
+    deactivate Spriteset
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneMap,Graphics: every frame — render phase
+    Graphics->>Graphics: _onTick() → _app.render()
+    Note right of Graphics: PIXI renderer walks the stage: updateTransform() then render()
+    Graphics->>Tilemap: updateTransform()
+    activate Tilemap
+    Note right of Tilemap: startX = floor((ceil(origin.x) - _margin) / tileWidth), same for Y<br/>_lowerLayer / _upperLayer x, y = start * tile size - origin
+    opt _needsRepaint or animationFrame or startX / startY changed
+        Tilemap->>Tilemap: _addAllSpots(startX, startY)
+        activate Tilemap
+        Tilemap->>Layer: _lowerLayer.clear(), _upperLayer.clear()
+        loop each visible cell (screen + margin)
+            Tilemap->>Tilemap: _addSpot(startX, startY, x, y)
+            Note right of Tilemap: _readMapData(mx, my, z) for z 0 to 3 and shadow bits<br/>_addSpotTile() → upper layer if _isHigherTile() (star flag)<br/>_addShadow(), _addTableEdge()
+            Tilemap->>Tilemap: _addTile() → _addAutotile() / _addNormalTile()
+            Tilemap->>Layer: addRect(setNumber, sx, sy, dx, dy, w, h)
+            Note right of Layer: CombinedLayer puts it in the first Layer<br/>below MAX_SIZE (16000) elements
+        end
+        deactivate Tilemap
+        Note right of Tilemap: _needsRepaint = false
+    end
+    Tilemap->>Tilemap: _sortChildren()
+    Note right of Tilemap: _compareChildOrder: z, then y, then spriteId<br/>(characters between lower and upper tiles)
+    deactivate Tilemap
+    Graphics->>Layer: render(renderer)
+    activate Layer
+    Layer->>TileRenderer: renderer.plugins.rpgtilemap, getShader()
+    Note right of Layer: uProjectionMatrix = projection x worldTransform
+    opt _needsTexturesUpdate
+        Layer->>TileRenderer: updateTextures(renderer, _images)
+        Note right of TileRenderer: texSubImage2D of each tileset image into<br/>2048x2048 internal textures (4 sheets each)
+    end
+    Layer->>TileRenderer: bindTextures(renderer)
+    Layer->>Layer: _updateIndexBuffer(), _updateVertexBuffer()
+    Note right of Layer: vertex buffer rebuilt only if _needsVertexUpdate
+    Layer->>Graphics: renderer.geometry.draw(gl.TRIANGLES, numElements * 6)
+    deactivate Layer
+    Note over Tilemap,Layer: Sprite_Character, shadow, balloons and animations are<br/>ordinary PIXI children of the tilemap, drawn in sorted order
+    end

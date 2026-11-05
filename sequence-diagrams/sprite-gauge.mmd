@@ -1,0 +1,137 @@
+sequenceDiagram
+    title RPG Maker MZ — Sprite_Gauge (HP / MP / TP / TPB time gauges in status windows)
+
+    participant StatusWin as Window_StatusBase (Window_BattleStatus / Window_MenuStatus)
+    participant ClientArea as Window._clientArea
+    participant Gauge as Sprite_Gauge
+    participant Bitmap as Bitmap (gauge bitmap)
+    participant Battler as Game_Actor (battler)
+    participant ColorManager
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over StatusWin,ColorManager: placing gauges — Window_StatusBase.refresh() → hideAdditionalSprites() then Window_Selectable.refresh() → drawAllItems() → drawItem(index)
+    StatusWin->>StatusWin: refresh()
+    activate StatusWin
+    StatusWin->>StatusWin: hideAdditionalSprites()
+    Note right of StatusWin: sprite.hide() for every value in _additionalSprites<br/>(sprites that are placed again are shown again)
+    StatusWin->>StatusWin: drawItem(index)
+    Note right of StatusWin: Window_BattleStatus.drawItemStatus(): placeTimeGauge() + placeBasicGauges()<br/>Window_MenuStatus: drawActorSimpleStatus() → placeBasicGauges()<br/>Window_Status: placeBasicGauges() too
+    opt placeTimeGauge(actor, x, y) and BattleManager.isTpb()
+        StatusWin->>StatusWin: placeGauge(actor, "time", x, y)
+    end
+    StatusWin->>StatusWin: placeBasicGauges(actor, x, y)
+    activate StatusWin
+    Note right of StatusWin: "hp" at y, "mp" at y + gaugeLineHeight()<br/>"tp" at y + gaugeLineHeight() * 2 only if $dataSystem.optDisplayTp
+    loop each type
+        StatusWin->>StatusWin: placeGauge(actor, type, x, y)
+        activate StatusWin
+        Note right of StatusWin: key = "actor%1-gauge-%2".format(actorId(), type)
+        StatusWin->>StatusWin: createInnerSprite(key, Sprite_Gauge)
+        activate StatusWin
+        alt _additionalSprites[key] exists (cached)
+            Note right of StatusWin: reuse the same sprite (no new bitmap)
+        else first time
+            StatusWin->>Gauge: <<create>> new Sprite_Gauge()
+            activate Gauge
+            Gauge->>Gauge: initMembers()
+            Note right of Gauge: _battler = null, _statusType = ""<br/>_value / _maxValue / _targetValue / _targetMaxValue = NaN<br/>_duration = 0, _flashingCount = 0
+            Gauge->>Gauge: createBitmap()
+            Gauge->>Bitmap: <<create>> new Bitmap(bitmapWidth(), bitmapHeight())
+            Note right of Bitmap: 128 × 32
+            deactivate Gauge
+            Note right of StatusWin: _additionalSprites[key] = sprite
+            StatusWin->>ClientArea: addInnerChild(sprite)
+            Note right of ClientArea: pushed to _innerChildren and added to _clientArea<br/>(scrolls with the window contents)
+        end
+        deactivate StatusWin
+        StatusWin->>Gauge: setup(actor, type)
+        activate Gauge
+        Note right of Gauge: _battler = battler, _statusType = statusType
+        Gauge->>Gauge: currentValue() / currentMaxValue()
+        Gauge->>Battler: hp / mhp, mp / mmp, tp / maxTp() or tpbChargeTime()
+        Note right of Battler: "hp": hp / mhp, "mp": mp / mmp<br/>"tp": tp / maxTp(), "time": tpbChargeTime() / 1
+        Battler-->>Gauge: _value, _maxValue
+        Gauge->>Gauge: updateBitmap()
+        deactivate Gauge
+        StatusWin->>Gauge: move(x, y), show()
+        deactivate StatusWin
+    end
+    deactivate StatusWin
+    deactivate StatusWin
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over StatusWin,ColorManager: every frame — WindowLayer.update() → window.update() → Window.update() → _clientArea.update() → Sprite.update() on each child (see window-lifecycle.mmd)
+    ClientArea->>Gauge: update()
+    activate Gauge
+    Gauge->>Gauge: Sprite.update() (children)
+    Gauge->>Gauge: updateBitmap()
+    activate Gauge
+    Gauge->>Gauge: currentValue(), currentMaxValue()
+    Gauge->>Battler: hp / mhp, mp / mmp, tp / maxTp() or tpbChargeTime()
+    Battler-->>Gauge: value, maxValue
+    opt value !== _targetValue or maxValue !== _targetMaxValue
+        Gauge->>Gauge: updateTargetValue(value, maxValue)
+        activate Gauge
+        Note right of Gauge: _targetValue = value, _targetMaxValue = maxValue
+        alt isNaN(_value)
+            Note right of Gauge: _value = value, _maxValue = maxValue (jump)
+            Gauge->>Gauge: redraw()
+        else
+            Note right of Gauge: _duration = smoothness()<br/>("time" → 5 frames, others → 20 frames)<br/>note: setup() already set _value, so even the first<br/>update animates (from the same value)
+        end
+        deactivate Gauge
+    end
+    Gauge->>Gauge: updateGaugeAnimation()
+    opt _duration above 0
+        Note right of Gauge: d = _duration<br/>_value = (_value * (d - 1) + _targetValue) / d<br/>_maxValue = (_maxValue * (d - 1) + _targetMaxValue) / d<br/>_duration--
+        Gauge->>Gauge: redraw()
+        activate Gauge
+        Gauge->>Bitmap: clear()
+        opt !isNaN(currentValue())
+            Gauge->>Gauge: drawGauge()
+            activate Gauge
+            Note right of Gauge: gaugeX(): 0 for "time", else measureLabelWidth() + 6<br/>gaugeY = textHeight() - gaugeHeight() (24 - 12)
+            Gauge->>Gauge: drawGaugeRect(x, y, width, height)
+            Gauge->>Gauge: gaugeRate()
+            Note right of Gauge: isValid() ? _value / _maxValue : 0<br/>isValid(): "tp" without isPreserveTp() only in battle
+            Gauge->>ColorManager: gaugeBackColor(), then the type's gauge colors
+            Note right of ColorManager: hpGaugeColor1/2, mpGaugeColor1/2<br/>tpGaugeColor1/2, ctGaugeColor1/2 ("time")
+            Gauge->>Bitmap: fillRect(x, y, width, height, color0)
+            Gauge->>Bitmap: gradientFillRect(x + 1, y + 1, fillW, fillH, color1, color2)
+            deactivate Gauge
+            opt _statusType !== "time"
+                Gauge->>Gauge: drawLabel()
+                activate Gauge
+                Gauge->>Gauge: setupLabelFont()
+                Note right of Gauge: mainFontFace, mainFontSize - 2<br/>systemColor(), outline width 3
+                Note right of Gauge: drawLabel() sets paintOpacity = labelOpacity()<br/>(255 or 160 if !isValid()), back to 255 after drawText
+                Gauge->>Bitmap: drawText(label(), x, labelY(), ..., "left")
+                Note right of Bitmap: label(): TextManager.hpA / mpA / tpA
+                deactivate Gauge
+                opt isValid()
+                    Gauge->>Gauge: drawValue()
+                    activate Gauge
+                    Gauge->>Gauge: setupValueFont()
+                    Note right of Gauge: numberFontFace, mainFontSize - 6<br/>valueColor(): ColorManager.hpColor / mpColor / tpColor(battler)
+                    Gauge->>Bitmap: drawText(currentValue(), 0, 0, width, height, "right")
+                    Note right of Bitmap: the number shown is the real value<br/>only the bar is animated
+                    deactivate Gauge
+                end
+            end
+        end
+        deactivate Gauge
+    end
+    Gauge->>Gauge: updateFlashing()
+    opt _statusType === "time"
+        Note right of Gauge: _flashingCount++
+        alt _battler.isInputting()
+            Note right of Gauge: setBlendColor(flashingColor1()) or flashingColor2()<br/>alternating every 15 frames
+        else
+            Note right of Gauge: setBlendColor([0, 0, 0, 0])
+        end
+    end
+    deactivate Gauge
+    deactivate Gauge
+    end
+    Note over StatusWin,Gauge: Sprite_Gauge.destroy() destroys its bitmap when the window is destroyed with its children

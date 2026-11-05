@@ -1,0 +1,231 @@
+sequenceDiagram
+    title RPG Maker MZ — Audio playback (event commands → AudioManager → WebAudio)
+
+    participant Interpreter as Game_Interpreter
+    participant GameSystem as $gameSystem
+    participant ConfigManager
+    participant AudioManager
+    participant Buffer as WebAudio (buffer)
+    participant Net as XMLHttpRequest / fetch
+    participant Ctx as AudioContext (WebAudio._context)
+    participant SceneBase as Scene_Base
+    participant SceneManager
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,SceneManager: Play BGM (command241)
+    Interpreter->>Interpreter: command241(params)
+    activate Interpreter
+    Interpreter->>AudioManager: playBgm(params[0])
+    activate AudioManager
+    Note right of AudioManager: params[0] = { name, volume, pitch, pan }
+    alt isCurrentBgm(bgm) (same name already in _bgmBuffer)
+        AudioManager->>AudioManager: updateBgmParameters(bgm)
+    else different BGM
+        AudioManager->>AudioManager: stopBgm()
+        Note right of AudioManager: _bgmBuffer.destroy(), _bgmBuffer = null,<br/>_currentBgm = null
+        opt bgm.name
+            AudioManager->>AudioManager: createBuffer("bgm/", bgm.name)
+            activate AudioManager
+            Note right of AudioManager: url = "audio/bgm/" + Utils.encodeURI(name) + audioFileExt() (".ogg")
+            AudioManager->>Buffer: <<create>> new WebAudio(url)
+            activate Buffer
+            Buffer->>Buffer: initialize(url) → clear(), _url = url
+            Buffer->>Buffer: _startLoading()
+            activate Buffer
+            opt WebAudio._context exists
+                Buffer->>Buffer: url = _realUrl() (adds "_" if Utils.hasEncryptedAudio())
+                alt Utils.isLocal()
+                    Buffer->>Net: _startXhrLoading(url) (responseType "arraybuffer")
+                else
+                    Buffer->>Net: _startFetching(url) (fetch, same-origin)
+                end
+                Note right of Buffer: _isError = false, _isLoaded = false
+                opt _shouldUseDecoder() (no native Ogg and VorbisDecoder available)
+                    Buffer->>Buffer: _createDecoder() (new VorbisDecoder)
+                end
+            end
+            deactivate Buffer
+            Buffer-->>AudioManager: buffer
+            deactivate Buffer
+            Note right of AudioManager: buffer.name = name, buffer.frameCount = Graphics.frameCount
+            deactivate AudioManager
+            AudioManager->>AudioManager: updateBgmParameters(bgm)
+            activate AudioManager
+            AudioManager->>AudioManager: updateBufferParameters(_bgmBuffer, _bgmVolume, bgm)
+            AudioManager->>Buffer: volume = _bgmVolume * bgm.volume / 10000
+            AudioManager->>Buffer: pitch = bgm.pitch / 100, pan = bgm.pan / 100
+            deactivate AudioManager
+            opt !_meBuffer (no ME playing)
+                AudioManager->>Buffer: play(true, pos or 0)
+                activate Buffer
+                Note right of Buffer: _loop = true
+                alt isReady() (_buffers.length > 0)
+                    Buffer->>Buffer: _startPlaying(offset)
+                else not decoded yet
+                    Buffer->>Buffer: addLoadListener(() => play(loop, offset))
+                end
+                Note right of Buffer: _isPlaying = true
+                deactivate Buffer
+            end
+        end
+    end
+    AudioManager->>AudioManager: updateCurrentBgm(bgm, pos)
+    Note right of AudioManager: _currentBgm = { name, volume, pitch, pan, pos }
+    deactivate AudioManager
+    deactivate Interpreter
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,SceneManager: Asynchronous loading and decoding
+    alt XHR (local)
+        Net--)Buffer: _onXhrLoad(xhr)
+        activate Buffer
+        alt xhr.status < 400
+            Note right of Buffer: _data = new Uint8Array(xhr.response), _isLoaded = true
+            Buffer->>Buffer: _updateBuffer()
+        else
+            Buffer->>Buffer: _onError()
+        end
+        deactivate Buffer
+    else fetch (web)
+        Net--)Buffer: _onFetch(response)
+        activate Buffer
+        loop reader.read() chunks
+            Buffer->>Buffer: _onFetchProcess(value)
+            Note right of Buffer: _updateBufferOnFetch() decodes partially<br/>every 1 s once 200000 bytes are available
+        end
+        Note right of Buffer: done, _isLoaded = true
+        Buffer->>Buffer: _concatenateFetchedData()
+        Buffer->>Buffer: _updateBuffer()
+        deactivate Buffer
+    end
+    Buffer->>Buffer: _updateBuffer() (detail)
+    activate Buffer
+    Buffer->>Buffer: _readableBuffer() (Utils.decryptArrayBuffer if encrypted)
+    Buffer->>Buffer: _readLoopComments(arrayBuffer)
+    Note right of Buffer: LOOPSTART / LOOPLENGTH from Ogg comments
+    Buffer->>Buffer: _decodeAudioData(arrayBuffer)
+    alt _shouldUseDecoder()
+        Buffer->>Buffer: _decoder.send(arrayBuffer, _isLoaded)
+    else native
+        Buffer->>Ctx: decodeAudioData(arrayBuffer.slice())
+        activate Ctx
+        Ctx--)Buffer: AudioBuffer
+        deactivate Ctx
+    end
+    deactivate Buffer
+    alt decoded
+        Buffer->>Buffer: _onDecode(buffer)
+        activate Buffer
+        Note right of Buffer: _buffers.push(buffer), _totalTime,<br/>_loopStartTime / _loopLengthTime
+        opt _sourceNodes.length > 0 (already playing a partial buffer)
+            Buffer->>Buffer: _refreshSourceNode()
+        end
+        Buffer->>Buffer: _onLoad()
+        Note right of Buffer: runs _loadListeners, the pending play(true, offset)
+        deactivate Buffer
+    else decode / network failure
+        Buffer->>Buffer: _onError()
+        Note right of Buffer: _stopSourceNode(), _data = null, _isError = true
+    end
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,SceneManager: _startPlaying(offset) builds the Web Audio graph
+    Buffer->>Buffer: _startPlaying(offset)
+    activate Buffer
+    Note right of Buffer: _startTime = currentTime - offset / _pitch
+    Buffer->>Buffer: _removeEndTimer(), _removeNodes()
+    Buffer->>Ctx: _createPannerNode() → createPanner() → connect(_masterGainNode)
+    Buffer->>Ctx: _createGainNode() → createGain() (gain = _volume) → connect(_pannerNode)
+    loop each decoded chunk in _buffers
+        Buffer->>Ctx: _createSourceNode(i) → createBufferSource()
+        Note right of Ctx: buffer, loop, loopStart/loopEnd,<br/>playbackRate = _pitch, connect(_gainNode)
+    end
+    loop each source node
+        Buffer->>Ctx: _startSourceNode(i) → sourceNode.start(when, offset)
+    end
+    Buffer->>Buffer: _createEndTimer()
+    Note right of Buffer: only when !_loop: setTimeout(stop, remaining time)
+    deactivate Buffer
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,SceneManager: Play SE (command250)
+    Interpreter->>AudioManager: command250(params) → playSe(params[0])
+    activate AudioManager
+    opt se.name
+        alt same name already started in this Graphics.frameCount
+            Note right of AudioManager: return (no duplicates in one frame)
+        else
+            AudioManager->>AudioManager: createBuffer("se/", se.name)
+            AudioManager->>AudioManager: updateSeParameters(buffer, se) (uses _seVolume)
+            AudioManager->>Buffer: play(false)
+            AudioManager->>AudioManager: _seBuffers.push(buffer)
+            AudioManager->>AudioManager: cleanupSe()
+            Note right of AudioManager: destroy() and drop buffers where !isPlaying()
+        end
+    end
+    deactivate AudioManager
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,SceneManager: Volume from options (ConfigManager → AudioManager)
+    ConfigManager->>AudioManager: bgmVolume = value (ConfigManager.bgmVolume setter)
+    activate AudioManager
+    Note right of AudioManager: _bgmVolume = value
+    AudioManager->>AudioManager: updateBgmParameters(_currentBgm)
+    AudioManager->>Buffer: volume = _bgmVolume * _currentBgm.volume / 10000
+    Buffer->>Ctx: _gainNode.gain.setValueAtTime(_volume, currentTime)
+    deactivate AudioManager
+    Note right of ConfigManager: bgs/me setters work the same way, seVolume only<br/>stores _seVolume (see config-manager.mmd)
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,SceneManager: Fadeout BGM (command242), Save / Resume BGM (command243 / 244)
+    Interpreter->>AudioManager: command242(params) → fadeOutBgm(params[0])
+    activate AudioManager
+    opt _bgmBuffer && _currentBgm
+        AudioManager->>Buffer: fadeOut(duration)
+        Buffer->>Ctx: gain.linearRampToValueAtTime(0, currentTime + duration)
+        Note right of Buffer: _isPlaying = false, _loadListeners = []
+        Note right of AudioManager: _currentBgm = null
+    end
+    deactivate AudioManager
+    Interpreter->>GameSystem: command243() → saveBgm()
+    GameSystem->>AudioManager: saveBgm()
+    AudioManager-->>GameSystem: { name, volume, pitch, pan, pos: _bgmBuffer.seek() }
+    Note right of GameSystem: _savedBgm = ...
+    Interpreter->>GameSystem: command244() → replayBgm()
+    activate GameSystem
+    opt _savedBgm
+        GameSystem->>AudioManager: replayBgm(_savedBgm)
+        activate AudioManager
+        alt isCurrentBgm(bgm)
+            AudioManager->>AudioManager: updateBgmParameters(bgm)
+        else
+            AudioManager->>AudioManager: playBgm(bgm, bgm.pos)
+            AudioManager->>Buffer: fadeIn(_replayFadeTime = 0.5)
+        end
+        deactivate AudioManager
+    end
+    deactivate GameSystem
+    Note over AudioManager,Buffer: stopBgm() / stopSe() / stopAll() call buffer.destroy()<br/>→ _destroyDecoder(), clear() → stop() → _removeEndTimer(), _removeNodes()
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,SceneManager: Load error check (every frame, see scenemanager-gameloop.mmd)
+    SceneBase->>AudioManager: checkErrors() (called from Scene_Base.update())
+    activate AudioManager
+    loop _bgmBuffer, _bgsBuffer, _meBuffer, _seBuffers, _staticBuffers
+        opt buffer && buffer.isError()
+            AudioManager->>AudioManager: throwLoadError(buffer)
+            break throw ["LoadError", webAudio.url, retry]
+                AudioManager--)SceneManager: caught in update() → catchException(e)
+                SceneManager->>SceneManager: catchLoadError(e)
+                Note right of SceneManager: Graphics.printError("Failed to load", url)<br/>+ showRetryButton → buffer.retry() → _startLoading(),<br/>replay if _isPlaying, then SceneManager.resume()
+            end
+        end
+    end
+    deactivate AudioManager
+    end

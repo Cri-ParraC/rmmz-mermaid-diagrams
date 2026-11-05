@@ -1,0 +1,89 @@
+sequenceDiagram
+    title RPG Maker MZ — Control Timer (Game_Timer and Sprite_Timer)
+
+    participant Interpreter as Game_Interpreter
+    participant Scene as Scene_Map / Scene_Battle
+    participant GameTimer as $gameTimer
+    participant BattleManager
+    participant SpriteTimer as Sprite_Timer
+    participant Bitmap
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,Bitmap: Control Timer (command124)
+    Interpreter->>Interpreter: command124(params)
+    activate Interpreter
+    alt params[0] === 0 (Start)
+        Interpreter->>GameTimer: start(params[1] * 60)
+        Note right of GameTimer: seconds → frames<br/>_frames = count, _working = true
+    else Stop
+        Interpreter->>GameTimer: stop()
+        Note right of GameTimer: _working = false (_frames is kept)
+    end
+    deactivate Interpreter
+    Note right of Interpreter: Conditional Branch (command111, type 3)<br/>reads isWorking() and frames() / 60
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,Bitmap: Every frame — countdown
+    alt on the map
+        Scene->>Scene: Scene_Map.updateMain()
+        Scene->>GameTimer: update(this.isActive())
+    else in battle
+        Scene->>Scene: Scene_Battle.update()
+        Scene->>GameTimer: update(this.isActive())
+    end
+    activate GameTimer
+    opt sceneActive && _working && _frames > 0
+        Note right of GameTimer: _frames--
+        opt _frames === 0
+            GameTimer->>GameTimer: onExpire()
+            activate GameTimer
+            GameTimer->>BattleManager: abort()
+            Note right of BattleManager: _phase = "aborting"<br/>(on the map this has no visible effect,<br/>_phase is reset by the next battle setup)
+            deactivate GameTimer
+        end
+    end
+    deactivate GameTimer
+    Note right of GameTimer: the timer keeps _working = true at 0,<br/>so the display stays at 00:00 until stopped
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,Bitmap: In battle — the abort is processed
+    Scene->>BattleManager: update(timeActive) (via updateBattleProcess())
+    activate BattleManager
+    BattleManager->>BattleManager: updateEvent()
+    activate BattleManager
+    Note right of BattleManager: phase is not start / turn / turnEnd
+    BattleManager->>BattleManager: checkAbort()
+    activate BattleManager
+    opt isAborting()
+        BattleManager->>BattleManager: processAbort()
+        Note right of BattleManager: $gameParty.removeBattleStates(),<br/>replayBgmAndBgs(), endBattle(1) (result: abort)<br/>see battle-turn.mmd for endBattle
+    end
+    deactivate BattleManager
+    deactivate BattleManager
+    deactivate BattleManager
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,Bitmap: Display — Sprite_Timer is created by Spriteset_Base.createTimer()
+    Scene->>SpriteTimer: update() (child of Spriteset_Map / Spriteset_Battle)
+    activate SpriteTimer
+    SpriteTimer->>SpriteTimer: updateBitmap()
+    activate SpriteTimer
+    SpriteTimer->>GameTimer: seconds()
+    GameTimer-->>SpriteTimer: floor(_frames / 60)
+    opt _seconds changed
+        SpriteTimer->>SpriteTimer: redraw()
+        SpriteTimer->>SpriteTimer: timerText()
+        Note right of SpriteTimer: "MM:SS" with padZero(2)
+        SpriteTimer->>Bitmap: clear(), drawText(text, 0, 0, 96, 48, "center")
+    end
+    deactivate SpriteTimer
+    SpriteTimer->>SpriteTimer: updatePosition()
+    Note right of SpriteTimer: top center of the screen
+    SpriteTimer->>SpriteTimer: updateVisibility()
+    SpriteTimer->>GameTimer: isWorking()
+    Note right of SpriteTimer: visible = $gameTimer.isWorking()
+    deactivate SpriteTimer
+    end

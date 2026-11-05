@@ -1,0 +1,121 @@
+sequenceDiagram
+    title RPG Maker MZ — Show Scrolling Text (command105 → Game_Message → Window_ScrollText)
+
+    actor User as Player
+    participant Scene as Scene_Message (Scene_Map / Scene_Battle)
+    participant Interpreter as Game_Interpreter
+    participant GameMessage as $gameMessage
+    participant ScrollWin as Window_ScrollText
+    participant MsgWin as Window_Message
+    participant Contents as Bitmap (contents)
+    participant Input as Input / TouchInput
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Scene,Input: window creation — Scene_Message.createAllWindows() → createScrollTextWindow()
+    Scene->>Scene: scrollTextWindowRect()
+    Note right of Scene: Rectangle(0, 0, Graphics.boxWidth, Graphics.boxHeight)
+    Scene->>ScrollWin: <<create>> new Window_ScrollText(rect)
+    activate ScrollWin
+    ScrollWin->>ScrollWin: Window_Base.initialize(new Rectangle())
+    Note right of ScrollWin: created with an empty rect (see window-lifecycle.mmd)<br/>opacity = 0 (no frame/back), hide()<br/>_reservedRect = rect, _text = ""<br/>_maxBitmapHeight = 2048, _scrollY = 0
+    deactivate ScrollWin
+    Scene->>Scene: addWindow(_scrollTextWindow)
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Scene,Input: event command — executeCommand() → command105(params)<br/>followed by one 405 command per text line
+    Interpreter->>Interpreter: command105(params)
+    activate Interpreter
+    Interpreter->>GameMessage: isBusy()
+    GameMessage-->>Interpreter: false (otherwise return false and retry next frame)
+    Interpreter->>GameMessage: setScroll(params[0], params[1])
+    Note right of GameMessage: _scrollMode = true<br/>_scrollSpeed = speed (1..8)<br/>_scrollNoFast = noFast
+    loop while nextEventCode() === 405
+        Note right of Interpreter: _index++
+        Interpreter->>GameMessage: add(currentCommand().parameters[0])
+        Note right of GameMessage: _texts.push(text)
+    end
+    Interpreter->>Interpreter: setWaitMode("message")
+    Note right of Interpreter: waits while $gameMessage.isBusy() (hasText())
+    deactivate Interpreter
+    Note over MsgWin,GameMessage: Window_Message ignores it: canStart() and doesContinue()<br/>require !$gameMessage.scrollMode() (see show-text-message.mmd)
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Scene,Input: every frame — WindowLayer.update() → Window_ScrollText.update()
+    Scene->>ScrollWin: update()
+    activate ScrollWin
+    ScrollWin->>ScrollWin: Window_Base.update()
+    ScrollWin->>GameMessage: scrollMode()
+    opt scrollMode() is true
+        opt _text (a message is scrolling)
+            ScrollWin->>ScrollWin: updateMessage()
+            Note right of ScrollWin: see "scrolling" below
+        end
+        opt !_text and $gameMessage.hasText()
+            ScrollWin->>ScrollWin: startMessage()
+            activate ScrollWin
+            ScrollWin->>GameMessage: allText()
+            GameMessage-->>ScrollWin: _texts.join("\n")
+            alt _text is not empty
+                ScrollWin->>ScrollWin: updatePlacement()
+                Note right of ScrollWin: move(_reservedRect) → full screen
+                ScrollWin->>ScrollWin: textSizeEx(_text)
+                Note right of ScrollWin: _allTextHeight = height of the text with escape codes<br/>(see window-text-escape-codes.mmd)<br/>_blockHeight = _maxBitmapHeight - height<br/>_blockIndex = 0<br/>origin.y = _scrollY = -height (text starts below the screen)
+                ScrollWin->>ScrollWin: createContents()
+                ScrollWin->>Contents: <<create>> new Bitmap(innerWidth, contentsHeight())
+                Note right of Contents: contentsHeight() = min(_allTextHeight, 2048)
+                ScrollWin->>ScrollWin: refresh()
+                activate ScrollWin
+                Note right of ScrollWin: rect = baseTextRect()<br/>y = rect.y - _scrollY + (_scrollY % _blockHeight)
+                ScrollWin->>Contents: clear()
+                ScrollWin->>ScrollWin: drawTextEx(_text, rect.x, y, rect.width)
+                deactivate ScrollWin
+                ScrollWin->>ScrollWin: show()
+            else empty text
+                ScrollWin->>GameMessage: clear()
+            end
+            deactivate ScrollWin
+        end
+    end
+    deactivate ScrollWin
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Scene,Input: scrolling — updateMessage() each frame while _text is set
+    ScrollWin->>ScrollWin: updateMessage()
+    activate ScrollWin
+    ScrollWin->>ScrollWin: scrollSpeed()
+    activate ScrollWin
+    ScrollWin->>GameMessage: scrollSpeed()
+    Note right of ScrollWin: speed = $gameMessage.scrollSpeed() / 2 (px per frame)
+    ScrollWin->>ScrollWin: isFastForward()
+    alt $gameMessage.scrollNoFast()
+        Note right of ScrollWin: false (fast forward disabled)
+    else
+        User->>Input: hold OK / Shift / touch
+        ScrollWin->>Input: Input.isPressed("ok") or isPressed("shift") or TouchInput.isPressed()
+        Input-->>ScrollWin: pressed
+        Note right of ScrollWin: speed *= fastForwardRate() (3)
+    end
+    deactivate ScrollWin
+    Note right of ScrollWin: _scrollY += speed
+    alt _scrollY ≥ _allTextHeight (text has left the screen)
+        ScrollWin->>ScrollWin: terminateMessage()
+        activate ScrollWin
+        Note right of ScrollWin: _text = null
+        ScrollWin->>GameMessage: clear()
+        Note right of GameMessage: _texts = [], _scrollMode = false<br/>_scrollSpeed = 2, _scrollNoFast = false<br/>→ isBusy() false → interpreter leaves "message" wait
+        ScrollWin->>ScrollWin: hide()
+        deactivate ScrollWin
+    else still scrolling
+        Note right of ScrollWin: blockIndex = floor(_scrollY / _blockHeight)
+        opt blockIndex above _blockIndex (text taller than the 2048 px bitmap)
+            Note right of ScrollWin: _blockIndex = blockIndex
+            ScrollWin->>ScrollWin: refresh()
+            Note right of Contents: redraws the whole text shifted up<br/>so the next 2048 px block fits in the bitmap
+        end
+        Note right of ScrollWin: origin.y = _scrollY % _blockHeight<br/>(the content scrolls up through the window)
+    end
+    deactivate ScrollWin
+    end

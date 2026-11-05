@@ -1,7 +1,7 @@
 sequenceDiagram
-    title Scene_Shop — Proceso de compra: datos en $gameParty
+    title RPG Maker MZ — Scene_Shop purchase: data in $gameParty
 
-    actor User as Usuario
+    actor User as Player
     participant Scene as Scene_Shop
     participant BuyWindow as Window_ShopBuy
     participant GameParty as $gameParty
@@ -11,32 +11,35 @@ sequenceDiagram
     participant dataArmors as $dataArmors
     participant GameMap as $gameMap
 
-    User->>Scene: selecciona item de la lista
+    User->>Scene: selects an item from the list
     Scene->>Scene: onBuyOk()
     activate Scene
     Scene->>BuyWindow: item()
     activate BuyWindow
     BuyWindow->>BuyWindow: itemAt(index())
     activate BuyWindow
-    Note right of BuyWindow: index() = fila resaltada por el cursor<br/>_data[index()] = objeto ya resuelto del database<br/>(inyectado por Scene_Shop via setupGoods)
+    Note right of BuyWindow: index() = row highlighted by the cursor<br/>_data[index()] = object already resolved from the database<br/>(injected by Scene_Shop via setupGoods)
     BuyWindow-->>BuyWindow: _data[index()]
     deactivate BuyWindow
-    BuyWindow-->>Scene: objeto de $dataItems/$dataWeapons/$dataArmors
+    BuyWindow-->>Scene: object from $dataItems/$dataWeapons/$dataArmors
     deactivate BuyWindow
-    Note right of Scene: this._item = referencia al objeto del database
+    Note right of Scene: this._item = reference to the database object
     deactivate Scene
 
-    User->>Scene: confirma cantidad a comprar
+    User->>Scene: confirms the quantity to buy
+    Scene->>Scene: onNumberOk()
+    activate Scene
+    Note right of Scene: SoundManager.playShop() then, for the "buy" command,<br/>doBuy(_numberWindow.number())
     Scene->>Scene: doBuy(number)
 
     activate Scene
     Scene->>GameParty: loseGold(number * buyingPrice())
     activate GameParty
     GameParty->>GameParty: gainGold(-amount)
-    Note right of GameParty: maxGold() → 99999999
+    Note right of GameParty: _gold clamped to 0..maxGold() → 99999999
     deactivate GameParty
 
-    Note over Scene: item es una referencia directa a un objeto de $dataItems/$dataWeapons/$dataArmors<br/>Ej: { id: 1, name: "Poción", price: 50, itypeId: 1, consumable: true, ... }
+    Note over Scene: item is a direct reference to an object of $dataItems/$dataWeapons/$dataArmors<br/>e.g. { id: 1, name: "Potion", price: 50, itypeId: 1, consumable: true, ... }
     Scene->>GameParty: gainItem(item, number)
     activate GameParty
 
@@ -50,9 +53,9 @@ sequenceDiagram
     deactivate dataItems
     DataManager-->>GameParty: true/false
     deactivate DataManager
-    alt es Item de uso
-        GameParty-->>GameParty: retorna _items
-    else
+    alt is a regular item
+        GameParty-->>GameParty: returns _items
+    else not an item
         GameParty->>DataManager: isWeapon(item)
         activate DataManager
         DataManager->>dataWeapons: includes(item)
@@ -61,9 +64,9 @@ sequenceDiagram
         deactivate dataWeapons
         DataManager-->>GameParty: true/false
         deactivate DataManager
-        alt es arma
-            GameParty-->>GameParty: retorna _weapons
-        else es armadura
+        alt is a weapon
+            GameParty-->>GameParty: returns _weapons
+        else is an armor
             GameParty->>DataManager: isArmor(item)
             activate DataManager
             DataManager->>dataArmors: includes(item)
@@ -72,21 +75,23 @@ sequenceDiagram
             deactivate dataArmors
             DataManager-->>GameParty: true/false
             deactivate DataManager
-            GameParty-->>GameParty: retorna _armors
+            GameParty-->>GameParty: returns _armors
         end
     end
     deactivate GameParty
 
     GameParty->>GameParty: numItems(item)
     activate GameParty
-    Note right of GameParty: lee container[item.id] || 0
+    Note right of GameParty: calls itemContainer(item) again,<br/>then reads container[item.id] || 0
     GameParty-->>GameParty: lastNumber
     deactivate GameParty
 
     Note right of GameParty: container[item.id] = (lastNumber + amount).clamp(0, maxItems()) — maxItems() → 99
-    deactivate GameParty
 
     GameParty->>GameMap: requestRefresh()
     activate GameMap
+    Note right of GameMap: _needsRefresh = true
     deactivate GameMap
+    deactivate GameParty
+    deactivate Scene
     deactivate Scene

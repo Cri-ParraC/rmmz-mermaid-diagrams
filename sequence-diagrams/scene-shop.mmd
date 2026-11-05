@@ -1,0 +1,189 @@
+sequenceDiagram
+    title RPG Maker MZ — Shop Processing (command302 → Scene_Shop → buy / sell)
+
+    actor User as Player
+    participant Interpreter as Game_Interpreter
+    participant SceneManager
+    participant SceneShop as Scene_Shop
+    participant CommandWindow as Window_ShopCommand
+    participant BuyWindow as Window_ShopBuy
+    participant CategoryWindow as Window_ItemCategory
+    participant SellWindow as Window_ShopSell
+    participant NumberWindow as Window_ShopNumber
+    participant StatusWindow as Window_ShopStatus
+    participant GoldWindow as Window_Gold
+    participant GameParty as $gameParty
+
+    Note over Interpreter: event command 302 "Shop Processing"<br/>params = [type, id, priceType, price, purchaseOnly]
+    Interpreter->>Interpreter: command302(params)
+    activate Interpreter
+    alt !$gameParty.inBattle()
+        Interpreter->>Interpreter: goods = [params]
+        loop while nextEventCode() === 605
+            Interpreter->>Interpreter: _index++, goods.push(currentCommand().parameters)
+            Note right of Interpreter: each 605 line is one more [type, id, priceType, price]
+        end
+        Interpreter->>SceneManager: push(Scene_Shop)
+        Note right of SceneManager: _stack.push(Scene_Map), goto(Scene_Shop)<br/>_nextScene = new Scene_Shop()<br/>(see scenemanager-scene-change.mmd)
+        Interpreter->>SceneManager: prepareNextScene(goods, params[4])
+        SceneManager->>SceneShop: prepare(goods, purchaseOnly)
+        Note right of SceneShop: _goods = goods, _purchaseOnly, _item = null
+    else in battle
+        Note right of Interpreter: command is ignored
+    end
+    Interpreter-->>Interpreter: return true
+    deactivate Interpreter
+
+    SceneManager->>SceneShop: create()
+    activate SceneShop
+    Note right of SceneShop: Scene_MenuBase.create(): blurred map background,<br/>window layer, buttons
+    SceneShop->>SceneShop: createHelpWindow()
+    SceneShop->>GoldWindow: <<create>> new Window_Gold(rect)
+    SceneShop->>CommandWindow: <<create>> new Window_ShopCommand(rect)
+    SceneShop->>CommandWindow: setPurchaseOnly(_purchaseOnly)
+    Note right of CommandWindow: refresh() → makeCommandList()<br/>"buy", "sell" (enabled = !_purchaseOnly), "cancel"
+    SceneShop->>CommandWindow: setHandler("buy", commandBuy), ("sell", commandSell), ("cancel", popScene)
+    SceneShop->>SceneShop: createDummyWindow()
+    Note right of SceneShop: empty Window_Base that fills the area below the commands
+    SceneShop->>NumberWindow: <<create>> + hide(), setHandler("ok", onNumberOk), ("cancel", onNumberCancel)
+    SceneShop->>StatusWindow: <<create>> + hide()
+    SceneShop->>BuyWindow: <<create>> new Window_ShopBuy(rect)
+    SceneShop->>BuyWindow: setupGoods(_goods)
+    activate BuyWindow
+    BuyWindow->>BuyWindow: refresh() → makeItemList()
+    Note right of BuyWindow: for each goods: goodsToItem(goods) → _data<br/>_price.push(goods[2] === 0 ? item.price : goods[3])<br/>(database lookup detailed in scene-shop-buy.mmd)
+    BuyWindow->>BuyWindow: select(0)
+    deactivate BuyWindow
+    SceneShop->>BuyWindow: setHelpWindow(), setStatusWindow(), hide()
+    SceneShop->>BuyWindow: setHandler("ok", onBuyOk), ("cancel", onBuyCancel)
+    SceneShop->>CategoryWindow: <<create>> + hide(), deactivate()
+    SceneShop->>CategoryWindow: setHandler("ok", onCategoryOk), ("cancel", onCategoryCancel)
+    SceneShop->>SellWindow: <<create>> + hide(), setHandler("ok", onSellOk), ("cancel", onSellCancel)
+    SceneShop->>CategoryWindow: setItemWindow(_sellWindow)
+    opt !_categoryWindow.needsSelection()
+        Note right of SellWindow: only one category: sell window grows over the category area
+    end
+    deactivate SceneShop
+
+    User->>CommandWindow: OK on a command
+    Note over CommandWindow: input handled by Window_Selectable<br/>(see window-selectable-input.mmd)
+    alt "cancel" or Esc
+        CommandWindow->>SceneShop: popScene()
+        SceneShop->>SceneManager: pop()
+        Note right of SceneManager: back to Scene_Map, the interpreter continues
+    else "buy"
+        CommandWindow->>SceneShop: commandBuy()
+        activate SceneShop
+        SceneShop->>SceneShop: _dummyWindow.hide()
+        SceneShop->>SceneShop: activateBuyWindow()
+        SceneShop->>GoldWindow: value()
+        GoldWindow->>GameParty: gold()
+        SceneShop->>BuyWindow: setMoney(money())
+        Note right of BuyWindow: _money = money, refresh()<br/>isEnabled(item) = price(item) <= _money<br/>&& !$gameParty.hasMaxItems(item)
+        SceneShop->>BuyWindow: show(), activate()
+        SceneShop->>StatusWindow: show()
+        deactivate SceneShop
+
+        loop cursor moves in the buy list
+            BuyWindow->>BuyWindow: updateHelp()
+            BuyWindow->>StatusWindow: setItem(item())
+            Note right of StatusWindow: shows possession count and equip comparison
+        end
+
+        alt Cancel in the buy list
+            User->>BuyWindow: Cancel
+            BuyWindow->>SceneShop: onBuyCancel()
+            Note right of SceneShop: _commandWindow.activate(), dummy shown,<br/>buy and status windows hidden, help cleared
+        else OK on an enabled item
+            User->>BuyWindow: OK
+            BuyWindow->>SceneShop: onBuyOk()
+            activate SceneShop
+            SceneShop->>BuyWindow: item()
+            BuyWindow-->>SceneShop: _data[index()]
+            Note right of SceneShop: _item = selected database object<br/>(see scene-shop-buy.mmd)
+            SceneShop->>BuyWindow: hide()
+            SceneShop->>SceneShop: maxBuy()
+            Note right of SceneShop: max = $gameParty.maxItems(item) - numItems(item)<br/>price > 0 → min(max, floor(money() / price))
+            SceneShop->>SceneShop: buyingPrice() → _buyWindow.price(_item)
+            SceneShop->>NumberWindow: setup(_item, maxBuy(), buyingPrice())
+            SceneShop->>NumberWindow: setCurrencyUnit(currencyUnit()), show(), activate()
+            deactivate SceneShop
+        end
+
+    else "sell" (only enabled when !_purchaseOnly)
+        CommandWindow->>SceneShop: commandSell()
+        activate SceneShop
+        SceneShop->>SceneShop: _dummyWindow.hide()
+        SceneShop->>SellWindow: show(), deselect(), refresh()
+        Note right of SellWindow: Window_ItemList: _data = $gameParty.allItems() of the category<br/>isEnabled(item) = item.price > 0
+        alt _categoryWindow.needsSelection()
+            SceneShop->>CategoryWindow: show(), activate()
+            User->>CategoryWindow: OK on a category
+            CategoryWindow->>SceneShop: onCategoryOk()
+        else single category
+            SceneShop->>SceneShop: onCategoryOk()
+        end
+        SceneShop->>SceneShop: activateSellWindow()
+        Note right of SceneShop: category shown if needed, _sellWindow.refresh(),<br/>show(), activate(), _statusWindow.hide()
+        SceneShop->>SellWindow: select(0), setTopRow(0)
+        deactivate SceneShop
+
+        alt Cancel in the sell list
+            User->>SellWindow: Cancel
+            SellWindow->>SceneShop: onSellCancel()
+            Note right of SceneShop: deselect, status item null, help cleared<br/>category active again, or onCategoryCancel()<br/>back to the command window
+        else OK on an item with price > 0
+            User->>SellWindow: OK
+            SellWindow->>SceneShop: onSellOk()
+            activate SceneShop
+            SceneShop->>SellWindow: item()
+            Note right of SceneShop: _item = selected item
+            SceneShop->>CategoryWindow: hide()
+            SceneShop->>SellWindow: hide()
+            SceneShop->>GameParty: numItems(_item)
+            Note right of SceneShop: maxSell() = $gameParty.numItems(_item)<br/>sellingPrice() = Math.floor(_item.price / 2)
+            SceneShop->>NumberWindow: setup(_item, maxSell(), sellingPrice())
+            SceneShop->>NumberWindow: setCurrencyUnit(), show(), activate()
+            SceneShop->>StatusWindow: setItem(_item), show()
+            deactivate SceneShop
+        end
+    end
+
+    loop while the number window is active
+        NumberWindow->>NumberWindow: update() → processNumberChange()
+        Note right of NumberWindow: right +1, left -1, up +10, down -10<br/>(or touch buttons) → changeNumber(amount)<br/>_number clamped to 1.._max, refresh() shows the total
+    end
+
+    alt Cancel in the number window
+        User->>NumberWindow: Cancel
+        NumberWindow->>SceneShop: onNumberCancel()
+        SceneShop->>SceneShop: SoundManager.playCancel()
+        SceneShop->>SceneShop: endNumberInput()
+    else OK in the number window
+        User->>NumberWindow: OK
+        NumberWindow->>SceneShop: onNumberOk()
+        activate SceneShop
+        SceneShop->>SceneShop: SoundManager.playShop()
+        SceneShop->>CommandWindow: currentSymbol()
+        alt "buy"
+            SceneShop->>SceneShop: doBuy(_numberWindow.number())
+            activate SceneShop
+            SceneShop->>GameParty: loseGold(number * buyingPrice())
+            Note right of GameParty: gainGold(-amount)<br/>_gold clamped to 0..maxGold()
+            SceneShop->>GameParty: gainItem(_item, number)
+            Note right of GameParty: itemContainer(item)[item.id] += number<br/>clamped to maxItems(item), $gameMap.requestRefresh()<br/>(see scene-shop-buy.mmd)
+            deactivate SceneShop
+        else "sell"
+            SceneShop->>SceneShop: doSell(_numberWindow.number())
+            activate SceneShop
+            SceneShop->>GameParty: gainGold(number * sellingPrice())
+            SceneShop->>GameParty: loseItem(_item, number)
+            Note right of GameParty: gainItem(item, -number), entry deleted at 0
+            deactivate SceneShop
+        end
+        SceneShop->>SceneShop: endNumberInput()
+        SceneShop->>GoldWindow: refresh()
+        SceneShop->>StatusWindow: refresh()
+        deactivate SceneShop
+    end
+    Note over SceneShop: endNumberInput(): _numberWindow.hide(), then<br/>activateBuyWindow() for "buy" or activateSellWindow() for "sell"

@@ -1,0 +1,147 @@
+sequenceDiagram
+    title RPG Maker MZ — Map passability (canPass → tileset flags → character collision)
+
+    participant Mover as Game_CharacterBase
+    participant GamePlayer as $gamePlayer
+    participant Vehicle as Game_Vehicle
+    participant GameMap as $gameMap
+    participant GameEvent as Game_Event
+    participant Input
+
+    Note over Mover: Mover is any character (player, event, follower, vehicle)<br/>moveStraight(d) comes from input, a move route or pathfinding<br/>see move-route.mmd and touch-destination-pathfinding.mmd
+
+    Mover->>Mover: moveStraight(d)
+    activate Mover
+    opt mover is $gamePlayer
+        Note right of GamePlayer: Game_Player.moveStraight() first calls canPass()<br/>and on success _followers.updateMove() (see followers.mmd)
+    end
+    Mover->>Mover: canPass(_x, _y, d)
+    activate Mover
+    Mover->>GameMap: roundXWithDirection(x, d) / roundYWithDirection(y, d)
+    GameMap-->>Mover: x2, y2 (wrapped on looping maps)
+
+    Mover->>GameMap: isValid(x2, y2)
+    GameMap-->>Mover: 0 <= x2 < width() and 0 <= y2 < height()
+    break target tile outside the map
+        Mover-->>Mover: false
+    end
+
+    Mover->>Mover: isThrough() || isDebugThrough()
+    Note right of Mover: isThrough() returns _through (Through flag, airship)<br/>isDebugThrough() is false in the base class
+    opt mover is $gamePlayer
+        Mover->>GamePlayer: isDebugThrough()
+        GamePlayer->>Input: isPressed("control")
+        Note right of GamePlayer: true only when Ctrl is held and $gameTemp.isPlaytest()
+    end
+    break through or debug-through
+        Mover-->>Mover: true (no further checks)
+    end
+
+    Mover->>Mover: isMapPassable(x, y, d)
+    activate Mover
+    alt mover is $gamePlayer riding a vehicle
+        Mover->>Vehicle: vehicle().isMapPassable(x, y, d)
+        activate Vehicle
+        alt boat
+            Vehicle->>GameMap: isBoatPassable(x2, y2)
+            Note right of GameMap: checkPassage(x2, y2, 0x0200)
+        else ship
+            Vehicle->>GameMap: isShipPassable(x2, y2)
+            Note right of GameMap: checkPassage(x2, y2, 0x0400)
+        else airship
+            Note right of Vehicle: always true (see vehicles.mmd)
+        end
+        Vehicle-->>Mover: passable
+        deactivate Vehicle
+    else walking character
+        Mover->>GameMap: isPassable(x, y, d)
+        activate GameMap
+        Note right of GameMap: bit = (1 << (d / 2 - 1)) & 0x0f<br/>d2 = 0x01, d4 = 0x02, d6 = 0x04, d8 = 0x08
+        GameMap->>GameMap: checkPassage(x, y, bit)
+        activate GameMap
+        GameMap->>GameMap: tilesetFlags()
+        Note right of GameMap: $dataTilesets[_tilesetId].flags, indexed by tileId
+        GameMap->>GameMap: allTiles(x, y)
+        activate GameMap
+        GameMap->>GameMap: tileEventsXy(x, y)
+        Note right of GameMap: events using a tile image come first<br/>(event.tileId())
+        GameMap->>GameMap: layeredTiles(x, y)
+        Note right of GameMap: tileId(x, y, z) for z = 3, 2, 1, 0<br/>upper layers first, read from $dataMap.data
+        deactivate GameMap
+        loop each tile in allTiles (top to bottom)
+            alt flag & 0x10 (star tile)
+                Note right of GameMap: no effect on passage, continue
+            else (flag & bit) === 0
+                GameMap-->>GameMap: true (passable)
+            else (flag & bit) === bit
+                GameMap-->>GameMap: false (impassable)
+            end
+        end
+        Note right of GameMap: no deciding tile → false
+        deactivate GameMap
+        GameMap-->>Mover: passable from (x, y) toward d
+        deactivate GameMap
+        Mover->>GameMap: isPassable(x2, y2, reverseDir(d))
+        Note right of GameMap: same check on the target tile,<br/>entering from the opposite side (10 - d)
+        GameMap-->>Mover: passable into (x2, y2)
+    end
+    deactivate Mover
+    break map not passable
+        Mover-->>Mover: false
+    end
+
+    Mover->>Mover: isCollidedWithCharacters(x2, y2)
+    activate Mover
+    Mover->>Mover: isCollidedWithEvents(x2, y2)
+    Mover->>GameMap: eventsXyNt(x2, y2)
+    GameMap-->>Mover: events at x2,y2 that are not through
+    Note right of Mover: base class: collides if some event.isNormalPriority()<br/>Game_Event override: collides with ANY non-through event
+    Mover->>Mover: isCollidedWithVehicles(x2, y2)
+    Mover->>GameMap: boat().posNt(x2, y2) || ship().posNt(x2, y2)
+    opt mover is a Game_Event
+        Mover->>GameEvent: isCollidedWithPlayerCharacters(x2, y2)
+        Note right of GameEvent: isNormalPriority() and $gamePlayer.isCollided(x2, y2)<br/>(player or a visible follower stands there)
+    end
+    deactivate Mover
+    Mover-->>Mover: true only if not collided
+    deactivate Mover
+
+    Mover->>Mover: setMovementSuccess(result)
+    alt movement succeeded
+        Mover->>Mover: setDirection(d)
+        Note right of Mover: _x/_y step to x2/y2, _realX/_realY stay behind<br/>and slide over the next frames in updateMove()
+        Mover->>Mover: increaseSteps()
+    else blocked
+        Mover->>Mover: setDirection(d)
+        Mover->>Mover: checkEventTriggerTouchFront(d)
+        activate Mover
+        alt mover is $gamePlayer
+            Mover->>GamePlayer: checkEventTriggerTouch(x2, y2)
+            Note right of GamePlayer: if canStartLocalEvents() (not in airship)<br/>startMapEvent(x2, y2, [1, 2], true)<br/>Player Touch / Event Touch events of normal priority start
+        else mover is a Game_Event
+            Mover->>GameEvent: checkEventTriggerTouch(x2, y2)
+            Note right of GameEvent: if no event is running, _trigger === 2 (Event Touch)<br/>and $gamePlayer.pos(x2, y2),<br/>not jumping and isNormalPriority() → start()
+        end
+        deactivate Mover
+    end
+    deactivate Mover
+
+    Note over Mover,GameMap: Diagonal movement (move routes, plugins)
+    Mover->>Mover: moveDiagonally(horz, vert)
+    activate Mover
+    Mover->>Mover: canPassDiagonally(_x, _y, horz, vert)
+    activate Mover
+    alt canPass(x, y, vert) and canPass(x, y2, horz)
+        Note right of Mover: vertical first, then horizontal → true
+    else canPass(x, y, horz) and canPass(x2, y, vert)
+        Note right of Mover: horizontal first, then vertical → true
+    else
+        Note right of Mover: false (no corner cutting through walls)
+    end
+    deactivate Mover
+    Mover->>Mover: setMovementSuccess(result)
+    opt succeeded
+        Mover->>Mover: increaseSteps()
+    end
+    Note right of Mover: direction is adjusted only if facing the reverse of horz or vert<br/>no checkEventTriggerTouchFront() on a failed diagonal move
+    deactivate Mover

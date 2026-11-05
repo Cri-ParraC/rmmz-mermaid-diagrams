@@ -1,0 +1,94 @@
+sequenceDiagram
+    title RPG Maker MZ — Image loading (ImageManager → Bitmap → Sprite)
+
+    participant SpriteChar as Sprite_Character
+    participant ImageManager
+    participant Bitmap
+    participant Image as HTMLImageElement
+    participant PIXI as PIXI.BaseTexture
+    participant SceneManager
+    participant Scene as Scene_Base
+
+    SpriteChar->>SpriteChar: updateBitmap()
+    activate SpriteChar
+    opt isImageChanged()
+        SpriteChar->>SpriteChar: setCharacterBitmap()
+        activate SpriteChar
+        SpriteChar->>ImageManager: loadCharacter(_characterName)
+        activate ImageManager
+        ImageManager->>ImageManager: loadBitmap("img/characters/", filename)
+        Note right of ImageManager: url = folder + Utils.encodeURI(filename) + ".png"<br/>empty filename → _emptyBitmap
+        ImageManager->>ImageManager: loadBitmapFromUrl(url)
+        activate ImageManager
+        Note right of ImageManager: cache = url includes "/system/" ? _system : _cache
+        alt !cache[url]
+            ImageManager->>Bitmap: load(url)
+            activate Bitmap
+            Bitmap->>Bitmap: initialize()
+            Bitmap->>Bitmap: _startLoading()
+            activate Bitmap
+            Bitmap->>Image: <<create>> new Image()
+            Note right of Bitmap: onload = _onLoad, onerror = _onError<br/>_loadingState = "loading"
+            alt Utils.hasEncryptedImages()
+                Bitmap->>Bitmap: _startDecrypting()
+                Note right of Bitmap: XHR GET url + "_" (arraybuffer)
+            else
+                Bitmap->>Image: src = _url
+            end
+            deactivate Bitmap
+            Bitmap-->>ImageManager: bitmap (still loading)
+            deactivate Bitmap
+            Note right of ImageManager: cache[url] = bitmap
+        end
+        ImageManager-->>SpriteChar: cache[url]
+        deactivate ImageManager
+        deactivate ImageManager
+        SpriteChar->>SpriteChar: bitmap = ... (Sprite setter)
+        SpriteChar->>SpriteChar: _onBitmapChange()
+        SpriteChar->>Bitmap: addLoadListener(_onBitmapLoad)
+        Note right of Bitmap: already ready → listener called at once<br/>otherwise pushed to _loadListeners
+        deactivate SpriteChar
+    end
+    deactivate SpriteChar
+
+    par asynchronous load
+        opt encrypted
+            Bitmap->>Bitmap: _onXhrLoad(xhr)
+            Note right of Bitmap: Utils.decryptArrayBuffer() → Blob<br/>_image.src = URL.createObjectURL(blob)
+        end
+        Image-)Bitmap: onload
+        activate Bitmap
+        Bitmap->>Bitmap: _onLoad()
+        Note right of Bitmap: _loadingState = "loaded"
+        Bitmap->>Bitmap: _createBaseTexture(_image)
+        Bitmap->>PIXI: <<create>> new PIXI.BaseTexture(image)
+        Bitmap->>Bitmap: _callLoadListeners()
+        Bitmap->>SpriteChar: _onBitmapLoad(bitmap)
+        activate SpriteChar
+        Note right of SpriteChar: frame = bitmap size, _refresh()<br/>→ texture uses the BaseTexture
+        deactivate SpriteChar
+        deactivate Bitmap
+    and load error
+        Image-)Bitmap: onerror
+        Bitmap->>Bitmap: _onError()
+        Note right of Bitmap: _loadingState = "error"
+    end
+
+    loop every frame until the new scene starts — SceneManager.updateScene()
+        SceneManager->>Scene: isReady()
+        activate Scene
+        Scene->>ImageManager: isReady()
+        activate ImageManager
+        loop each bitmap in _cache and _system
+            alt bitmap.isError()
+                ImageManager->>ImageManager: throwLoadError(bitmap)
+                Note right of ImageManager: throw ["LoadError", url, bitmap.retry]<br/>→ SceneManager.catchLoadError() (see scenemanager-gameloop.mmd)
+            else !bitmap.isReady()
+                ImageManager-->>Scene: false
+            end
+        end
+        ImageManager-->>Scene: true
+        deactivate ImageManager
+        deactivate Scene
+    end
+    Note over SceneManager,Scene: Scene_Map.onTransfer() calls ImageManager.clear()<br/>→ destroys every bitmap in _cache (not _system)

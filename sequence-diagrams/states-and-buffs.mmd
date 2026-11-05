@@ -1,0 +1,178 @@
+sequenceDiagram
+    title RPG Maker MZ — States and buffs over time (add, count down, auto removal, messages, icons)
+
+    participant BattleManager
+    participant Action as Game_Action
+    participant Target as Game_Battler (target)
+    participant Result as Game_ActionResult
+    participant LogWindow as Window_BattleLog
+    participant StateIcon as Sprite_StateIcon
+    participant StateOverlay as Sprite_StateOverlay
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over BattleManager,StateOverlay: 1. an action applies effects — invokeNormalAction() → action.apply(target) (see battle-turn.mmd)
+    BattleManager->>Action: apply(target)
+    activate Action
+    Action->>Result: clear()
+    Note right of Result: addedStates, removedStates,<br/>addedBuffs, addedDebuffs, removedBuffs = []
+    opt result.isHit()
+        opt item().damage.type > 0
+            Action->>Action: executeDamage() → executeHpDamage()
+            Action->>Target: gainHp(-value)
+            opt value > 0
+                Action->>Target: onDamage(value)
+                activate Target
+                Target->>Target: removeStatesByDamage()
+                Note right of Target: state.removeByDamage and<br/>Math.randomInt(100) < chanceByDamage → removeState()
+                Target->>Target: chargeTpByDamage(value / mhp)
+                deactivate Target
+            end
+        end
+        loop each item effect — applyItemEffect(target, effect)
+            alt EFFECT_ADD_STATE
+                Action->>Action: itemEffectAddState()
+                Note right of Action: dataId 0 → itemEffectAddAttackState() (attack state traits)<br/>else itemEffectAddNormalState(): chance = value1<br/>* stateRate * lukEffectRate (unless certain hit)
+                Action->>Target: addState(stateId) when Math.random() < chance
+            else EFFECT_REMOVE_STATE
+                Action->>Target: removeState(dataId) when Math.random() < value1
+            else EFFECT_ADD_BUFF
+                Action->>Target: addBuff(paramId, turns)
+            else EFFECT_ADD_DEBUFF
+                Action->>Target: addDebuff(paramId, turns) when random < debuffRate * lukEffectRate
+            else EFFECT_REMOVE_BUFF / EFFECT_REMOVE_DEBUFF
+                Action->>Target: removeBuff(paramId) if buff / debuff affected
+            end
+            Note right of Action: makeSuccess(target) → result.success = true
+        end
+    end
+    deactivate Action
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over BattleManager,StateOverlay: 2. Game_Battler.addState(stateId)
+    activate Target
+    Target->>Target: isStateAddable(stateId)
+    Note right of Target: isAlive() && $dataStates[stateId]<br/>&& !isStateResist() (State Resist trait)<br/>&& !isStateRestrict() (removeByRestriction while restricted)
+    opt addable
+        opt !isStateAffected(stateId)
+            Target->>Target: addNewState(stateId)
+            activate Target
+            opt stateId === deathStateId() (1)
+                Target->>Target: die()
+                Note right of Target: _hp = 0, clearStates(), clearBuffs()
+            end
+            Note right of Target: _states.push(stateId), sortStates() by priority
+            opt was not restricted and isRestricted() now
+                Target->>Target: onRestrict()
+                Note right of Target: clearTpbChargeTime(), clearActions()<br/>removeState() for states with removeByRestriction
+            end
+            deactivate Target
+            Target->>Target: refresh()
+            Note right of Target: erase resisted states, clamp HP / MP / TP<br/>hp 0 → addState(death) else removeState(death)
+        end
+        Target->>Target: resetStateCounts(stateId)
+        Note right of Target: _stateTurns[id] = minTurns + randomInt(max - min + 1)<br/>Game_Actor also sets _stateSteps[id] = stepsToRemove<br/>(adding an existing state only resets its turns)
+        Target->>Result: pushAddedState(stateId)
+    end
+    deactivate Target
+    Note over Target,Result: removeState(id): death → revive(), eraseState(id), refresh(), result.pushRemovedState(id)
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over BattleManager,StateOverlay: 3. buffs — addBuff(paramId, turns) / addDebuff / removeBuff
+    activate Target
+    opt isAlive()
+        Target->>Target: increaseBuff(paramId)
+        Note right of Target: _buffs[paramId] up to +2 (decreaseBuff down to -2)<br/>a buff on a debuffed param cancels one level
+        opt isBuffAffected(paramId)
+            Target->>Target: overwriteBuffTurns(paramId, turns)
+            Note right of Target: _buffTurns[paramId] = turns if longer
+        end
+        Target->>Result: pushAddedBuff(paramId)
+        Target->>Target: refresh()
+    end
+    Note right of Target: param() multiplies by paramBuffRate()<br/>= _buffs[paramId] * 0.25 + 1
+    deactivate Target
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over BattleManager,StateOverlay: 4. messages for the action result
+    BattleManager->>LogWindow: displayActionResults(subject, target)
+    activate LogWindow
+    Note right of LogWindow: only when target.result().used
+    LogWindow->>LogWindow: displayAffectedStatus(target)
+    opt result.isStatusAffected()
+        LogWindow->>LogWindow: displayChangedStates(target)
+        activate LogWindow
+        LogWindow->>Result: addedStateObjects()
+        Note right of LogWindow: displayAddedStates(): message1 (actor) / message2 (enemy)<br/>death state → push("performCollapse", target)
+        LogWindow->>Result: removedStateObjects()
+        Note right of LogWindow: displayRemovedStates(): message4
+        deactivate LogWindow
+        LogWindow->>LogWindow: displayChangedBuffs(target)
+        Note right of LogWindow: TextManager.buffAdd / debuffAdd / buffRemove
+    end
+    deactivate LogWindow
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over BattleManager,StateOverlay: 5. end of the battler's actions — endAction() → endBattlerActions(subject)
+    BattleManager->>Target: onAllActionsEnd()
+    activate Target
+    Target->>Target: clearResult()
+    Target->>Target: removeStatesAuto(1)
+    Note right of Target: timing 1 = "Action End":<br/>removeState() for states with _stateTurns[id] === 0
+    Target->>Target: removeBuffsAuto()
+    Note right of Target: removeBuff() for buffs whose _buffTurns reached 0
+    deactivate Target
+    BattleManager->>BattleManager: displayBattlerStatus(battler, true)
+    BattleManager->>LogWindow: displayAutoAffectedStatus(battler)
+    Note right of LogWindow: same displayAffectedStatus() messages, then clear
+    BattleManager->>LogWindow: displayCurrentState(battler)
+    Note right of LogWindow: mostImportantStateText() → message3 ("is sleeping")
+    BattleManager->>LogWindow: displayRegeneration(battler)
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over BattleManager,StateOverlay: 6. end of turn — turn-based: updateTurnEnd() → endAllBattlersTurn()<br/>TPB: updateTpbBattler() when battler.isTpbTurnEnd() (see battle-tpb.mmd)
+    BattleManager->>Target: onTurnEnd()
+    activate Target
+    Target->>Target: clearResult()
+    Target->>Target: regenerateAll()
+    Note right of Target: if alive: regenerateHp() (hrg and slip damage, capped by maxSlipDamage())<br/>regenerateMp() (mrg), regenerateTp() (trg)
+    Target->>Target: updateStateTurns()
+    Note right of Target: _stateTurns[id]-- while > 0
+    Target->>Target: updateBuffTurns()
+    Note right of Target: _buffTurns[i]-- while > 0
+    Target->>Target: removeStatesAuto(2)
+    Note right of Target: timing 2 = "Turn End": expired states removed<br/>expired buffs wait for the next onAllActionsEnd()
+    deactivate Target
+    BattleManager->>BattleManager: displayBattlerStatus(battler, false)
+    BattleManager->>LogWindow: displayAutoAffectedStatus(battler)
+    BattleManager->>LogWindow: displayRegeneration(battler)
+    Note right of LogWindow: popupDamage for regen / slip damage (see damage-popup.mmd)
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over BattleManager,StateOverlay: other removal points
+    Note over BattleManager,Target: battle end: Scene_Battle.terminate() → onBattleEnd() → removeBattleStates() (removeAtBattleEnd), removeAllBuffs()<br/>also processVictory() / processAbort() → $gameParty.removeBattleStates()<br/>on the map: Game_Actor.onPlayerWalk() → updateStateSteps() (removeByWalking)
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over BattleManager,StateOverlay: 7. sprites read the battler every frame (battle sprites and Window_BattleStatus)
+    loop Sprite_StateIcon.update() — enemies (Sprite_Enemy) and Window_BattleStatus.placeStateIcon()
+        StateIcon->>StateIcon: _animationCount++ until animationWait() 40
+        StateIcon->>Target: allIcons()
+        Target-->>StateIcon: stateIcons() (iconIndex > 0) + buffIcons()
+        Note right of StateIcon: buffIconIndex(): ICON_BUFF_START / ICON_DEBUFF_START<br/>+ (level - 1) * 8 + paramId<br/>cycles _animationIndex through the icons
+        StateIcon->>StateIcon: updateFrame()
+        Note right of StateIcon: crops IconSet at _iconIndex
+    end
+    loop Sprite_StateOverlay.update() — actors (Sprite_Actor._stateSprite)
+        StateOverlay->>StateOverlay: updatePattern() every 8 frames
+        StateOverlay->>Target: stateOverlayIndex()
+        Target-->>StateOverlay: states()[0].overlay (highest priority state)
+        StateOverlay->>StateOverlay: updateFrame()
+        Note right of StateOverlay: crops system/States.png row overlayIndex - 1, frame _pattern
+    end
+    end

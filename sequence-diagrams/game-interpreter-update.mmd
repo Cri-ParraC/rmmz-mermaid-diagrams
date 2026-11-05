@@ -1,0 +1,106 @@
+sequenceDiagram
+    title RPG Maker MZ — Game_Interpreter — Running an event command list
+
+    participant GameMap as $gameMap
+    participant GameEvent as Game_Event
+    participant Interpreter as Game_Interpreter
+    participant Child as Child Game_Interpreter
+    participant SceneManager
+    participant dataCommonEvents as $dataCommonEvents
+
+    Note over GameMap,GameEvent: Game_Event.start() has set _starting = true
+    GameMap->>GameMap: setupStartingMapEvent()
+    activate GameMap
+    GameMap->>GameEvent: clearStartingFlag()
+    GameMap->>GameEvent: list()
+    GameEvent-->>GameMap: page.list (array of {code, indent, parameters})
+    GameMap->>Interpreter: setup(list, eventId)
+    activate Interpreter
+    Interpreter->>Interpreter: clear()
+    Note right of Interpreter: _list = list, _index = 0<br/>_mapId = $gameMap.mapId(), _eventId = eventId
+    Interpreter->>Interpreter: loadImages()
+    deactivate Interpreter
+    deactivate GameMap
+
+    loop every frame — $gameMap.updateInterpreter()
+        GameMap->>Interpreter: update()
+        activate Interpreter
+        loop while isRunning()
+            Interpreter->>Interpreter: updateChild()
+            activate Interpreter
+            opt _childInterpreter
+                Interpreter->>Child: update()
+                Note right of Child: same loop on the common event list
+                Interpreter->>Child: isRunning()
+                Note right of Interpreter: still running → return true<br/>finished → _childInterpreter = null
+            end
+            deactivate Interpreter
+            Interpreter->>Interpreter: updateWait()
+            activate Interpreter
+            Interpreter->>Interpreter: updateWaitCount()
+            Note right of Interpreter: _waitCount > 0 → _waitCount--
+            Interpreter->>Interpreter: updateWaitMode()
+            Note right of Interpreter: _waitMode: "message", "transfer", "route",<br/>"animation", "balloon", "image", ...
+            deactivate Interpreter
+            break updateChild() || updateWait()
+                Note over Interpreter: resume on the next frame
+            end
+            Interpreter->>SceneManager: isSceneChanging()
+            break SceneManager.isSceneChanging()
+                Note over Interpreter: resume after the scene change
+            end
+
+            Interpreter->>Interpreter: executeCommand()
+            activate Interpreter
+            Interpreter->>Interpreter: currentCommand()
+            Note right of Interpreter: _list[_index]
+            alt command exists
+                Note right of Interpreter: _indent = command.indent<br/>methodName = "command" + command.code
+                Interpreter->>Interpreter: this[methodName](command.parameters)
+                activate Interpreter
+                alt e.g. command111 (Conditional Branch)
+                    Note right of Interpreter: _branch[_indent] = result<br/>false → skipBranch()
+                else e.g. command117 (Common Event)
+                    Interpreter->>dataCommonEvents: [params[0]]
+                    dataCommonEvents-->>Interpreter: commonEvent
+                    Interpreter->>Interpreter: setupChild(commonEvent.list, eventId)
+                    Interpreter->>Child: <<create>> new Game_Interpreter(_depth + 1)
+                    Interpreter->>Child: setup(list, eventId)
+                else e.g. command230 (Wait)
+                    Interpreter->>Interpreter: wait(params[0])
+                    Note right of Interpreter: _waitCount = duration
+                else e.g. command101 (Show Text)
+                    Note right of Interpreter: see show-text-message.mmd<br/>setWaitMode("message")
+                end
+                deactivate Interpreter
+                alt handler returned false
+                    Note right of Interpreter: _index unchanged → command retried next frame
+                    Interpreter-->>Interpreter: false
+                else handler returned true / no handler
+                    Note right of Interpreter: _index++
+                    Interpreter-->>Interpreter: true
+                end
+            else end of list
+                Interpreter->>Interpreter: terminate()
+                Note right of Interpreter: _list = null → isRunning() = false
+                Interpreter-->>Interpreter: true
+            end
+            deactivate Interpreter
+            break executeCommand() returned false
+                Note over Interpreter: resume on the next frame
+            end
+            Interpreter->>Interpreter: checkFreeze()
+            Note right of Interpreter: break after 100000 commands in one frame
+        end
+        deactivate Interpreter
+
+        opt !_interpreter.isRunning()
+            opt _interpreter.eventId() > 0
+                GameMap->>GameMap: unlockEvent(eventId)
+                GameMap->>GameEvent: unlock()
+                GameMap->>Interpreter: clear()
+            end
+            GameMap->>GameMap: setupStartingEvent()
+            Note right of GameMap: next starting event, if any
+        end
+    end

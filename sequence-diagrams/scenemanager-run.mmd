@@ -1,5 +1,5 @@
 sequenceDiagram
-    title RPG Maker MZ — SceneManager.run() — Arranque del Game Loop
+    title RPG Maker MZ — SceneManager.run() — Game loop startup
 
     participant Main
     participant SceneManager
@@ -103,11 +103,11 @@ sequenceDiagram
 
     deactivate SceneManager
 
-    loop Cada frame (requestAnimationFrame vía PIXI ticker)
+    loop Every frame (requestAnimationFrame via the PIXI ticker)
         PIXIApp->>Graphics: _onTick(deltaTime)
         activate Graphics
         Graphics->>SceneManager: _tickHandler(deltaTime) → update(deltaTime)
-        Graphics->>PIXIApp: render() — dibuja el stage
+        Graphics->>PIXIApp: render() if _canRender() — draws the stage
         activate PIXIApp
         deactivate PIXIApp
         deactivate Graphics

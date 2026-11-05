@@ -1,0 +1,163 @@
+sequenceDiagram
+    title RPG Maker MZ — Set Movement Route (command205) and custom move routes
+
+    participant GameMap as $gameMap
+    participant Interpreter as Game_Interpreter
+    participant Character as Game_Character
+    participant GameSwitches as $gameSwitches
+    participant AudioManager
+
+    Note over Interpreter: executeCommand() reaches code 205<br/>params = [characterId, moveRoute]<br/>moveRoute = {list, repeat, skippable, wait}
+    Interpreter->>Interpreter: command205(params)
+    activate Interpreter
+    Interpreter->>GameMap: refreshIfNeeded()
+    Note right of Interpreter: _characterId = params[0]
+    Interpreter->>Interpreter: character(_characterId)
+    Note right of Interpreter: -1 → $gamePlayer, 0 → this event,<br/>N → $gameMap.event(N), null in battle
+    Interpreter->>Character: forceMoveRoute(params[1])
+    activate Character
+    opt !_originalMoveRoute
+        Character->>Character: memorizeMoveRoute()
+        Note right of Character: _originalMoveRoute = _moveRoute<br/>_originalMoveRouteIndex = _moveRouteIndex<br/>(e.g. the event page's custom route)
+    end
+    Note right of Character: _moveRoute = moveRoute, _moveRouteIndex = 0<br/>_moveRouteForcing = true, _waitCount = 0
+    Note right of Character: Game_Event override also clears _prelockDirection
+    deactivate Character
+    opt params[1].wait
+        Interpreter->>Interpreter: setWaitMode("route")
+    end
+    Interpreter-->>Interpreter: true (_index++)
+    deactivate Interpreter
+
+    loop every frame, character.update() from $gameMap.updateEvents() / $gamePlayer.update()
+        Note over Character: see scene-map-update.mmd for who calls update()
+        Character->>Character: Game_CharacterBase.update()
+        activate Character
+        opt isStopping() (not moving and not jumping)
+            Character->>Character: updateStop()
+            activate Character
+            Note right of Character: _stopCount++
+            opt _moveRouteForcing
+                Character->>Character: updateRoutineMove()
+                activate Character
+                alt _waitCount > 0
+                    Note right of Character: _waitCount--
+                else
+                    Character->>Character: setMovementSuccess(true)
+                    Note right of Character: command = _moveRoute.list[_moveRouteIndex]
+                    opt command exists
+                        Character->>Character: processMoveCommand(command)
+                        activate Character
+                        alt ROUTE_MOVE_DOWN / LEFT / RIGHT / UP (1-4)
+                            Character->>Character: moveStraight(d)
+                            Note right of Character: canPass() ok → _x/_y = next tile, increaseSteps()<br/>blocked → setMovementSuccess(false),<br/>setDirection(d), checkEventTriggerTouchFront(d)
+                        else ROUTE_MOVE_LOWER_L ... UPPER_R (5-8)
+                            Character->>Character: moveDiagonally(horz, vert)
+                        else ROUTE_MOVE_RANDOM / TOWARD / AWAY / FORWARD / BACKWARD (9-13)
+                            Character->>Character: moveRandom() / moveTowardPlayer() / moveForward() ...
+                        else ROUTE_JUMP (14)
+                            Character->>Character: jump(params[0], params[1])
+                        else ROUTE_WAIT (15)
+                            Note right of Character: _waitCount = params[0] - 1
+                        else ROUTE_TURN_DOWN ... TURN_AWAY (16-26)
+                            Character->>Character: setDirection(d) / turnRight90() / turnTowardPlayer() ...
+                        else ROUTE_SWITCH_ON / OFF (27-28)
+                            Character->>GameSwitches: setValue(params[0], true / false)
+                            Note right of GameSwitches: onChange() → $gameMap.requestRefresh()<br/>see event-page-refresh.mmd
+                        else ROUTE_CHANGE_SPEED ... CHANGE_BLEND_MODE (29-43)
+                            Character->>Character: setMoveSpeed() / setThrough() / setImage() / setOpacity() ...
+                        else ROUTE_PLAY_SE (44)
+                            Character->>AudioManager: playSe(params[0])
+                        else ROUTE_SCRIPT (45)
+                            Character->>Character: eval(params[0])
+                        else ROUTE_END (0)
+                            Character->>Character: processRouteEnd()
+                            activate Character
+                            alt _moveRoute.repeat
+                                Note right of Character: _moveRouteIndex = -1 (advance makes it 0)
+                            else _moveRouteForcing
+                                Note right of Character: _moveRouteForcing = false
+                                Character->>Character: restoreMoveRoute()
+                                Note right of Character: _moveRoute = _originalMoveRoute<br/>_moveRouteIndex = _originalMoveRouteIndex<br/>_originalMoveRoute = null
+                                Character->>Character: setMovementSuccess(false)
+                            end
+                            deactivate Character
+                        end
+                        deactivate Character
+                        Character->>Character: advanceMoveRouteIndex()
+                        alt isMovementSucceeded() or moveRoute.skippable
+                            Note right of Character: _moveRouteIndex++<br/>repeat and index past last command → 0
+                        else movement failed and not skippable
+                            Note right of Character: index unchanged → same command retried next frame
+                        end
+                    end
+                end
+                deactivate Character
+            end
+            deactivate Character
+        end
+        alt isJumping()
+            Character->>Character: updateJump()
+        else isMoving()
+            Character->>Character: updateMove()
+            Note right of Character: _realX/_realY approach _x/_y by distancePerFrame()
+        end
+        Character->>Character: updateAnimation()
+        deactivate Character
+
+        Note over GameMap,Interpreter: meanwhile in $gameMap.updateInterpreter()
+        GameMap->>Interpreter: update()
+        activate Interpreter
+        Interpreter->>Interpreter: updateWait() → updateWaitMode()
+        activate Interpreter
+        opt _waitMode === "route"
+            Interpreter->>Interpreter: character(_characterId)
+            Interpreter->>Character: isMoveRouteForcing()
+            Character-->>Interpreter: _moveRouteForcing
+            alt still forcing
+                Note right of Interpreter: waiting = true → interpreter stays on the next command
+            else route finished (ROUTE_END reached)
+                Note right of Interpreter: _waitMode = "" → continue the event list
+            end
+        end
+        deactivate Interpreter
+        Note right of Interpreter: see game-interpreter-update.mmd
+        deactivate Interpreter
+    end
+
+    Note over Character: Event's own custom route (page move type "Custom")
+    Note over Character: Game_Event.setupPageSettings() calls setMoveRoute(page.moveRoute)<br/>and _moveType = page.moveType (3 = custom)
+    Character->>Character: setMoveRoute(page.moveRoute)
+    alt _moveRouteForcing
+        Note right of Character: stored as _originalMoveRoute, index 0<br/>(used after the forced route ends)
+    else
+        Note right of Character: _moveRoute = moveRoute, _moveRouteIndex = 0
+    end
+
+    loop every frame while the event is stopped
+        Character->>Character: Game_Event.updateStop()
+        activate Character
+        opt _locked
+            Character->>Character: resetStopCount()
+        end
+        Character->>Character: Game_Character.updateStop()
+        Note right of Character: _stopCount++, runs updateRoutineMove() only when forcing
+        opt !isMoveRouteForcing()
+            Character->>Character: updateSelfMovement()
+            activate Character
+            opt !_locked and isNearTheScreen() and checkStop(stopCountThreshold())
+                Note right of Character: threshold = 30 * (5 - moveFrequency())<br/>_stopCount is reset by setDirection() / increaseSteps()
+                alt _moveType === 1
+                    Character->>Character: moveTypeRandom()
+                else _moveType === 2
+                    Character->>Character: moveTypeTowardPlayer()
+                else _moveType === 3
+                    Character->>Character: moveTypeCustom()
+                    Character->>Character: updateRoutineMove()
+                    Note right of Character: same processMoveCommand() flow as above,<br/>but not forcing: ROUTE_END without repeat leaves<br/>the index past the end, so the route just stops
+                end
+            end
+            deactivate Character
+        end
+        deactivate Character
+    end

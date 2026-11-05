@@ -1,0 +1,139 @@
+sequenceDiagram
+    title RPG Maker MZ — Scene_Map.update() — One map frame
+
+    participant SceneManager
+    participant SceneMap as Scene_Map
+    participant GameMap as $gameMap
+    participant Interpreter as Game_Interpreter
+    participant GamePlayer as $gamePlayer
+    participant Input
+    participant GameEvent as Game_Event
+    participant GameTimer as $gameTimer
+    participant GameScreen as $gameScreen
+
+    SceneManager->>SceneMap: update()
+    activate SceneMap
+    SceneMap->>SceneMap: Scene_Message.prototype.update()
+    Note right of SceneMap: Scene_Base.update(): updateFade(),<br/>updateChildren() → Spriteset_Map, windows
+    SceneMap->>SceneMap: updateDestination()
+    Note right of SceneMap: touch/click → $gameTemp.setDestination(x, y)
+    SceneMap->>SceneMap: updateMainMultiply()
+    activate SceneMap
+    Note right of SceneMap: updateMain() runs twice when isFastForward()
+    SceneMap->>SceneMap: updateMain()
+    activate SceneMap
+
+    SceneMap->>GameMap: update(isActive())
+    activate GameMap
+    GameMap->>GameMap: refreshIfNeeded()
+    opt sceneActive
+        GameMap->>GameMap: updateInterpreter()
+        activate GameMap
+        GameMap->>Interpreter: update()
+        Note right of Interpreter: see game-interpreter-update.mmd
+        opt !_interpreter.isRunning()
+            GameMap->>GameMap: setupStartingEvent()
+            Note right of GameMap: reserved common event → test event →<br/>setupStartingMapEvent() → autorun common event
+        end
+        deactivate GameMap
+    end
+    GameMap->>GameMap: updateScroll()
+    GameMap->>GameMap: updateEvents()
+    activate GameMap
+    loop each event in events()
+        GameMap->>GameEvent: update()
+        activate GameEvent
+        GameEvent->>GameEvent: Game_Character.prototype.update()
+        Note right of GameEvent: updateStop() → updateSelfMovement()<br/>(random / toward player / custom route)<br/>updateMove() → moves _realX/_realY
+        GameEvent->>GameEvent: checkEventTriggerAuto()
+        Note right of GameEvent: trigger 3 (autorun) → start()
+        GameEvent->>GameEvent: updateParallel()
+        Note right of GameEvent: trigger 4 (parallel) → own Game_Interpreter.update()
+        deactivate GameEvent
+    end
+    Note right of GameMap: then each Game_CommonEvent.update()
+    deactivate GameMap
+    GameMap->>GameMap: updateVehicles()
+    GameMap->>GameMap: updateParallax()
+    deactivate GameMap
+
+    SceneMap->>GamePlayer: update(isPlayerActive())
+    activate GamePlayer
+    GamePlayer->>GamePlayer: updateDashing()
+    opt sceneActive
+        GamePlayer->>GamePlayer: moveByInput()
+        activate GamePlayer
+        opt !isMoving() && canMove()
+            Note right of GamePlayer: canMove() is false while<br/>$gameMap.isEventRunning() or $gameMessage.isBusy()
+            GamePlayer->>Input: dir4
+            Input-->>GamePlayer: direction
+            alt direction > 0
+                GamePlayer->>GamePlayer: executeMove(direction)
+                activate GamePlayer
+                GamePlayer->>GamePlayer: moveStraight(direction)
+                Note right of GamePlayer: canPass() → sets _x/_y to the next tile,<br/>or checkEventTriggerTouchFront(d) if blocked
+                deactivate GamePlayer
+            else $gameTemp.isDestinationValid()
+                GamePlayer->>GamePlayer: findDirectionTo(x, y) → executeMove(direction)
+            end
+        end
+        deactivate GamePlayer
+    end
+    GamePlayer->>GamePlayer: Game_Character.prototype.update()
+    Note right of GamePlayer: updateMove() — interpolates _realX/_realY toward _x/_y
+    GamePlayer->>GamePlayer: updateScroll(lastScrolledX, lastScrolledY)
+    GamePlayer->>GameMap: scrollDown / scrollLeft / scrollRight / scrollUp
+    GamePlayer->>GamePlayer: updateVehicle()
+    opt !isMoving()
+        GamePlayer->>GamePlayer: updateNonmoving(wasMoving, sceneActive)
+        activate GamePlayer
+        opt !$gameMap.isEventRunning()
+            opt wasMoving
+                GamePlayer->>GamePlayer: checkEventTriggerHere([1, 2])
+                Note right of GamePlayer: player/event touch on the same tile
+                GamePlayer->>GameMap: setupStartingEvent()
+            end
+            opt sceneActive
+                GamePlayer->>GamePlayer: triggerAction()
+                activate GamePlayer
+                GamePlayer->>GamePlayer: triggerButtonAction()
+                activate GamePlayer
+                opt Input.isTriggered("ok")
+                    GamePlayer->>GamePlayer: checkEventTriggerHere([0])
+                    GamePlayer->>GamePlayer: checkEventTriggerThere([0, 1, 2])
+                    activate GamePlayer
+                    GamePlayer->>GamePlayer: startMapEvent(x2, y2, triggers, true)
+                    GamePlayer->>GameEvent: start()
+                    deactivate GamePlayer
+                    Note right of GameEvent: _starting = true, lock()
+                    GamePlayer->>GameMap: setupStartingEvent()
+                    GameMap->>Interpreter: setup(event.list(), event.eventId())
+                end
+                deactivate GamePlayer
+                deactivate GamePlayer
+            end
+            opt wasMoving
+                GamePlayer->>GamePlayer: updateEncounterCount()
+            end
+        end
+        deactivate GamePlayer
+    end
+    GamePlayer->>GamePlayer: _followers.update()
+    deactivate GamePlayer
+
+    SceneMap->>GameTimer: update(isActive())
+    SceneMap->>GameScreen: update()
+    deactivate SceneMap
+    deactivate SceneMap
+
+    alt isSceneChangeOk()
+        Note right of SceneMap: isActive() && !$gameMessage.isBusy()
+        SceneMap->>SceneMap: updateScene()
+        activate SceneMap
+        Note right of SceneMap: checkGameover(), then while !SceneManager.isSceneChanging():<br/>updateTransferPlayer() → updateEncounter() →<br/>updateCallMenu() → updateCallDebug()
+        deactivate SceneMap
+    else SceneManager.isNextScene(Scene_Battle)
+        SceneMap->>SceneMap: updateEncounterEffect()
+    end
+    SceneMap->>SceneMap: updateWaitCount()
+    deactivate SceneMap

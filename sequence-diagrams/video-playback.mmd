@@ -1,0 +1,110 @@
+sequenceDiagram
+    title RPG Maker MZ — Play Movie (command261 → Video → HTML video element)
+
+    actor User as Player
+    participant SceneManager
+    participant Interpreter as Game_Interpreter
+    participant GameMessage as $gameMessage
+    participant Video
+    participant Element as HTMLVideoElement (#gameVideo)
+    participant Graphics
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneManager,Graphics: start-up — SceneManager.initialize() → initVideo() (see main-bootstrap.mmd)
+    SceneManager->>Video: initialize(Graphics.width, Graphics.height)
+    activate Video
+    Note right of Video: _element = null, _loading = false, _volume = 1
+    Video->>Video: _createElement()
+    Video->>Element: <<create>> document.createElement("video")
+    Note right of Element: id "gameVideo", absolute and centered<br/>opacity 0, zIndex 2 (above the canvas, zIndex 1)<br/>playsinline, no context menu<br/>appended to document.body
+    Video->>Video: _setupEventHandlers()
+    Note right of Video: keydown / mousedown / touchend → _onUserGesture()
+    Video->>Video: resize(width, height)
+    Note right of Element: style.width / style.height in px<br/>Graphics._updateVideo() calls resize() again on every<br/>screen resize (width/height × _realScale)
+    deactivate Video
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over SceneManager,Graphics: Play Movie — executeCommand() → command261(params) (see game-interpreter-update.mmd)
+    Interpreter->>Interpreter: command261(params)
+    activate Interpreter
+    Interpreter->>GameMessage: isBusy()
+    alt busy (a message is still showing)
+        GameMessage-->>Interpreter: true
+        Note right of Interpreter: return false → retried next frame
+    else
+        GameMessage-->>Interpreter: false
+        Note right of Interpreter: name = params[0]
+        opt name.length above 0
+            Interpreter->>Interpreter: videoFileExt()
+            Note right of Interpreter: Utils.canPlayWebm() ? ".webm" : ".mp4"
+            Interpreter->>Video: play("movies/" + name + ext)
+            activate Video
+            Video->>Element: src = src
+            Note right of Element: onloadeddata = _onLoad<br/>onerror = _onError<br/>onended = _onEnd
+            Video->>Element: load()
+            Note right of Video: _loading = true
+            deactivate Video
+            Interpreter->>Interpreter: setWaitMode("video")
+        end
+        Note right of Interpreter: return true
+    end
+    deactivate Interpreter
+    end
+
+    par asynchronous video events
+        Element-)Video: onloadeddata
+        activate Video
+        Video->>Video: _onLoad()
+        Video->>Element: volume = _volume
+        Video->>Element: play()
+        Video->>Video: _updateVisibility(true)
+        activate Video
+        Video->>Graphics: hideScreen()
+        Note right of Graphics: _canvas.style.opacity = 0<br/>(the game keeps updating and rendering underneath)
+        Note right of Element: style.opacity = 1
+        deactivate Video
+        Note right of Video: _loading = false
+        deactivate Video
+    and playback ends
+        Element-)Video: onended
+        activate Video
+        Video->>Video: _onEnd()
+        Video->>Video: _updateVisibility(false)
+        Video->>Graphics: showScreen()
+        Note right of Graphics: _canvas.style.opacity = 1
+        Note right of Element: style.opacity = 0
+        deactivate Video
+    and load error
+        Element-)Video: onerror
+        activate Video
+        Video->>Video: _onError()
+        Video->>Video: _updateVisibility(false)
+        Video->>Graphics: showScreen()
+        Note right of Video: throw ["LoadError", _element.src, retry]<br/>retry = () => _element.load()<br/>thrown from a DOM handler, outside SceneManager.update()<br/>→ window "error" event → SceneManager.onError()
+        deactivate Video
+    end
+
+    loop every frame while _waitMode is "video"
+        Interpreter->>Interpreter: update()
+        Note right of Interpreter: called by $gameMap.updateInterpreter()<br/>or $gameTroop.updateInterpreter()
+        activate Interpreter
+        Interpreter->>Interpreter: updateWait() → updateWaitMode()
+        Interpreter->>Video: isPlaying()
+        Video-->>Interpreter: _loading or _isVisible() (style.opacity above 0)
+        alt still playing
+            Note right of Interpreter: waiting = true → the event stays paused
+        else finished
+            Note right of Interpreter: _waitMode = "" → continue with the next command
+        end
+        deactivate Interpreter
+    end
+
+    opt the browser blocked autoplay
+        User-)Video: keydown / mousedown / touchend on document → _onUserGesture()
+        Note right of Video: listeners were added to document by _setupEventHandlers()
+        Note right of Video: if !_element.src and _element.paused → _element.play().catch()<br/>(unlocks playback on mobile browsers)
+    end
+
+    Note over User,Graphics: no skip: neither Video nor the interpreter reads Input while a movie plays<br/>the player has to wait until onended
+    Note over Video,Element: volume: Video.setVolume(volume) stores _volume and sets _element.volume<br/>_onLoad() applies _volume, but no engine code calls setVolume() (default 1, plugins may)

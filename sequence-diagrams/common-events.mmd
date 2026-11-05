@@ -1,0 +1,126 @@
+sequenceDiagram
+    title RPG Maker MZ — Common events — Reserved, autorun and parallel
+
+    actor User as Player
+    participant SceneItem as Scene_Item / Scene_Skill
+    participant GameAction as Game_Action
+    participant GameTemp as $gameTemp
+    participant SceneManager
+    participant GameMap as $gameMap
+    participant Interpreter as Game_Interpreter (map)
+    participant CommonEvent as Game_CommonEvent
+    participant CEInterpreter as Game_Interpreter (parallel)
+    participant GameSwitches as $gameSwitches
+    participant dataCommonEvents as $dataCommonEvents
+
+    Note over SceneItem,GameTemp: 1. Reserved common event — item / skill effect "Common Event"
+    User->>SceneItem: use item or skill from the menu
+    SceneItem->>SceneItem: useItem()
+    activate SceneItem
+    SceneItem->>SceneItem: applyItem()
+    activate SceneItem
+    SceneItem->>GameAction: <<create>> new Game_Action(user)
+    SceneItem->>GameAction: apply(target) for each target
+    SceneItem->>GameAction: applyGlobal()
+    activate GameAction
+    loop each effect in item().effects
+        opt effect.code === EFFECT_COMMON_EVENT
+            GameAction->>GameTemp: reserveCommonEvent(effect.dataId)
+            Note right of GameTemp: _commonEventQueue.push(id)
+        end
+    end
+    deactivate GameAction
+    deactivate SceneItem
+    SceneItem->>SceneItem: checkCommonEvent()
+    opt $gameTemp.isCommonEventReserved()
+        SceneItem->>SceneManager: goto(Scene_Map)
+        Note right of SceneManager: see scenemanager-scene-change.mmd
+    end
+    deactivate SceneItem
+    Note over GameAction,GameTemp: In battle BattleManager.startAction() also calls applyGlobal(),<br/>and $gameTroop.setupBattleEvent() runs the queue with setupReservedCommonEvent()
+
+    Note over GameMap,Interpreter: 2. Picked up on the map — Game_Map.updateInterpreter() when the interpreter is idle
+    GameMap->>GameMap: setupStartingEvent()
+    activate GameMap
+    GameMap->>GameMap: refreshIfNeeded()
+    GameMap->>Interpreter: setupReservedCommonEvent()
+    activate Interpreter
+    Interpreter->>GameTemp: isCommonEventReserved()
+    alt queue not empty
+        Interpreter->>GameTemp: retrieveCommonEvent()
+        GameTemp->>dataCommonEvents: [_commonEventQueue.shift()]
+        dataCommonEvents-->>Interpreter: commonEvent
+        Interpreter->>Interpreter: setup(commonEvent.list)
+        Note right of Interpreter: eventId = 0, runs like a normal event<br/>see game-interpreter-update.mmd
+        Interpreter-->>GameMap: true → stop here
+    else nothing reserved
+        Interpreter-->>GameMap: false
+        GameMap->>GameMap: setupTestEvent()
+        GameMap->>GameMap: setupStartingMapEvent()
+        Note right of GameMap: events with _starting = true (see game-interpreter-update.mmd)
+        opt no map event started
+            GameMap->>GameMap: setupAutorunCommonEvent()
+            activate GameMap
+            GameMap->>GameMap: autorunCommonEvents()
+            GameMap->>dataCommonEvents: filter(trigger === 1)
+            loop each autorun common event
+                GameMap->>GameSwitches: value(commonEvent.switchId)
+                opt switch is ON
+                    GameMap->>Interpreter: setup(commonEvent.list)
+                    Note right of Interpreter: the first matching one wins
+                end
+            end
+            deactivate GameMap
+            Note right of GameMap: when it ends, the next idle frame sets it up again,<br/>so an autorun keeps looping (and blocks the player)<br/>until its switch is turned OFF
+        end
+    end
+    deactivate Interpreter
+    deactivate GameMap
+
+    Note over Interpreter,dataCommonEvents: Contrast — command117 (Common Event) does not use the queue
+    Interpreter->>Interpreter: command117(params)
+    Interpreter->>dataCommonEvents: [params[0]]
+    Interpreter->>Interpreter: setupChild(commonEvent.list, eventId)
+    Note right of Interpreter: runs inside a child Game_Interpreter (depth + 1)<br/>see game-interpreter-update.mmd
+
+    Note over GameMap,CEInterpreter: 3. Parallel common events (trigger 2)
+    GameMap->>GameMap: setupEvents() (on Game_Map.setup)
+    activate GameMap
+    GameMap->>GameMap: parallelCommonEvents()
+    GameMap->>dataCommonEvents: filter(trigger === 2)
+    loop each parallel common event
+        GameMap->>CommonEvent: <<create>> new Game_CommonEvent(commonEvent.id)
+        CommonEvent->>CommonEvent: refresh()
+    end
+    deactivate GameMap
+
+    Note over GameSwitches,GameMap: a switch change → onChange() → $gameMap.requestRefresh()<br/>→ next refreshIfNeeded() → Game_Map.refresh() (see event-page-refresh.mmd)
+    GameMap->>CommonEvent: refresh()
+    activate CommonEvent
+    CommonEvent->>CommonEvent: isActive()
+    CommonEvent->>dataCommonEvents: [_commonEventId]
+    CommonEvent->>GameSwitches: value(event.switchId)
+    Note right of CommonEvent: active = trigger === 2 and switch is ON
+    alt active
+        opt !_interpreter
+            CommonEvent->>CEInterpreter: <<create>> new Game_Interpreter()
+        end
+    else not active
+        Note right of CommonEvent: _interpreter = null (a running list is dropped)
+    end
+    deactivate CommonEvent
+
+    loop every frame — Game_Map.updateEvents(), after all Game_Event.update()
+        GameMap->>CommonEvent: update()
+        activate CommonEvent
+        opt _interpreter
+            CommonEvent->>CEInterpreter: isRunning()
+            opt not running
+                CommonEvent->>CEInterpreter: setup(list())
+                Note right of CEInterpreter: restarts from the top each time it ends
+            end
+            CommonEvent->>CEInterpreter: update()
+            Note right of CEInterpreter: runs alongside the map interpreter,<br/>see game-interpreter-update.mmd
+        end
+        deactivate CommonEvent
+    end

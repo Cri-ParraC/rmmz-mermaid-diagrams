@@ -1,0 +1,106 @@
+sequenceDiagram
+    title RPG Maker MZ — Battle start (random encounter / Battle Processing → Scene_Battle)
+
+    participant SceneMap as Scene_Map
+    participant GamePlayer as $gamePlayer
+    participant Interpreter as Game_Interpreter
+    participant BattleManager
+    participant GameTroop as $gameTroop
+    participant SceneManager
+    participant SceneBattle as Scene_Battle
+
+    alt random encounter
+        Note over GamePlayer: after each step: updateNonmoving() → updateEncounterCount()<br/>_encounterCount -= encounterProgressValue()
+        SceneMap->>SceneMap: updateScene() → updateEncounter()
+        activate SceneMap
+        SceneMap->>GamePlayer: executeEncounter()
+        activate GamePlayer
+        opt !$gameMap.isEventRunning() && _encounterCount <= 0
+            GamePlayer->>GamePlayer: makeEncounterCount()
+            GamePlayer->>GamePlayer: makeEncounterTroopId()
+            Note right of GamePlayer: weighted random pick from $gameMap.encounterList()<br/>filtered by meetsEncounterConditions()
+            GamePlayer->>BattleManager: setup(troopId, true, false)
+            GamePlayer->>BattleManager: onEncounter()
+            Note right of BattleManager: rolls _preemptive / _surprise
+        end
+        GamePlayer-->>SceneMap: true if a battle was set up
+        deactivate GamePlayer
+        opt executeEncounter() returned true
+            SceneMap->>SceneManager: push(Scene_Battle)
+        end
+        deactivate SceneMap
+    else Battle Processing event command
+        Interpreter->>Interpreter: command301(params)
+        activate Interpreter
+        Note right of Interpreter: troopId direct, from a variable,<br/>or $gamePlayer.makeEncounterTroopId()
+        Interpreter->>BattleManager: setup(troopId, canEscape, canLose)
+        Interpreter->>BattleManager: setEventCallback(n → _branch[_indent] = n)
+        Note right of BattleManager: result 0 win / 1 escape / 2 lose<br/>feeds the If Win / If Escape / If Lose branches
+        Interpreter->>GamePlayer: makeEncounterCount()
+        Interpreter->>SceneManager: push(Scene_Battle)
+        deactivate Interpreter
+    end
+
+    activate BattleManager
+    Note over BattleManager: inside setup(troopId, canEscape, canLose)
+    BattleManager->>BattleManager: initMembers()
+    Note right of BattleManager: _phase = "", _actionBattlers = [], ...
+    BattleManager->>GameTroop: setup(troopId)
+    activate GameTroop
+    Note right of GameTroop: new Game_Enemy(enemyId, x, y)<br/>per $dataTroops[troopId].members
+    GameTroop->>GameTroop: makeUniqueNames()
+    deactivate GameTroop
+    BattleManager->>BattleManager: makeEscapeRatio()
+    deactivate BattleManager
+
+    Note over SceneManager: push() stores Scene_Map on _stack, then goto(Scene_Battle)
+    SceneManager->>SceneMap: stop()
+    activate SceneMap
+    SceneMap->>SceneManager: isNextScene(Scene_Battle)
+    SceneManager-->>SceneMap: true
+    SceneMap->>SceneMap: launchBattle()
+    activate SceneMap
+    SceneMap->>BattleManager: saveBgmAndBgs()
+    SceneMap->>SceneMap: stopAudioOnBattleStart()
+    Note right of SceneMap: stops BGM (unless it is the battle BGM), BGS, ME, SE<br/>then launchBattle() calls SoundManager.playBattleStart()
+    SceneMap->>SceneMap: startEncounterEffect()
+    Note right of SceneMap: _spriteset.hideCharacters()<br/>_encounterEffectDuration = 60
+    deactivate SceneMap
+    deactivate SceneMap
+
+    loop while _encounterEffectDuration > 0 — Scene_Map.update()
+        SceneMap->>SceneMap: updateEncounterEffect()
+        activate SceneMap
+        Note right of SceneMap: $gameScreen.setZoom(), flashes,<br/>snapForBattleBackground() on frame 2
+        opt halfway
+            SceneMap->>BattleManager: playBattleBgm()
+            SceneMap->>SceneMap: startFadeOut(fadeSpeed())
+        end
+        deactivate SceneMap
+        Note over SceneMap: isBusy() is true while _encounterEffectDuration > 0
+    end
+
+    SceneManager->>SceneMap: terminate()
+    Note right of SceneMap: next scene is Scene_Battle → no snapForBackground()<br/>$gameScreen.clearZoom()
+    SceneManager->>SceneBattle: create()
+    activate SceneBattle
+    SceneBattle->>SceneBattle: createDisplayObjects()
+    Note right of SceneBattle: Spriteset_Battle, Window_BattleLog,<br/>status / command / skill / item / target windows<br/>BattleManager.setLogWindow(), setSpriteset()
+    deactivate SceneBattle
+
+    SceneManager->>SceneBattle: start()
+    activate SceneBattle
+    SceneBattle->>BattleManager: playBattleBgm()
+    SceneBattle->>BattleManager: startBattle()
+    activate BattleManager
+    Note right of BattleManager: _phase = "start"
+    Note right of BattleManager: $gameSystem.onBattleStart()
+    Note right of BattleManager: $gameParty.onBattleStart(_preemptive)
+    BattleManager->>GameTroop: onBattleStart(_surprise)
+    BattleManager->>BattleManager: displayStartMessages()
+    Note right of BattleManager: "%1 emerged!" per enemy + preemptive / surprise text
+    deactivate BattleManager
+    SceneBattle->>SceneBattle: startFadeIn(fadeSpeed(), false)
+    deactivate SceneBattle
+
+    Note over SceneBattle: from here on, see battle-turn.mmd

@@ -1,0 +1,174 @@
+sequenceDiagram
+    title RPG Maker MZ — Using an item from the menu (Scene_Item / Scene_ItemBase)
+
+    actor User as Player
+    participant SceneItem as Scene_Item (Scene_ItemBase)
+    participant CategoryWindow as Window_ItemCategory
+    participant ItemWindow as Window_ItemList
+    participant ActorWindow as Window_MenuActor
+    participant Action as Game_Action
+    participant UserActor as user() (Game_Actor)
+    participant Target as Target Game_Actor
+    participant GameParty as $gameParty
+    participant GameTemp as $gameTemp
+    participant SceneManager
+
+    Note over SceneItem: pushed by Scene_Menu.commandItem() (see scene-menu.mmd)
+    SceneManager->>SceneItem: create()
+    activate SceneItem
+    SceneItem->>SceneItem: createHelpWindow()
+    SceneItem->>CategoryWindow: <<create>> + setHandler("ok", onCategoryOk), setHandler("cancel", popScene)
+    SceneItem->>ItemWindow: <<create>> + setHandler("ok", onItemOk), setHandler("cancel", onItemCancel)
+    SceneItem->>CategoryWindow: setItemWindow(_itemWindow)
+    opt !_categoryWindow.needsSelection() (only one category)
+        Note right of SceneItem: enlarge item window, hide and deactivate category window,<br/>then onCategoryOk() right away
+    end
+    SceneItem->>SceneItem: createActorWindow()
+    SceneItem->>ActorWindow: <<create>> new Window_MenuActor(rect)
+    Note right of ActorWindow: hidden<br/>setHandler("ok", onActorOk), setHandler("cancel", onActorCancel)
+    deactivate SceneItem
+
+    loop every frame while the category window is active
+        CategoryWindow->>CategoryWindow: update()
+        CategoryWindow->>ItemWindow: setCategory(currentSymbol())
+        Note right of ItemWindow: on change: refresh() → makeItemList()<br/>_data = $gameParty.allItems().filter(includes)
+    end
+    User->>CategoryWindow: OK on a category
+    CategoryWindow->>SceneItem: callOkHandler() → onCategoryOk()
+    SceneItem->>ItemWindow: activate()
+    SceneItem->>ItemWindow: selectLast()
+    ItemWindow->>GameParty: lastItem()
+    Note right of ItemWindow: forceSelect(index of last item or 0)
+
+    User->>ItemWindow: OK on an item
+    ItemWindow->>ItemWindow: processOk()
+    activate ItemWindow
+    ItemWindow->>ItemWindow: isCurrentItemEnabled() → isEnabled(item())
+    ItemWindow->>GameParty: canUse(item)
+    Note right of GameParty: members().some(actor.canUse(item))<br/>canMove(), occasion 0 or 2, hasItem(item)
+    alt not usable
+        ItemWindow->>ItemWindow: playBuzzerSound()
+    else usable
+        ItemWindow->>ItemWindow: playOkSound(), deactivate()
+        ItemWindow->>SceneItem: callOkHandler() → onItemOk()
+        activate SceneItem
+        SceneItem->>GameParty: setLastItem(item())
+        SceneItem->>SceneItem: determineItem()
+        activate SceneItem
+        SceneItem->>SceneItem: user()
+        Note right of SceneItem: movable member with the highest pha
+        SceneItem->>Action: <<create>> new Game_Action(user())
+        SceneItem->>Action: setItemObject(item)
+        SceneItem->>Action: isForFriend()
+        alt for friends (needs a target actor)
+            SceneItem->>SceneItem: showActorWindow()
+            Note right of SceneItem: places the window on the side away from the cursor,<br/>_actorWindow.show() and activate()
+            SceneItem->>ActorWindow: selectForItem(item)
+            activate ActorWindow
+            ActorWindow->>Action: new Game_Action(menuActor()), setItemObject(item)
+            alt isForUser()
+                Note right of ActorWindow: skill: setCursorFixed(true), forceSelect(actor.index())<br/>item: selectLast()
+            else isForAll()
+                Note right of ActorWindow: setCursorAll(true), forceSelect(0)
+            else one ally
+                ActorWindow->>ActorWindow: selectLast()
+                Note right of ActorWindow: forceSelect($gameParty.targetActor().index())
+            end
+            deactivate ActorWindow
+        else not for friends (e.g. no target or for enemies)
+            SceneItem->>SceneItem: useItem()
+            Note right of SceneItem: same steps as below without target actors,<br/>then activateItemWindow()
+        end
+        deactivate SceneItem
+        deactivate SceneItem
+    end
+    deactivate ItemWindow
+
+    alt Cancel in the actor window
+        User->>ActorWindow: Cancel
+        ActorWindow->>SceneItem: onActorCancel()
+        SceneItem->>SceneItem: hideActorWindow(), activateItemWindow()
+    else OK on a target actor
+        User->>ActorWindow: OK
+        ActorWindow->>ActorWindow: processOk()
+        activate ActorWindow
+        opt !cursorAll()
+            ActorWindow->>GameParty: setTargetActor(members()[index()])
+        end
+        ActorWindow->>SceneItem: callOkHandler() → onActorOk()
+        deactivate ActorWindow
+        activate SceneItem
+        SceneItem->>SceneItem: canUse()
+        activate SceneItem
+        SceneItem->>UserActor: canUse(item)
+        SceneItem->>SceneItem: isItemEffectsValid()
+        SceneItem->>SceneItem: itemTargetActors()
+        Note right of SceneItem: isForAll() → $gameParty.members()<br/>otherwise [members()[_actorWindow.index()]]
+        SceneItem->>Action: testApply(target) for some target
+        Note right of Action: target alive/dead check, and HP/MP not full<br/>or hasItemAnyValidEffects(target)
+        deactivate SceneItem
+        alt cannot use
+            SceneItem->>SceneItem: SoundManager.playBuzzer()
+            Note right of SceneItem: actor window stays open (it was deactivated by processOk)
+        else can use
+            SceneItem->>SceneItem: useItem()
+            activate SceneItem
+            SceneItem->>SceneItem: playSeForItem() → SoundManager.playUseItem()
+            SceneItem->>UserActor: useItem(item)
+            activate UserActor
+            UserActor->>UserActor: consumeItem(item)
+            UserActor->>GameParty: consumeItem(item)
+            opt DataManager.isItem(item) && item.consumable
+                GameParty->>GameParty: loseItem(item, 1) → gainItem(item, -1)
+                Note right of GameParty: _items[item.id] decreases, deleted at 0
+            end
+            deactivate UserActor
+            SceneItem->>SceneItem: applyItem()
+            activate SceneItem
+            SceneItem->>Action: new Game_Action(user()), setItemObject(item)
+            loop for each target in itemTargetActors(), numRepeats() times
+                SceneItem->>Action: apply(target)
+                activate Action
+                Action->>Target: result().clear()
+                Note right of Action: result.used = testApply(target), hit/evade rolls
+                opt result.isHit()
+                    Action->>Action: executeDamage(target, value) if damage.type > 0
+                    Action->>Action: applyItemEffect(target, effect) for each effect
+                    Action->>Target: e.g. itemEffectRecoverHp → target.gainHp(value)
+                    Action->>Action: applyItemUserEffect(target)
+                    Action->>UserActor: gainSilentTp(item.tpGain * tcr)
+                end
+                deactivate Action
+            end
+            SceneItem->>Action: applyGlobal()
+            activate Action
+            opt effect.code === EFFECT_COMMON_EVENT
+                Action->>GameTemp: reserveCommonEvent(effect.dataId)
+                Note right of GameTemp: _commonEventQueue.push(id)
+            end
+            deactivate Action
+            deactivate SceneItem
+            SceneItem->>SceneItem: checkCommonEvent()
+            SceneItem->>GameTemp: isCommonEventReserved()
+            opt common event reserved
+                SceneItem->>SceneManager: goto(Scene_Map)
+                Note right of SceneManager: the menu is left, Game_Map.setupStartingEvent() →<br/>_interpreter.setupReservedCommonEvent() runs it via $gameTemp.retrieveCommonEvent()<br/>(see scene-map-update.mmd)
+            end
+            SceneItem->>SceneItem: checkGameover()
+            Note right of SceneItem: $gameParty.isAllDead() → goto(Scene_Gameover)
+            SceneItem->>ActorWindow: refresh()
+            SceneItem->>ItemWindow: redrawCurrentItem()
+            Note right of ItemWindow: Scene_Item.useItem() override, shows the new count
+            deactivate SceneItem
+        end
+        deactivate SceneItem
+    end
+
+    User->>ItemWindow: Cancel
+    ItemWindow->>SceneItem: onItemCancel()
+    alt category window needsSelection()
+        SceneItem->>ItemWindow: deselect()
+        SceneItem->>CategoryWindow: activate()
+    else
+        SceneItem->>SceneManager: popScene() → pop()
+    end

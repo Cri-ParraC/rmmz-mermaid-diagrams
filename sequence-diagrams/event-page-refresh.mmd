@@ -1,0 +1,140 @@
+sequenceDiagram
+    title RPG Maker MZ — Game_Event.refresh() — Choosing the active event page
+
+    participant Interpreter as Game_Interpreter
+    participant GameData as $gameSwitches / $gameVariables / $gameSelfSwitches
+    participant GameMap as $gameMap
+    participant GameEvent as Game_Event
+    participant CommonEvent as Game_CommonEvent
+    participant SpriteChar as Sprite_Character
+    participant ImageManager
+
+    Note over Interpreter,GameMap: 1. Something that page conditions depend on changes
+    alt command121 (Control Switches)
+        Interpreter->>GameData: $gameSwitches.setValue(id, value)
+    else command122 (Control Variables)
+        Interpreter->>GameData: $gameVariables.setValue(id, value)
+    else command123 (Control Self Switch)
+        Interpreter->>GameData: $gameSelfSwitches.setValue([_mapId, _eventId, ch], value)
+    end
+    activate GameData
+    GameData->>GameData: onChange()
+    GameData->>GameMap: requestRefresh()
+    deactivate GameData
+    Note right of GameMap: _needsRefresh = true
+    Note over GameData,GameMap: $gameParty.gainItem() / addActor() / removeActor() also call<br/>$gameMap.requestRefresh() (item and actor conditions)
+
+    Note over GameMap,GameEvent: 2. The refresh runs later, at the next refreshIfNeeded()
+    Note right of GameMap: called from Game_Map.update() (see scene-map-update.mmd),<br/>setupStartingEvent() and command205
+    GameMap->>GameMap: refreshIfNeeded()
+    activate GameMap
+    opt _needsRefresh
+        GameMap->>GameMap: refresh()
+        activate GameMap
+        loop each event in events()
+            GameMap->>GameEvent: refresh()
+            activate GameEvent
+            alt _erased
+                Note right of GameEvent: newPageIndex = -1 (Erase Event, command214)
+            else
+                GameEvent->>GameEvent: findProperPageIndex()
+                activate GameEvent
+                loop i = pages.length - 1 down to 0
+                    GameEvent->>GameEvent: meetsConditions(page)
+                    activate GameEvent
+                    Note right of GameEvent: c = page.conditions, every enabled check must pass
+                    GameEvent->>GameData: $gameSwitches.value(c.switch1Id / c.switch2Id)
+                    GameEvent->>GameData: $gameVariables.value(c.variableId) >= c.variableValue
+                    GameEvent->>GameData: $gameSelfSwitches.value([_mapId, _eventId, c.selfSwitchCh])
+                    Note right of GameEvent: also c.itemValid → $gameParty.hasItem(item),<br/>c.actorValid → $gameParty.members().includes(actor)
+                    deactivate GameEvent
+                    break conditions met
+                        Note right of GameEvent: return i (the highest-numbered page wins)
+                    end
+                end
+                Note right of GameEvent: no page matches → -1
+                deactivate GameEvent
+            end
+            opt _pageIndex !== newPageIndex
+                Note right of GameEvent: _pageIndex = newPageIndex<br/>(starts at -2, so the first refresh always sets up)
+                GameEvent->>GameEvent: setupPage()
+                activate GameEvent
+                alt _pageIndex >= 0
+                    GameEvent->>GameEvent: setupPageSettings()
+                    activate GameEvent
+                    Note right of GameEvent: page = event().pages[_pageIndex], image = page.image
+                    alt image.tileId > 0
+                        GameEvent->>GameEvent: setTileImage(image.tileId)
+                    else
+                        GameEvent->>GameEvent: setImage(image.characterName, image.characterIndex)
+                    end
+                    Note right of GameEvent: _tileId, _characterName, _characterIndex updated
+                    opt image.direction / image.pattern differ from the original
+                        GameEvent->>GameEvent: setDirectionFix(false), setDirection(image.direction)
+                        GameEvent->>GameEvent: setPattern(image.pattern)
+                    end
+                    GameEvent->>GameEvent: setMoveSpeed() / setMoveFrequency() / setPriorityType()
+                    GameEvent->>GameEvent: setWalkAnime() / setStepAnime() / setDirectionFix() / setThrough()
+                    GameEvent->>GameEvent: setMoveRoute(page.moveRoute)
+                    Note right of GameEvent: see move-route.mmd (custom move route)
+                    Note right of GameEvent: _moveType = page.moveType<br/>_trigger = page.trigger
+                    alt _trigger === 4 (parallel)
+                        Note right of GameEvent: _interpreter = new Game_Interpreter()<br/>run by updateParallel() each frame
+                    else
+                        Note right of GameEvent: _interpreter = null
+                    end
+                    deactivate GameEvent
+                else no page (-1)
+                    GameEvent->>GameEvent: clearPageSettings()
+                    Note right of GameEvent: setImage("", 0), _moveType = 0,<br/>_trigger = null, _interpreter = null, setThrough(true)
+                end
+                GameEvent->>GameEvent: refreshBushDepth()
+                GameEvent->>GameEvent: clearStartingFlag()
+                GameEvent->>GameEvent: checkEventTriggerAuto()
+                opt _trigger === 3 (autorun)
+                    GameEvent->>GameEvent: start()
+                    Note right of GameEvent: _starting = true when the list has commands
+                end
+                deactivate GameEvent
+            end
+            deactivate GameEvent
+        end
+        loop each Game_CommonEvent
+            GameMap->>CommonEvent: refresh()
+            Note right of CommonEvent: see common-events.mmd
+        end
+        GameMap->>GameMap: refreshTileEvents()
+        Note right of GameMap: _tileEvents = events().filter(isTile()),<br/>_needsRefresh = false
+        deactivate GameMap
+    end
+    deactivate GameMap
+
+    Note over GameEvent,ImageManager: 3. The sprite notices the new image on its next update
+    loop every frame — Spriteset_Map updates its children
+        SpriteChar->>SpriteChar: update()
+        activate SpriteChar
+        SpriteChar->>SpriteChar: updateBitmap()
+        activate SpriteChar
+        SpriteChar->>SpriteChar: isImageChanged()
+        SpriteChar->>GameEvent: tileId(), characterName(), characterIndex()
+        Note right of SpriteChar: compared with cached _tilesetId, _tileId,<br/>_characterName, _characterIndex
+        opt image changed
+            Note right of SpriteChar: copy the new values into the cache
+            alt _tileId > 0
+                SpriteChar->>SpriteChar: setTileBitmap()
+                SpriteChar->>ImageManager: loadTileset(tileset.tilesetNames[5 + floor(tileId / 256)])
+            else
+                SpriteChar->>SpriteChar: setCharacterBitmap()
+                SpriteChar->>ImageManager: loadCharacter(_characterName)
+                SpriteChar->>ImageManager: isBigCharacter(_characterName)
+                Note right of ImageManager: see imagemanager-load-bitmap.mmd
+            end
+        end
+        deactivate SpriteChar
+        SpriteChar->>SpriteChar: updateFrame()
+        Note right of SpriteChar: tile frame or characterBlockX/Y + pattern / direction
+        SpriteChar->>SpriteChar: updatePosition() / updateOther()
+        SpriteChar->>SpriteChar: updateVisibility()
+        Note right of SpriteChar: hidden when isEmptyCharacter() (no page / no image)<br/>or _character.isTransparent()
+        deactivate SpriteChar
+    end

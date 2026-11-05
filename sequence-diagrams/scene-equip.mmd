@@ -1,0 +1,156 @@
+sequenceDiagram
+    title RPG Maker MZ — Equipment screen (Scene_Equip → Game_Actor.changeEquip)
+
+    actor User as Player
+    participant SceneEquip as Scene_Equip
+    participant CommandWindow as Window_EquipCommand
+    participant SlotWindow as Window_EquipSlot
+    participant ItemWindow as Window_EquipItem
+    participant StatusWindow as Window_EquipStatus
+    participant GameActor as Game_Actor (menu actor)
+    participant TempActor as Temp copy of Game_Actor
+    participant GameParty as $gameParty
+
+    Note over SceneEquip: pushed by Scene_Menu.onPersonalOk() (see scene-menu.mmd)
+    SceneEquip->>SceneEquip: create()
+    activate SceneEquip
+    Note right of SceneEquip: Scene_MenuBase.create(): updateActor()<br/>_actor = $gameParty.menuActor()
+    SceneEquip->>StatusWindow: <<create>> new Window_EquipStatus(rect)
+    SceneEquip->>CommandWindow: <<create>> + setHandler("equip" / "optimize" / "clear" / "cancel")
+    Note right of CommandWindow: "pagedown" → nextActor(), "pageup" → previousActor()
+    SceneEquip->>SlotWindow: <<create>> + setStatusWindow(), setHandler("ok", onSlotOk), setHandler("cancel", onSlotCancel)
+    SceneEquip->>ItemWindow: <<create>> + setStatusWindow(), setHandler("ok", onItemOk), setHandler("cancel", onItemCancel)
+    SceneEquip->>ItemWindow: hide()
+    SceneEquip->>SlotWindow: setItemWindow(_itemWindow)
+    SceneEquip->>SceneEquip: refreshActor()
+    SceneEquip->>StatusWindow: setActor(actor)
+    SceneEquip->>SlotWindow: setActor(actor)
+    SceneEquip->>ItemWindow: setActor(actor)
+    deactivate SceneEquip
+
+    User->>CommandWindow: OK on "Equip"
+    CommandWindow->>SceneEquip: callOkHandler() → commandEquip()
+    SceneEquip->>SlotWindow: activate()
+    SceneEquip->>SlotWindow: select(0)
+
+    loop every frame while the slot window is active
+        SlotWindow->>SlotWindow: update()
+        activate SlotWindow
+        Note right of SlotWindow: Window_Selectable.update() moves the cursor<br/>(see window-selectable-input.mmd)
+        SlotWindow->>ItemWindow: setSlotId(index())
+        opt slot id changed
+            ItemWindow->>ItemWindow: refresh() → makeItemList()
+            Note right of ItemWindow: includes(item): null (unequip) or<br/>actor.canEquip(item) && item.etypeId === etypeId()
+        end
+        deactivate SlotWindow
+        opt cursor moved → select() → callUpdateHelp()
+            SlotWindow->>SlotWindow: updateHelp()
+            Note right of SlotWindow: help shows the equipped item
+            SlotWindow->>StatusWindow: setTempActor(null)
+            Note right of StatusWindow: refresh() without the new values
+        end
+    end
+
+    User->>SlotWindow: OK on a slot
+    SlotWindow->>SlotWindow: processOk()
+    activate SlotWindow
+    SlotWindow->>GameActor: isEquipChangeOk(index())
+    Note right of GameActor: equip type not locked and not sealed
+    alt slot locked or sealed
+        SlotWindow->>SlotWindow: playBuzzerSound()
+    else ok
+        SlotWindow->>SlotWindow: deactivate()
+        SlotWindow->>SceneEquip: callOkHandler() → onSlotOk()
+        activate SceneEquip
+        SceneEquip->>SlotWindow: hide()
+        SceneEquip->>ItemWindow: show()
+        SceneEquip->>ItemWindow: activate()
+        SceneEquip->>ItemWindow: forceSelect(0)
+        deactivate SceneEquip
+    end
+    deactivate SlotWindow
+
+    loop each time the item cursor moves (select() → callUpdateHelp())
+        ItemWindow->>ItemWindow: updateHelp()
+        activate ItemWindow
+        Note right of ItemWindow: help window shows item()
+        ItemWindow->>TempActor: <<create>> JsonEx.makeDeepCopy(_actor)
+        ItemWindow->>TempActor: forceChangeEquip(_slotId, item())
+        activate TempActor
+        Note right of TempActor: _equips[slotId].setObject(item),<br/>releaseUnequippableItems(true), refresh()<br/>the party inventory is not touched
+        deactivate TempActor
+        ItemWindow->>StatusWindow: setTempActor(tempActor)
+        activate StatusWindow
+        StatusWindow->>StatusWindow: refresh() → drawAllParams()
+        loop paramId 2..7 (ATK to LUK)
+            StatusWindow->>GameActor: param(paramId)
+            Note right of StatusWindow: drawCurrentParam() then drawRightArrow()
+            StatusWindow->>TempActor: param(paramId)
+            Note right of StatusWindow: drawNewParam(): color from<br/>ColorManager.paramchangeTextColor(new - current)
+        end
+        deactivate StatusWindow
+        deactivate ItemWindow
+    end
+
+    alt OK on an item
+        User->>ItemWindow: OK
+        ItemWindow->>ItemWindow: processOk()
+        Note right of ItemWindow: isEnabled() is always true, playOkSound() is empty
+        ItemWindow->>SceneEquip: callOkHandler() → onItemOk()
+        activate SceneEquip
+        SceneEquip->>SceneEquip: SoundManager.playEquip()
+        SceneEquip->>SceneEquip: executeEquipChange()
+        activate SceneEquip
+        Note right of SceneEquip: slotId = _slotWindow.index()<br/>item = _itemWindow.item()
+        SceneEquip->>GameActor: changeEquip(slotId, item)
+        activate GameActor
+        GameActor->>GameActor: tradeItemWithParty(item, equips()[slotId])
+        activate GameActor
+        alt item && !$gameParty.hasItem(item)
+            Note right of GameActor: return false → nothing changes
+        else
+            GameActor->>GameParty: gainItem(oldItem, 1)
+            GameActor->>GameParty: loseItem(newItem, 1)
+        end
+        deactivate GameActor
+        opt trade ok && (item is null or equipSlots()[slotId] === item.etypeId)
+            Note right of GameActor: _equips[slotId].setObject(item)
+            GameActor->>GameActor: refresh()
+            Note right of GameActor: releaseUnequippableItems(false) returns<br/>now invalid equips to the party, then Game_Battler.refresh()
+        end
+        deactivate GameActor
+        deactivate SceneEquip
+        SceneEquip->>SceneEquip: hideItemWindow()
+        Note right of SceneEquip: _slotWindow.show() + activate()<br/>_itemWindow.hide() + deselect()
+        SceneEquip->>SlotWindow: refresh()
+        SceneEquip->>ItemWindow: refresh()
+        SceneEquip->>StatusWindow: refresh()
+        deactivate SceneEquip
+    else Cancel
+        User->>ItemWindow: Cancel
+        ItemWindow->>SceneEquip: callCancelHandler() → onItemCancel()
+        SceneEquip->>SceneEquip: hideItemWindow()
+    end
+
+    opt "optimize" / "clear" commands
+        CommandWindow->>SceneEquip: commandOptimize() / commandClear()
+        SceneEquip->>GameActor: optimizeEquipments() / clearEquipments()
+        SceneEquip->>StatusWindow: refresh()
+        SceneEquip->>SlotWindow: refresh()
+        SceneEquip->>CommandWindow: activate()
+    end
+
+    opt pageup / pagedown (Q / W or page buttons)
+        CommandWindow->>SceneEquip: nextActor() / previousActor()
+        SceneEquip->>GameParty: makeMenuActorNext() / makeMenuActorPrevious()
+        SceneEquip->>SceneEquip: updateActor(), onActorChange()
+        Note right of SceneEquip: refreshActor(), hideItemWindow(),<br/>slot window deselect() + deactivate(), command window activate()
+    end
+
+    User->>SlotWindow: Cancel
+    SlotWindow->>SceneEquip: onSlotCancel()
+    SceneEquip->>SlotWindow: deselect()
+    SceneEquip->>CommandWindow: activate()
+    User->>CommandWindow: Cancel
+    CommandWindow->>SceneEquip: popScene()
+    Note right of SceneEquip: SceneManager.pop() → back to Scene_Menu

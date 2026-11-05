@@ -1,0 +1,145 @@
+sequenceDiagram
+    title RPG Maker MZ — Damage popup (Game_Action.apply → Window_BattleLog → Sprite_Damage)
+
+    participant BattleManager
+    participant Action as Game_Action
+    participant Target as Game_Battler (target)
+    participant Result as Game_ActionResult
+    participant LogWindow as Window_BattleLog
+    participant SpriteBattler as Sprite_Battler (Sprite_Enemy / Sprite_Actor)
+    participant SpriteDamage as Sprite_Damage
+    participant BattleField as _battleField (Sprite)
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over BattleManager,BattleField: action applied — see battle-turn.mmd for invokeAction()
+    BattleManager->>Action: apply(target)
+    activate Action
+    Action->>Result: clear()
+    Note right of Result: used, missed, evaded, physical, drain
+    opt result.isHit()
+        Note right of Action: critical = Math.random() below itemCri(target)<br/>value = makeDamageValue(target, critical)
+        Action->>Action: executeDamage() → executeHpDamage(target, value)
+        Action->>Target: gainHp(-value)
+        Target->>Result: hpDamage = value, hpAffected = true
+        Note right of Action: executeMpDamage() → gainMp() sets mpDamage,<br/>applyItemEffect() per effect
+    end
+    deactivate Action
+    BattleManager->>LogWindow: displayActionResults(subject, target)
+    activate LogWindow
+    Note right of LogWindow: only queues method names in _methods
+    opt target.result().used
+        LogWindow->>LogWindow: push("pushBaseLine"), displayCritical(target)
+        LogWindow->>LogWindow: push("popupDamage", target)
+        LogWindow->>LogWindow: push("popupDamage", subject)
+        LogWindow->>LogWindow: displayDamage(target)
+        activate LogWindow
+        alt result.missed
+            LogWindow->>LogWindow: displayMiss() → push("performMiss"), push("addText", ...)
+        else result.evaded
+            LogWindow->>LogWindow: displayEvasion() → push("performEvasion"), push("addText", ...)
+        else
+            LogWindow->>LogWindow: displayHpDamage(target)
+            Note right of LogWindow: hpDamage above 0 and not drain → push("performDamage")<br/>hpDamage below 0 → push("performRecovery")<br/>push("addText", makeHpDamageText(target))
+            LogWindow->>LogWindow: displayMpDamage(), displayTpDamage()
+        end
+        deactivate LogWindow
+        LogWindow->>LogWindow: displayAffectedStatus(), displayFailure()
+        LogWindow->>LogWindow: push("waitForNewLine"), push("popBaseLine")
+    end
+    deactivate LogWindow
+    Note over BattleManager,LogWindow: turn end: displayBattlerStatus() → displayRegeneration(battler)<br/>also queues push("popupDamage", battler) for HP / MP regeneration
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over BattleManager,BattleField: following frames — Window_BattleLog.update() runs one queued method when not waiting
+    LogWindow->>LogWindow: updateWait() → callNextMethod()
+    LogWindow->>LogWindow: popupDamage(target)
+    activate LogWindow
+    LogWindow->>Target: shouldPopupDamage()
+    Note right of Target: missed || evaded || hpAffected || mpDamage !== 0
+    opt true
+        LogWindow->>Target: startDamagePopup()
+        Note right of Target: _damagePopup = true
+    end
+    deactivate LogWindow
+    opt performDamage(target) queued
+        LogWindow->>Target: performDamage()
+        Note right of Target: Game_Enemy: playEnemyDamage(), requestEffect("blink")<br/>Game_Actor: requestMotion("damage") in side view,<br/>else $gameScreen.startShake(5, 5, 10)
+    end
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over BattleManager,BattleField: every frame — Spriteset_Battle children update
+    BattleField->>SpriteBattler: update()
+    activate SpriteBattler
+    SpriteBattler->>SpriteBattler: updateMain()
+    SpriteBattler->>SpriteBattler: updateDamagePopup()
+    activate SpriteBattler
+    SpriteBattler->>SpriteBattler: setupDamagePopup()
+    activate SpriteBattler
+    SpriteBattler->>Target: isDamagePopupRequested()
+    opt _damagePopup
+        opt _battler.isSpriteVisible()
+            Note right of SpriteBattler: enemies always, actors only in side view<br/>(front view: no popup for actors)
+            SpriteBattler->>SpriteBattler: createDamageSprite()
+            activate SpriteBattler
+            SpriteBattler->>SpriteDamage: <<create>> new Sprite_Damage()
+            Note right of SpriteDamage: _duration = 90, _flashColor = [0, 0, 0, 0]
+            alt last = _damages[_damages.length - 1] exists
+                Note right of SpriteBattler: x = last.x + 8, y = last.y - 16 (stacked)
+            else
+                Note right of SpriteBattler: x = this.x + damageOffsetX(), y = this.y + damageOffsetY()<br/>(actor: x - 32, enemy: y - 8)
+            end
+            SpriteBattler->>SpriteDamage: setup(this._battler)
+            activate SpriteDamage
+            SpriteDamage->>Target: result()
+            Target-->>SpriteDamage: Game_ActionResult
+            alt missed || evaded
+                SpriteDamage->>SpriteDamage: createMiss()
+                Note right of SpriteDamage: _colorType = 0, one child sprite with drawText("Miss")
+            else hpAffected
+                SpriteDamage->>SpriteDamage: createDigits(hpDamage)
+                Note right of SpriteDamage: _colorType = 0 (damage) or 1 (recovery)
+            else isAlive() && mpDamage !== 0
+                SpriteDamage->>SpriteDamage: createDigits(mpDamage)
+                Note right of SpriteDamage: _colorType = 2 (damage) or 3 (recovery)
+            end
+            Note right of SpriteDamage: createDigits(): one createChildSprite(w, h) per digit,<br/>createBitmap() with numberFontFace(), mainFontSize() + 4,<br/>ColorManager.damageColor(_colorType),<br/>sprite.y = ry = -40, dy = -i (staggered bounce)
+            opt result.critical
+                SpriteDamage->>SpriteDamage: setupCriticalEffect()
+                Note right of SpriteDamage: _flashColor = [255, 0, 0, 160], _flashDuration = 60
+            end
+            deactivate SpriteDamage
+            SpriteBattler->>SpriteBattler: _damages.push(sprite)
+            SpriteBattler->>BattleField: parent.addChild(sprite)
+            deactivate SpriteBattler
+        end
+        SpriteBattler->>Target: clearDamagePopup(), clearResult()
+    end
+    deactivate SpriteBattler
+
+    opt _damages.length above 0
+        loop each damage in _damages
+            SpriteBattler->>SpriteDamage: update()
+            activate SpriteDamage
+            opt _duration above 0
+                Note right of SpriteDamage: _duration--, updateChild() per digit:<br/>dy += 0.5, ry += dy, bounce at ry 0 with dy *= -0.6,<br/>setBlendColor(_flashColor)
+            end
+            SpriteDamage->>SpriteDamage: updateFlash(), updateOpacity()
+            Note right of SpriteDamage: flash alpha fades out,<br/>opacity fades during the last 10 frames
+            deactivate SpriteDamage
+        end
+        opt !_damages[0].isPlaying()
+            SpriteBattler->>SpriteBattler: destroyDamageSprite(_damages[0])
+            activate SpriteBattler
+            SpriteBattler->>BattleField: parent.removeChild(sprite)
+            SpriteBattler->>SpriteDamage: destroy()
+            Note right of SpriteDamage: destroys each child bitmap, then Sprite.destroy()
+            deactivate SpriteBattler
+        end
+    end
+    deactivate SpriteBattler
+    SpriteBattler->>SpriteBattler: updateSelectionEffect(), updateVisibility()
+    deactivate SpriteBattler
+    Note over SpriteDamage,BattleField: the damage sprite is also a child of _battleField,<br/>so Sprite.update() of the field reaches it too
+    end
