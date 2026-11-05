@@ -1,0 +1,106 @@
+sequenceDiagram
+    title RPG Maker MZ — Scene_Boot → Scene_Title → New Game
+
+    actor User as Player
+    participant SceneManager
+    participant SceneBoot as Scene_Boot
+    participant DataManager
+    participant StorageManager
+    participant ConfigManager
+    participant FontManager
+    participant SceneTitle as Scene_Title
+    participant GamePlayer as $gamePlayer
+    participant SceneMap as Scene_Map
+
+    Note over SceneManager: run(Scene_Boot) → goto(Scene_Boot)<br/>see scenemanager-run.mmd
+    SceneManager->>SceneBoot: create()
+    activate SceneBoot
+    SceneBoot->>DataManager: loadDatabase()
+    activate DataManager
+    loop each entry in _databaseFiles
+        DataManager->>DataManager: loadDataFile(name, src)
+        Note right of DataManager: XMLHttpRequest GET data/Actors.json, ...<br/>window[name] = null until onXhrLoad()
+    end
+    deactivate DataManager
+    SceneBoot->>StorageManager: updateForageKeys()
+    deactivate SceneBoot
+
+    par asynchronous XHR responses
+        DataManager->>DataManager: onXhrLoad(xhr, name, src, url)
+        activate DataManager
+        Note right of DataManager: window[name] = JSON.parse(responseText)<br/>(errors go to _errors via onXhrError)
+        DataManager->>DataManager: onLoad(object)
+        Note right of DataManager: extractMetadata() — parses note-field tags into .meta
+        deactivate DataManager
+    end
+
+    loop every frame until isReady() — SceneManager.updateScene()
+        SceneManager->>SceneBoot: isReady()
+        activate SceneBoot
+        SceneBoot->>DataManager: isDatabaseLoaded()
+        Note right of DataManager: checkError() throws ["LoadError", url, retry]<br/>if a file failed
+        SceneBoot->>StorageManager: forageKeysUpdated()
+        opt first time both are true
+            SceneBoot->>SceneBoot: onDatabaseLoaded()
+            activate SceneBoot
+            SceneBoot->>SceneBoot: setEncryptionInfo()
+            SceneBoot->>SceneBoot: loadSystemImages()
+            Note right of SceneBoot: ColorManager.loadWindowskin()<br/>ImageManager.loadSystem("IconSet")
+            SceneBoot->>SceneBoot: loadPlayerData()
+            SceneBoot->>DataManager: loadGlobalInfo()
+            SceneBoot->>ConfigManager: load()
+            SceneBoot->>SceneBoot: loadGameFonts()
+            SceneBoot->>FontManager: load("rmmz-mainfont", mainFontFilename)
+            deactivate SceneBoot
+        end
+        Note right of SceneBoot: ready when Scene_Base.isReady()<br/>&& isPlayerDataLoaded()
+        deactivate SceneBoot
+    end
+
+    SceneManager->>SceneBoot: start()
+    activate SceneBoot
+    alt DataManager.isBattleTest()
+        SceneBoot->>DataManager: setupBattleTest()
+        SceneBoot->>SceneManager: goto(Scene_Battle)
+    else DataManager.isEventTest()
+        SceneBoot->>DataManager: setupEventTest()
+        SceneBoot->>SceneManager: goto(Scene_Map)
+    else DataManager.isTitleSkip()
+        SceneBoot->>DataManager: setupNewGame()
+        SceneBoot->>SceneManager: goto(Scene_Map)
+    else normal start
+        SceneBoot->>SceneBoot: startNormalGame()
+        activate SceneBoot
+        SceneBoot->>SceneBoot: checkPlayerLocation()
+        SceneBoot->>DataManager: setupNewGame()
+        Note right of DataManager: prepares game objects so Scene_Title can show<br/>(they are rebuilt on New Game / Continue)
+        SceneBoot->>SceneManager: goto(Scene_Splash)
+        Note right of SceneManager: Scene_Splash then goes to Scene_Title
+        deactivate SceneBoot
+    end
+    SceneBoot->>SceneBoot: resizeScreen()
+    SceneBoot->>SceneBoot: updateDocumentTitle()
+    deactivate SceneBoot
+
+    User->>SceneTitle: selects "New Game"
+    SceneTitle->>SceneTitle: commandNewGame()
+    activate SceneTitle
+    SceneTitle->>DataManager: setupNewGame()
+    activate DataManager
+    DataManager->>DataManager: createGameObjects()
+    Note right of DataManager: $gameTemp, $gameSystem, ..., $gameMap, $gamePlayer
+    DataManager->>DataManager: selectSavefileForNewGame()
+    Note right of DataManager: $gameParty.setupStartingMembers()
+    DataManager->>GamePlayer: setupForNewGame()
+    activate GamePlayer
+    GamePlayer->>GamePlayer: reserveTransfer(startMapId, startX, startY, 2, 0)
+    Note right of GamePlayer: _transferring = true
+    deactivate GamePlayer
+    Note right of DataManager: Graphics.frameCount = 0
+    deactivate DataManager
+    SceneTitle->>SceneTitle: fadeOutAll()
+    SceneTitle->>SceneManager: goto(Scene_Map)
+    deactivate SceneTitle
+
+    SceneManager->>SceneMap: create()
+    Note right of SceneMap: $gamePlayer.isTransferring() → loadMapData(newMapId())<br/>see scene-map-transfer.mmd
