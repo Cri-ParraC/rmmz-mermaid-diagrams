@@ -44,7 +44,7 @@ sequenceDiagram
                 Note right of Enemy: true
             else 1 — Turn
                 Enemy->>Enemy: meetsTurnCondition(param1, param2)
-                Note right of Enemy: n = turnCount() ($gameTroop.turnCount() + 1,<br/>or _tpbTurnCount in TPB)<br/>param2 0 → n === param1<br/>else n >= param1 and n % param2 === param1 % param2
+                Note right of Enemy: n = turnCount() ($gameTroop.turnCount() + 1,<br/>or _tpbTurnCount in TPB)<br/>param2 0 → n === param1<br/>else n > 0 and n >= param1 and n % param2 === param1 % param2
             else 2 — HP
                 Enemy->>Enemy: meetsHpCondition(param1, param2)
                 Note right of Enemy: param1 <= hpRate() <= param2
@@ -61,8 +61,10 @@ sequenceDiagram
                 Note right of Enemy: $gameSwitches.value(param1)
             end
             deactivate Enemy
-            Enemy->>Enemy: canUse($dataSkills[a.skillId])
-            Note right of Enemy: MP / TP cost, seals, occasion<br/>(see skill-cost-and-usability.mmd)
+            opt meetsCondition(a) true (&& short-circuit)
+                Enemy->>Enemy: canUse($dataSkills[a.skillId])
+                Note right of Enemy: MP / TP cost, seals, occasion<br/>(see skill-cost-and-usability.mmd)
+            end
             deactivate Enemy
         end
 

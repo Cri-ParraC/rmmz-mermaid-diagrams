@@ -63,59 +63,61 @@ sequenceDiagram
     activate GamePlayer
     GamePlayer->>GamePlayer: updateDashing()
     Note right of GamePlayer: _dashing is also true while isDestinationValid()<br/>(touch movement always dashes unless dashing is disabled on the map)
-    GamePlayer->>GamePlayer: moveByInput()
-    activate GamePlayer
-    opt !isMoving() and canMove()
-        GamePlayer->>GamePlayer: getInputDirection()
-        Note right of GamePlayer: Input.dir4 (keyboard / gamepad)
-        alt direction > 0 (key pressed)
-            GamePlayer->>GameTemp: clearDestination()
-            Note right of GameTemp: keyboard input cancels touch movement
-        else $gameTemp.isDestinationValid()
-            GamePlayer->>GameTemp: destinationX() / destinationY()
-            GamePlayer->>GamePlayer: findDirectionTo(x, y)
-            activate GamePlayer
-            Note right of GamePlayer: Game_Character.findDirectionTo()<br/>returns 0 when already on the goal
-            GamePlayer->>GamePlayer: searchLimit()
-            Note right of GamePlayer: 12 steps (Game_Character default)
-            Note right of GamePlayer: start node: g = 0, f = $gameMap.distance(start, goal)<br/>nodeList / openList / closedList, best = start
-            loop while nodeList is not empty (A* search)
-                GamePlayer->>GamePlayer: pick the node with the lowest f
-                Note right of GamePlayer: move it from openList to closedList
-                break current is the goal
-                    GamePlayer->>GamePlayer: best = current
-                end
-                opt g1 < searchLimit
-                    loop direction 2, 4, 6, 8
-                        GamePlayer->>GameMap: roundXWithDirection / roundYWithDirection
-                        opt pos2 not in closedList
-                            GamePlayer->>GamePlayer: canPass(x1, y1, direction)
-                            Note right of GamePlayer: same check as normal movement,<br/>see map-passability.mmd
-                            opt passable and (new node or shorter g2 = g1 + 1)
-                                GamePlayer->>GameMap: distance(x2, y2, goalX, goalY)
-                                Note right of GamePlayer: neighbor.f = g2 + distance, parent = current<br/>best = the node with the smallest heuristic (f - g)
+    opt sceneActive
+        GamePlayer->>GamePlayer: moveByInput()
+        activate GamePlayer
+        opt !isMoving() and canMove()
+            GamePlayer->>GamePlayer: getInputDirection()
+            Note right of GamePlayer: Input.dir4 (keyboard / gamepad)
+            alt direction > 0 (key pressed)
+                GamePlayer->>GameTemp: clearDestination()
+                Note right of GameTemp: keyboard input cancels touch movement
+            else $gameTemp.isDestinationValid()
+                GamePlayer->>GameTemp: destinationX() / destinationY()
+                GamePlayer->>GamePlayer: findDirectionTo(x, y)
+                activate GamePlayer
+                Note right of GamePlayer: Game_Character.findDirectionTo()<br/>returns 0 when already on the goal
+                GamePlayer->>GamePlayer: searchLimit()
+                Note right of GamePlayer: 12 steps (Game_Character default)
+                Note right of GamePlayer: start node: g = 0, f = $gameMap.distance(start, goal)<br/>nodeList / openList / closedList, best = start
+                loop while nodeList is not empty (A* search)
+                    GamePlayer->>GamePlayer: pick the node with the lowest f
+                    Note right of GamePlayer: move it from openList to closedList
+                    break current is the goal
+                        GamePlayer->>GamePlayer: best = current
+                    end
+                    opt g1 < searchLimit
+                        loop direction 2, 4, 6, 8
+                            GamePlayer->>GameMap: roundXWithDirection / roundYWithDirection
+                            opt pos2 not in closedList
+                                GamePlayer->>GamePlayer: canPass(x1, y1, direction)
+                                Note right of GamePlayer: same check as normal movement,<br/>see map-passability.mmd
+                                opt passable and (new node or shorter g2 = g1 + 1)
+                                    GamePlayer->>GameMap: distance(x2, y2, goalX, goalY)
+                                    Note right of GamePlayer: neighbor.f = g2 + distance, parent = current<br/>best = the node with the smallest heuristic (f - g)
+                                end
                             end
                         end
                     end
                 end
+                GamePlayer->>GamePlayer: walk best.parent back to the first step after start
+                GamePlayer->>GameMap: deltaX(node.x, start.x) / deltaY(node.y, start.y)
+                alt first step found
+                    Note right of GamePlayer: returns 2, 4, 6 or 8 toward that step
+                else no step (goal unreachable within searchLimit)
+                    GamePlayer->>GamePlayer: deltaXFrom(goalX) / deltaYFrom(goalY)
+                    Note right of GamePlayer: fall back to the straight direction<br/>along the larger axis, or 0
+                end
+                deactivate GamePlayer
             end
-            GamePlayer->>GamePlayer: walk best.parent back to the first step after start
-            GamePlayer->>GameMap: deltaX(node.x, start.x) / deltaY(node.y, start.y)
-            alt first step found
-                Note right of GamePlayer: returns 2, 4, 6 or 8 toward that step
-            else no step (goal unreachable within searchLimit)
-                GamePlayer->>GamePlayer: deltaXFrom(goalX) / deltaYFrom(goalY)
-                Note right of GamePlayer: fall back to the straight direction<br/>along the larger axis, or 0
+            opt direction > 0
+                GamePlayer->>GamePlayer: executeMove(direction)
+                GamePlayer->>GamePlayer: moveStraight(direction)
+                Note right of GamePlayer: canPass() → _followers.updateMove()<br/>then Game_CharacterBase.moveStraight()<br/>blocked → checkEventTriggerTouchFront(d)<br/>→ checkEventTriggerTouch(x2, y2) for Player Touch events
             end
-            deactivate GamePlayer
         end
-        opt direction > 0
-            GamePlayer->>GamePlayer: executeMove(direction)
-            GamePlayer->>GamePlayer: moveStraight(direction)
-            Note right of GamePlayer: canPass() → _followers.updateMove()<br/>then Game_CharacterBase.moveStraight()<br/>blocked → checkEventTriggerTouchFront(d)<br/>→ checkEventTriggerTouch(x2, y2) for Player Touch events
-        end
+        deactivate GamePlayer
     end
-    deactivate GamePlayer
 
     GamePlayer->>GamePlayer: Game_Character.prototype.update()
     Note right of GamePlayer: updateMove() slides _realX/_realY one step per path node,<br/>findDirectionTo() is recomputed after every step

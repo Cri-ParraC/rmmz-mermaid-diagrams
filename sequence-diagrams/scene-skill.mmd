@@ -24,8 +24,9 @@ sequenceDiagram
     SceneSkill->>SkillWindow: <<create>> new Window_SkillList(rect)
     SceneSkill->>SkillWindow: setHandler("ok", onItemOk), ("cancel", onItemCancel)
     SceneSkill->>TypeWindow: setSkillWindow(_itemWindow)
-    SceneSkill->>ActorWindow: createActorWindow()
-    Note right of ActorWindow: Scene_ItemBase: new Window_MenuActor(rect), hidden<br/>setHandler("ok", onActorOk), ("cancel", onActorCancel)
+    SceneSkill->>SceneSkill: createActorWindow()
+    SceneSkill->>ActorWindow: <<create>> new Window_MenuActor(rect)
+    Note right of ActorWindow: Scene_ItemBase.createActorWindow()<br/>Window_MenuActor.initialize() calls hide()<br/>setHandler("ok", onActorOk), ("cancel", onActorCancel)
     deactivate SceneSkill
 
     SceneManager->>SceneSkill: start()

@@ -47,7 +47,8 @@ sequenceDiagram
         StatusWin->>Gauge: setup(actor, type)
         activate Gauge
         Note right of Gauge: _battler = battler, _statusType = statusType
-        Gauge->>Battler: currentValue() / currentMaxValue()
+        Gauge->>Gauge: currentValue() / currentMaxValue()
+        Gauge->>Battler: hp / mhp, mp / mmp, tp / maxTp() or tpbChargeTime()
         Note right of Battler: "hp": hp / mhp, "mp": mp / mmp<br/>"tp": tp / maxTp(), "time": tpbChargeTime() / 1
         Battler-->>Gauge: _value, _maxValue
         Gauge->>Gauge: updateBitmap()
@@ -66,7 +67,8 @@ sequenceDiagram
     Gauge->>Gauge: Sprite.update() (children)
     Gauge->>Gauge: updateBitmap()
     activate Gauge
-    Gauge->>Battler: currentValue(), currentMaxValue()
+    Gauge->>Gauge: currentValue(), currentMaxValue()
+    Gauge->>Battler: hp / mhp, mp / mmp, tp / maxTp() or tpbChargeTime()
     Battler-->>Gauge: value, maxValue
     opt value !== _targetValue or maxValue !== _targetMaxValue
         Gauge->>Gauge: updateTargetValue(value, maxValue)
@@ -93,7 +95,7 @@ sequenceDiagram
             Gauge->>Gauge: drawGaugeRect(x, y, width, height)
             Gauge->>Gauge: gaugeRate()
             Note right of Gauge: isValid() ? _value / _maxValue : 0<br/>isValid(): "tp" without isPreserveTp() only in battle
-            Gauge->>ColorManager: gaugeBackColor(), gaugeColor1/2 by type
+            Gauge->>ColorManager: gaugeBackColor(), then the type's gauge colors
             Note right of ColorManager: hpGaugeColor1/2, mpGaugeColor1/2<br/>tpGaugeColor1/2, ctGaugeColor1/2 ("time")
             Gauge->>Bitmap: fillRect(x, y, width, height, color0)
             Gauge->>Bitmap: gradientFillRect(x + 1, y + 1, fillW, fillH, color1, color2)
@@ -102,7 +104,8 @@ sequenceDiagram
                 Gauge->>Gauge: drawLabel()
                 activate Gauge
                 Gauge->>Gauge: setupLabelFont()
-                Note right of Gauge: mainFontFace, mainFontSize - 2<br/>systemColor(), outline width 3<br/>paintOpacity = labelOpacity() (255 or 160 if !isValid())
+                Note right of Gauge: mainFontFace, mainFontSize - 2<br/>systemColor(), outline width 3
+                Note right of Gauge: drawLabel() sets paintOpacity = labelOpacity()<br/>(255 or 160 if !isValid()), back to 255 after drawText
                 Gauge->>Bitmap: drawText(label(), x, labelY(), ..., "left")
                 Note right of Bitmap: label(): TextManager.hpA / mpA / tpA
                 deactivate Gauge

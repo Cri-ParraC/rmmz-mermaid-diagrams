@@ -25,11 +25,13 @@ sequenceDiagram
     ListWindow->>ListWindow: drawItem(index)
     activate ListWindow
     alt Window_SkillList
-        ListWindow->>Battler: isEnabled(skill) → _actor.canUse(skill)
+        ListWindow->>ListWindow: isEnabled(skill)
+        ListWindow->>Battler: _actor.canUse(skill)
         ListWindow->>Battler: skillTpCost(skill) / skillMpCost(skill)
         Note right of ListWindow: drawSkillCost(): TP cost shown first,<br/>else MP cost
     else Window_ItemList (menu) and Window_BattleItem
-        ListWindow->>GameParty: isEnabled(item) → canUse(item)
+        ListWindow->>ListWindow: isEnabled(item)
+        ListWindow->>GameParty: canUse(item)
         GameParty->>Battler: members().some(actor.canUse(item))
         Note right of ListWindow: Window_BattleItem.includes() also uses<br/>$gameParty.canUse(), so unusable items are not listed
     end
@@ -63,7 +65,7 @@ sequenceDiagram
         Note right of Battler: occasion 0 Always, 1 Battle Screen (inBattle),<br/>2 Menu Screen (not in battle), 3 Never
         deactivate Battler
         Battler->>Battler: isSkillWtypeOk(skill)
-        Note right of Battler: Game_Actor: requiredWtypeId1 / 2 must be equipped<br/>(isWtypeEquipped), always true for enemies
+        Note right of Battler: Game_Actor: both required weapon types 0, or requiredWtypeId1<br/>or requiredWtypeId2 equipped (isWtypeEquipped), always true for enemies
         Battler->>Battler: canPaySkillCost(skill)
         activate Battler
         Battler->>Battler: skillTpCost(skill)
@@ -99,8 +101,10 @@ sequenceDiagram
         BattleManager->>BattleManager: processTurn() → action.prepare()
         BattleManager->>BattleManager: action.isValid()
         Note right of BattleManager: (_forcing && item) || subject.canUse(item)<br/>MP may have run out since input
-        BattleManager->>BattleManager: startAction()
-        BattleManager->>Battler: useItem(action.item())
+        opt action.isValid()
+            BattleManager->>BattleManager: startAction()
+            BattleManager->>Battler: useItem(action.item())
+        end
     else menu (Scene_Item / Scene_Skill)
         Scene->>Scene: onActorOk() → canUse() → useItem()
         Note right of Scene: Scene_ItemBase.canUse(): user.canUse(item)<br/>&& isItemEffectsValid()

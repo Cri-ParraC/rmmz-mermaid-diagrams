@@ -134,7 +134,7 @@ sequenceDiagram
             Note right of SpriteAnim: _started = true (sound / flash timings only)
         end
     end
-    opt _started
+    opt no _delay left and _playing and _started
         SpriteAnim->>SpriteAnim: updateEffectGeometry()
         Note right of SpriteAnim: _handle.setLocation(0, 0, 0), setRotation(rx, ry, rz)<br/>setScale(scale), setSpeed(speed / 100)
         SpriteAnim->>SpriteAnim: updateMain(), updateFlash()

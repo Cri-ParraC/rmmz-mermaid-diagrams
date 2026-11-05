@@ -55,7 +55,8 @@ sequenceDiagram
     SceneDebug->>EditWindow: setHandler("cancel", onEditCancel)
     Note right of EditWindow: no "ok" handler: OK is read directly in update()
     SceneDebug->>RangeWindow: setEditWindow(_editWindow)
-    SceneDebug->>HelpWindow: <<create>> createDebugHelpWindow()
+    SceneDebug->>SceneDebug: createDebugHelpWindow()
+    SceneDebug->>HelpWindow: <<create>> new Window_Base(rect)
     deactivate SceneDebug
 
     loop every frame — Window_DebugRange.update()
@@ -63,8 +64,10 @@ sequenceDiagram
         Note right of EditWindow: "switch" if index < _maxSwitches, else "variable"
         RangeWindow->>EditWindow: setTopId(topId(index()))
         Note right of EditWindow: refresh() on change → drawItem(index) for 10 ids<br/>itemName(): $dataSystem.switches / variables[id]<br/>itemStatus(): $gameSwitches.value(id) → "[ON]" / "[OFF]"<br/>or String($gameVariables.value(id))
-        EditWindow->>GameSwitches: value(dataId)
-        EditWindow->>GameVariables: value(dataId)
+        opt mode or topId changed → refresh()
+            EditWindow->>GameSwitches: value(dataId)
+            EditWindow->>GameVariables: value(dataId)
+        end
     end
 
     alt Cancel or F9 in the range window
@@ -72,10 +75,11 @@ sequenceDiagram
         RangeWindow->>RangeWindow: isCancelTriggered()
         Note right of RangeWindow: Window_Selectable.isCancelTriggered() || Input.isTriggered("debug")
         RangeWindow->>RangeWindow: processCancel()
-        Note right of RangeWindow: lastTopRow = topRow(), lastIndex = index()
+        Note right of RangeWindow: Window_Selectable.processCancel() first:<br/>playCancel, deactivate(), callCancelHandler()
         RangeWindow->>SceneDebug: popScene()
         SceneDebug->>SceneManager: pop()
         Note right of SceneManager: back to Scene_Map, events see the new values<br/>because setValue() requested a map refresh
+        Note right of RangeWindow: then lastTopRow = topRow(), lastIndex = index()
     else OK on a range
         User->>RangeWindow: OK
         RangeWindow->>SceneDebug: onRangeOk()
@@ -92,13 +96,14 @@ sequenceDiagram
                 opt Input.isRepeated("ok")
                     User->>EditWindow: Enter / Z
                     EditWindow->>EditWindow: switchId = currentId() = _topId + index()
+                    EditWindow->>EditWindow: playCursorSound()
                     EditWindow->>GameSwitches: setValue(switchId, !value(switchId))
                     activate GameSwitches
                     Note right of GameSwitches: 0 < id < $dataSystem.switches.length<br/>_data[switchId] = value
                     GameSwitches->>GameSwitches: onChange()
                     GameSwitches->>GameMap: requestRefresh()
                     deactivate GameSwitches
-                    EditWindow->>EditWindow: playCursorSound(), redrawCurrentItem()
+                    EditWindow->>EditWindow: redrawCurrentItem()
                 end
             else _mode is "variable"
                 EditWindow->>EditWindow: updateVariable()

@@ -173,7 +173,7 @@ sequenceDiagram
     end
     Note right of Layer: gl.disable(STENCIL_TEST), clear the stencil buffer
     loop each child that is not a window and is visible
-        Layer->>Graphics: child.render(renderer)
+        Note right of Layer: child.render(renderer) (the child draws itself, no stencil)
     end
     deactivate Layer
     end

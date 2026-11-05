@@ -86,7 +86,8 @@ sequenceDiagram
     end
 
     loop every frame while _waitMode is "video"
-        SceneManager->>Interpreter: update() (map or battle interpreter)
+        Interpreter->>Interpreter: update()
+        Note right of Interpreter: called by $gameMap.updateInterpreter()<br/>or $gameTroop.updateInterpreter()
         activate Interpreter
         Interpreter->>Interpreter: updateWait() → updateWaitMode()
         Interpreter->>Video: isPlaying()
@@ -100,8 +101,8 @@ sequenceDiagram
     end
 
     opt the browser blocked autoplay
-        User->>Element: keydown / mousedown / touchend
-        Element-)Video: _onUserGesture()
+        User-)Video: keydown / mousedown / touchend on document → _onUserGesture()
+        Note right of Video: listeners were added to document by _setupEventHandlers()
         Note right of Video: if !_element.src and _element.paused → _element.play().catch()<br/>(unlocks playback on mobile browsers)
     end
 

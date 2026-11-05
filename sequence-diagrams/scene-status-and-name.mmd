@@ -36,8 +36,9 @@ sequenceDiagram
     Note right of SubWindows: each setActor() refreshes only when the actor changed
     deactivate SceneStatus
 
+    Note over SceneStatus: the on-screen page buttons call nextActor() / previousActor()<br/>on the scene directly, not through Window_Status
     loop every frame — Window_Status.update() → processHandling()
-        alt pagedown (W) or the pagedown button
+        alt pagedown (W)
             User->>Input: presses W
             StatusWindow->>StatusWindow: processPagedown()
             Note right of StatusWindow: updateInputData(), deactivate()
@@ -55,7 +56,7 @@ sequenceDiagram
             SceneStatus->>StatusWindow: activate()
             deactivate SceneStatus
             deactivate SceneStatus
-        else pageup (Q) or the pageup button
+        else pageup (Q)
             User->>Input: presses Q
             StatusWindow->>SceneStatus: processPageup() → previousActor()
             SceneStatus->>GameParty: makeMenuActorPrevious()

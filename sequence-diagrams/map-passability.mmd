@@ -120,7 +120,7 @@ sequenceDiagram
             Note right of GamePlayer: if canStartLocalEvents() (not in airship)<br/>startMapEvent(x2, y2, [1, 2], true)<br/>Player Touch / Event Touch events of normal priority start
         else mover is a Game_Event
             Mover->>GameEvent: checkEventTriggerTouch(x2, y2)
-            Note right of GameEvent: if no event is running, _trigger === 2 (Event Touch)<br/>and $gamePlayer.pos(x2, y2) and not jumping → start()
+            Note right of GameEvent: if no event is running, _trigger === 2 (Event Touch)<br/>and $gamePlayer.pos(x2, y2),<br/>not jumping and isNormalPriority() → start()
         end
         deactivate Mover
     end

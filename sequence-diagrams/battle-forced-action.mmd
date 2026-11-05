@@ -64,8 +64,9 @@ sequenceDiagram
     BattleManager->>BattleManager: processForcedAction()
     activate BattleManager
     opt _subject (a battler is in the middle of its actions)
-        BattleManager->>Subject: endBattlerActions(_subject)
-        Note right of Subject: setActionState("done" or "undecided" in TPB)<br/>onAllActionsEnd(), clearTpbChargeTime()<br/>its remaining actions are skipped
+        BattleManager->>BattleManager: endBattlerActions(_subject)
+        BattleManager->>Subject: setActionState("done" or "undecided" in TPB)<br/>onAllActionsEnd(), clearTpbChargeTime()
+        Note right of Subject: its remaining actions are skipped
     end
     Note right of BattleManager: _subject = _actionForcedBattler<br/>_actionForcedBattler = null
     BattleManager->>BattleManager: startAction()
@@ -99,7 +100,8 @@ sequenceDiagram
     BattleManager->>LogWindow: endAction(subject)
     Note right of BattleManager: _phase = "turn"
     opt subject.numActions() === 0
-        BattleManager->>Battler: endBattlerActions(subject)
+        BattleManager->>BattleManager: endBattlerActions(subject)
+        BattleManager->>Battler: setActionState(), onAllActionsEnd(), clearTpbChargeTime()
         Note right of BattleManager: _subject = null
     end
     deactivate BattleManager

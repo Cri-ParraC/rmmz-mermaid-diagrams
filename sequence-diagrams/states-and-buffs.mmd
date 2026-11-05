@@ -15,33 +15,35 @@ sequenceDiagram
     activate Action
     Action->>Result: clear()
     Note right of Result: addedStates, removedStates,<br/>addedBuffs, addedDebuffs, removedBuffs = []
-    opt result.isHit() and damage.type > 0
-        Action->>Action: executeDamage() → executeHpDamage()
-        Action->>Target: gainHp(-value)
-        opt value > 0
-            Action->>Target: onDamage(value)
-            activate Target
-            Target->>Target: removeStatesByDamage()
-            Note right of Target: state.removeByDamage and<br/>Math.randomInt(100) < chanceByDamage → removeState()
-            Target->>Target: chargeTpByDamage(value / mhp)
-            deactivate Target
+    opt result.isHit()
+        opt item().damage.type > 0
+            Action->>Action: executeDamage() → executeHpDamage()
+            Action->>Target: gainHp(-value)
+            opt value > 0
+                Action->>Target: onDamage(value)
+                activate Target
+                Target->>Target: removeStatesByDamage()
+                Note right of Target: state.removeByDamage and<br/>Math.randomInt(100) < chanceByDamage → removeState()
+                Target->>Target: chargeTpByDamage(value / mhp)
+                deactivate Target
+            end
         end
-    end
-    loop each item effect — applyItemEffect(target, effect)
-        alt EFFECT_ADD_STATE
-            Action->>Action: itemEffectAddState()
-            Note right of Action: dataId 0 → itemEffectAddAttackState() (attack state traits)<br/>else itemEffectAddNormalState(): chance = value1<br/>* stateRate * lukEffectRate (unless certain hit)
-            Action->>Target: addState(stateId) when Math.random() < chance
-        else EFFECT_REMOVE_STATE
-            Action->>Target: removeState(dataId) when Math.random() < value1
-        else EFFECT_ADD_BUFF
-            Action->>Target: addBuff(paramId, turns)
-        else EFFECT_ADD_DEBUFF
-            Action->>Target: addDebuff(paramId, turns) when random < debuffRate * lukEffectRate
-        else EFFECT_REMOVE_BUFF / EFFECT_REMOVE_DEBUFF
-            Action->>Target: removeBuff(paramId) if buff / debuff affected
+        loop each item effect — applyItemEffect(target, effect)
+            alt EFFECT_ADD_STATE
+                Action->>Action: itemEffectAddState()
+                Note right of Action: dataId 0 → itemEffectAddAttackState() (attack state traits)<br/>else itemEffectAddNormalState(): chance = value1<br/>* stateRate * lukEffectRate (unless certain hit)
+                Action->>Target: addState(stateId) when Math.random() < chance
+            else EFFECT_REMOVE_STATE
+                Action->>Target: removeState(dataId) when Math.random() < value1
+            else EFFECT_ADD_BUFF
+                Action->>Target: addBuff(paramId, turns)
+            else EFFECT_ADD_DEBUFF
+                Action->>Target: addDebuff(paramId, turns) when random < debuffRate * lukEffectRate
+            else EFFECT_REMOVE_BUFF / EFFECT_REMOVE_DEBUFF
+                Action->>Target: removeBuff(paramId) if buff / debuff affected
+            end
+            Note right of Action: makeSuccess(target) → result.success = true
         end
-        Note right of Action: makeSuccess(target) → result.success = true
     end
     deactivate Action
     end
@@ -97,6 +99,7 @@ sequenceDiagram
     Note over BattleManager,StateOverlay: 4. messages for the action result
     BattleManager->>LogWindow: displayActionResults(subject, target)
     activate LogWindow
+    Note right of LogWindow: only when target.result().used
     LogWindow->>LogWindow: displayAffectedStatus(target)
     opt result.isStatusAffected()
         LogWindow->>LogWindow: displayChangedStates(target)
