@@ -1,0 +1,172 @@
+sequenceDiagram
+    title RPG Maker MZ — Animation playback (Show Animation, battle animations, balloons)
+
+    participant Interpreter as Game_Interpreter
+    participant LogWindow as Window_BattleLog
+    participant GameTemp as $gameTemp
+    participant Target as Game_Character (target)
+    participant Spriteset as Spriteset_Base (Map / Battle)
+    participant SpriteAnim as Sprite_Animation
+    participant SpriteAnimMV as Sprite_AnimationMV
+    participant EffectManager
+    participant Effekseer as Graphics.effekseer
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,Effekseer: requests — Show Animation (command212) on the map
+    Interpreter->>Interpreter: command212(params)
+    activate Interpreter
+    Note right of Interpreter: _characterId = params[0], character = character(_characterId)
+    Interpreter->>GameTemp: requestAnimation([character], params[1])
+    activate GameTemp
+    opt $dataAnimations[animationId] exists
+        Note right of GameTemp: _animationQueue.push({targets, animationId, mirror: false})
+        GameTemp->>Target: startAnimation()
+        Note right of Target: _animationPlaying = true
+    end
+    deactivate GameTemp
+    opt params[2] (wait for completion)
+        Interpreter->>Interpreter: setWaitMode("animation")
+    end
+    deactivate Interpreter
+    Note over LogWindow,GameTemp: in battle: startAction() queues push("showAnimation", subject, targets, item.animationId)<br/>(see battle-turn.mmd), Show Battle Animation (command337) calls requestAnimation() directly
+    LogWindow->>LogWindow: showAnimation(subject, targets, animationId)
+    activate LogWindow
+    alt animationId below 0 (normal attack)
+        LogWindow->>LogWindow: showAttackAnimation()
+        Note right of LogWindow: actor: showNormalAnimation() with attackAnimationId1(),<br/>then attackAnimationId2() mirrored, enemy: playEnemyAttack() only
+    else
+        LogWindow->>GameTemp: showNormalAnimation() → requestAnimation(targets, animationId, mirror)
+    end
+    deactivate LogWindow
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,Effekseer: every frame — Spriteset_Map.update() / Spriteset_Battle.update()
+    Spriteset->>Spriteset: updateAnimations()
+    activate Spriteset
+    loop each sprite in _animationSprites
+        opt !sprite.isPlaying()
+            Spriteset->>Spriteset: removeAnimation(sprite)
+            Note right of Spriteset: _effectsContainer.removeChild(sprite), sprite.destroy()
+            Spriteset->>Target: endAnimation() for each targetObjects
+            Note right of Target: _animationPlaying = false
+        end
+    end
+    Spriteset->>Spriteset: processAnimationRequests()
+    activate Spriteset
+    loop while request = $gameTemp.retrieveAnimation()
+        Spriteset->>GameTemp: retrieveAnimation()
+        GameTemp-->>Spriteset: _animationQueue.shift()
+        Spriteset->>Spriteset: createAnimation(request)
+        activate Spriteset
+        Note right of Spriteset: animation = $dataAnimations[request.animationId]<br/>delay starts at animationBaseDelay() (map 0, battle 8)
+        alt isAnimationForEach(animation)
+            Note right of Spriteset: MV: position !== 3, MZ: displayType === 0<br/>one sprite per target, delay += animationNextDelay() (12)
+        else
+            Note right of Spriteset: one sprite for all targets
+        end
+        Spriteset->>Spriteset: createAnimationSprite(targets, animation, mirror, delay)
+        activate Spriteset
+        Note right of Spriteset: makeTargetSprites() → findTargetSprite()<br/>(map: Sprite_Character, battle: Sprite_Battler)<br/>animationShouldMirror(): actors flip mirror
+        alt isMVAnimation(animation) (has frames)
+            Spriteset->>SpriteAnimMV: <<create>> new Sprite_AnimationMV()
+            Spriteset->>SpriteAnimMV: setup(targetSprites, animation, mirror, delay)
+            activate SpriteAnimMV
+            SpriteAnimMV->>SpriteAnimMV: setupRate(), setupDuration()
+            Note right of SpriteAnimMV: _rate = 4, _duration = frames.length * 4 + 1
+            SpriteAnimMV->>SpriteAnimMV: loadBitmaps()
+            Note right of SpriteAnimMV: ImageManager.loadAnimation(animation1Name / animation2Name)
+            SpriteAnimMV->>SpriteAnimMV: createCellSprites(), createScreenFlashSprite()
+            deactivate SpriteAnimMV
+        else Effekseer animation (MZ)
+            Spriteset->>SpriteAnim: <<create>> new Sprite_Animation()
+            Spriteset->>SpriteAnim: setup(targetSprites, animation, mirror, delay, previous)
+            activate SpriteAnim
+            SpriteAnim->>EffectManager: load(animation.effectName)
+            activate EffectManager
+            opt !_cache[url] && Graphics.effekseer
+                EffectManager->>Effekseer: startLoading(url) → loadEffect(url, 1, onLoad, onError)
+                Note right of EffectManager: url = "effects/" + name + ".efkefc"
+            end
+            EffectManager-->>SpriteAnim: _cache[url] (effect)
+            deactivate EffectManager
+            Note right of SpriteAnim: _playing = true, _maxTimingFrames from<br/>soundTimings and flashTimings
+            deactivate SpriteAnim
+        end
+        Note right of Spriteset: sprite.targetObjects = targets<br/>_effectsContainer.addChild(sprite) (tilemap or _battleField)<br/>_animationSprites.push(sprite)
+        deactivate Spriteset
+        deactivate Spriteset
+    end
+    deactivate Spriteset
+    deactivate Spriteset
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,Effekseer: every frame — animation sprites update (children of _effectsContainer)
+    par Sprite_Animation (Effekseer)
+        Spriteset->>SpriteAnim: update()
+        activate SpriteAnim
+        alt _delay above 0
+            Note right of SpriteAnim: _delay--
+        else _playing
+            opt !_started && canStart()
+                alt _effect.isLoaded
+                    SpriteAnim->>Effekseer: play(_effect)
+                    Effekseer-->>SpriteAnim: _handle
+                    Note right of SpriteAnim: _started = true
+                else still loading
+                    SpriteAnim->>EffectManager: checkErrors()
+                    Note right of EffectManager: throws ["LoadError", url, retry] on error
+                end
+            end
+            opt _started
+                SpriteAnim->>Effekseer: updateEffectGeometry()
+                Note right of Effekseer: _handle.setLocation / setRotation /<br/>setScale(scale / 100) / setSpeed(speed / 100)
+                SpriteAnim->>SpriteAnim: updateMain()
+                Note right of SpriteAnim: processSoundTimings() → AudioManager.playSe()<br/>processFlashTimings(), _frameIndex++<br/>checkEnd(): past _maxTimingFrames, no flash,<br/>!_handle.exists → _playing = false
+                SpriteAnim->>SpriteAnim: updateFlash()
+                Note right of SpriteAnim: target.setBlendColor(_flashColor)
+            end
+        end
+        deactivate SpriteAnim
+        Note over SpriteAnim,Effekseer: SceneManager.updateEffekseer() calls Graphics.effekseer.update() each frame
+        SpriteAnim->>Effekseer: _render(renderer)
+        activate Effekseer
+        Note right of SpriteAnim: setProjectionMatrix() (mirror flips x), setCameraMatrix(),<br/>setViewport() centred on targetPosition()
+        SpriteAnim->>Effekseer: beginDraw(), drawHandle(_handle), endDraw()
+        deactivate Effekseer
+    and Sprite_AnimationMV (MV-compatible)
+        Spriteset->>SpriteAnimMV: update()
+        activate SpriteAnimMV
+        SpriteAnimMV->>SpriteAnimMV: updateMain()
+        Note right of SpriteAnimMV: when isReady() (both bitmaps loaded):<br/>_delay-- or _duration--, updatePosition(),<br/>every _rate frames updateFrame() → updateAllCellSprites(),<br/>processTimingData() → flash / screen flash / hide, playSe()<br/>_duration 0 → onEnd()
+        SpriteAnimMV->>SpriteAnimMV: updateFlash(), updateScreenFlash(), updateHiding()
+        deactivate SpriteAnimMV
+    end
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,Effekseer: waiting for the animation to finish
+    loop Game_Interpreter.updateWaitMode() while _waitMode === "animation"
+        Interpreter->>Target: character(_characterId).isAnimationPlaying()
+        Target-->>Interpreter: _animationPlaying
+        Note right of Interpreter: false after removeAnimation() → endAnimation()<br/>→ _waitMode = "" (see game-interpreter-update.mmd)
+    end
+    Note over LogWindow,Spriteset: battle: BattleManager.isBusy() → Spriteset_Battle.isBusy()<br/>→ isAnimationPlaying() (_animationSprites.length above 0)
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Interpreter,Effekseer: Show Balloon Icon (command213) — map only
+    Interpreter->>GameTemp: command213() → requestBalloon(character, params[1])
+    Note right of GameTemp: _balloonQueue.push({target, balloonId})
+    GameTemp->>Target: startBalloon()
+    Note right of Target: _balloonPlaying = true, wait mode "balloon" if params[2]
+    Spriteset->>Spriteset: Spriteset_Map.updateBalloons()
+    activate Spriteset
+    Note right of Spriteset: removeBalloon() for finished sprites →<br/>target.endBalloon() → _balloonPlaying = false
+    Spriteset->>GameTemp: processBalloonRequests() → retrieveBalloon()
+    Spriteset->>Spriteset: createBalloon(request)
+    Note right of Spriteset: new Sprite_Balloon() (loadSystem("Balloon"), z 7),<br/>setup(targetSprite, balloonId): _duration = 8 * speed() + waitTime() = 76<br/>added to the tilemap and _balloonSprites
+    deactivate Spriteset
+    Note over Spriteset,SpriteAnim: Sprite_Balloon.update(): _duration--, position above target sprite,<br/>updateFrame() uses frameIndex() column and balloonId row (48x48)
+    end
