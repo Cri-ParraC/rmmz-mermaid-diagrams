@@ -1,0 +1,119 @@
+sequenceDiagram
+    title RPG Maker MZ — Save and load (DataManager → StorageManager)
+
+    actor User as Player
+    participant SceneSave as Scene_Save
+    participant SceneLoad as Scene_Load
+    participant GameSystem as $gameSystem
+    participant DataManager
+    participant StorageManager
+    participant Backend as fs (NW.js) / localforage (browser)
+    participant SceneManager
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over User,SceneManager: Save
+    User->>SceneSave: chooses a save slot
+    SceneSave->>SceneSave: onSavefileOk()
+    activate SceneSave
+    SceneSave->>SceneSave: executeSave(savefileId)
+    activate SceneSave
+    SceneSave->>GameSystem: setSavefileId(savefileId)
+    SceneSave->>GameSystem: onBeforeSave()
+    SceneSave->>DataManager: saveGame(savefileId)
+    activate DataManager
+    DataManager->>DataManager: makeSaveContents()
+    Note right of DataManager: { system, screen, timer, switches, variables,<br/>selfSwitches, actors, party, map, player }<br/>($gameTemp, $gameMessage, $gameTroop are not saved)
+    DataManager->>DataManager: makeSavename(savefileId)
+    Note right of DataManager: "file%1" → "file1"
+    DataManager->>StorageManager: saveObject(saveName, contents)
+    activate StorageManager
+    StorageManager->>StorageManager: objectToJson(object)
+    Note right of StorageManager: JsonEx.stringify(object)
+    StorageManager->>StorageManager: jsonToZip(json)
+    Note right of StorageManager: pako.deflate(json)
+    StorageManager->>StorageManager: saveZip(saveName, zip)
+    activate StorageManager
+    alt isLocalMode() (Utils.isNwjs())
+        StorageManager->>StorageManager: saveToLocalFile(saveName, zip)
+        StorageManager->>Backend: fsWriteFile(filePath, zip)
+        Note right of Backend: save/file1.rmmzsave<br/>(backup "_" file restored on failure)
+    else browser
+        StorageManager->>StorageManager: saveToForage(saveName, zip)
+        StorageManager->>Backend: localforage.setItem(forageKey(saveName), zip)
+        Note right of Backend: key "rmmzsave.{gameId}.file1"
+        StorageManager->>StorageManager: updateForageKeys()
+    end
+    deactivate StorageManager
+    StorageManager-->>DataManager: Promise resolved
+    deactivate StorageManager
+    DataManager->>DataManager: makeSavefileInfo()
+    Note right of DataManager: _globalInfo[savefileId] = { title, characters,<br/>faces, playtime, timestamp }
+    DataManager->>DataManager: saveGlobalInfo()
+    DataManager->>StorageManager: saveObject("global", _globalInfo)
+    DataManager-->>SceneSave: Promise resolved (0)
+    deactivate DataManager
+    alt resolved
+        SceneSave->>SceneSave: onSaveSuccess()
+        Note right of SceneSave: SoundManager.playSave(), popScene()
+        SceneSave->>SceneManager: pop()
+    else rejected
+        SceneSave->>SceneSave: onSaveFailure()
+        Note right of SceneSave: SoundManager.playBuzzer(), activateListWindow()
+    end
+    deactivate SceneSave
+    deactivate SceneSave
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over User,SceneManager: Load
+    User->>SceneLoad: chooses a save slot
+    SceneLoad->>SceneLoad: onSavefileOk()
+    activate SceneLoad
+    SceneLoad->>SceneLoad: executeLoad(savefileId)
+    activate SceneLoad
+    SceneLoad->>DataManager: loadGame(savefileId)
+    activate DataManager
+    DataManager->>DataManager: makeSavename(savefileId)
+    DataManager->>StorageManager: loadObject(saveName)
+    activate StorageManager
+    StorageManager->>StorageManager: loadZip(saveName)
+    activate StorageManager
+    alt isLocalMode()
+        StorageManager->>StorageManager: loadFromLocalFile(saveName)
+        StorageManager->>Backend: fsReadFile(filePath)
+        Backend-->>StorageManager: zip (or reject "Savefile not found")
+    else browser
+        StorageManager->>StorageManager: loadFromForage(saveName)
+        StorageManager->>Backend: localforage.getItem(forageKey(saveName))
+        Backend-->>StorageManager: zip
+    end
+    deactivate StorageManager
+    StorageManager->>StorageManager: zipToJson(zip)
+    Note right of StorageManager: pako.inflate(zip)
+    StorageManager->>StorageManager: jsonToObject(json)
+    Note right of StorageManager: JsonEx.parse(json) — restores class prototypes
+    StorageManager-->>DataManager: contents
+    deactivate StorageManager
+    DataManager->>DataManager: createGameObjects()
+    Note right of DataManager: fresh $gameTemp, $gameMessage, $gameTroop, ...
+    DataManager->>DataManager: extractSaveContents(contents)
+    Note right of DataManager: $gameSystem = contents.system, ...,<br/>$gamePlayer = contents.player
+    DataManager->>DataManager: correctDataErrors()
+    Note right of DataManager: $gameParty.removeInvalidMembers()
+    DataManager-->>SceneLoad: Promise resolved (0)
+    deactivate DataManager
+    alt resolved
+        SceneLoad->>SceneLoad: onLoadSuccess()
+        activate SceneLoad
+        Note right of SceneLoad: SoundManager.playLoad(), fadeOutAll()
+        SceneLoad->>SceneLoad: reloadMapIfUpdated()
+        Note right of SceneLoad: if $gameSystem.versionId() !== $dataSystem.versionId<br/>→ $gamePlayer.reserveTransfer(...) + requestMapReload()
+        SceneLoad->>SceneManager: goto(Scene_Map)
+        deactivate SceneLoad
+    else rejected
+        SceneLoad->>SceneLoad: onLoadFailure()
+        Note right of SceneLoad: SoundManager.playBuzzer(), activateListWindow()
+    end
+    deactivate SceneLoad
+    deactivate SceneLoad
+    end
