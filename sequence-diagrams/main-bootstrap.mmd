@@ -1,0 +1,121 @@
+sequenceDiagram
+    title RPG Maker MZ — main.js bootstrap (Main.run → SceneManager.run)
+
+    participant Browser as Browser / NW.js
+    participant Main as main (Main)
+    participant Document as document
+    participant XHR as XMLHttpRequest
+    participant NW as nw.Window
+    participant Window as window
+    participant PluginManager
+    participant Effekseer as effekseer
+    participant SceneManager
+
+    Browser->>Main: <<create>> new Main()
+    Note right of Main: xhrSucceeded = false, loadCount = 0, error = null
+    Browser->>Main: run()
+    activate Main
+
+    Main->>Main: showLoadingSpinner()
+    activate Main
+    Main->>Document: createElement("div") x2
+    Main->>Document: body.appendChild(div id "loadingSpinner")
+    deactivate Main
+
+    Main->>Main: testXhr()
+    activate Main
+    Main->>XHR: <<create>> open("GET", document.currentScript.src)
+    Main->>XHR: send()
+    deactivate Main
+    XHR--)Main: onload (async)
+    Note right of Main: xhrSucceeded = true<br/>(fails when the browser blocks file:// reads)
+
+    Main->>Main: hookNwjsClose()
+    activate Main
+    opt typeof nw === "object"
+        Main->>NW: get().on("close", () => nw.App.quit())
+    end
+    deactivate Main
+
+    Note right of Main: this repo copy also calls alert(...) here<br/>so a VS Code debugger can be attached
+
+    Main->>Main: loadMainScripts()
+    activate Main
+    loop for each url of scriptUrls (libs, rmmz_core/*, rmmz_managers/*,<br/>rmmz_objects/*, rmmz_scenes/*, rmmz_sprites/*, rmmz_windows/*, plugins.js)
+        Main->>Document: createElement("script") as a script tag
+        Note right of Main: src = url, async = false, defer = true,<br/>onload = onScriptLoad, onerror = onScriptError, _url = url
+        Main->>Document: body.appendChild(script)
+    end
+    Note right of Main: numScripts = scriptUrls.length
+    Main->>Window: addEventListener("load", onWindowLoad)
+    Main->>Window: addEventListener("error", onWindowError)
+    deactivate Main
+    deactivate Main
+
+    par Scripts execute in order (async = false)
+        loop each script tag
+            alt script loaded
+                Document--)Main: onScriptLoad()
+                activate Main
+                Main->>Main: ++loadCount
+                opt loadCount === numScripts (plugins.js defined $plugins)
+                    Main->>PluginManager: setup($plugins)
+                    activate PluginManager
+                    Note right of PluginManager: appends one script tag per enabled plugin<br/>(see plugin-loading.mmd)
+                    deactivate PluginManager
+                end
+                deactivate Main
+            else network / 404 error
+                Document--)Main: onScriptError(e)
+                activate Main
+                Main->>Main: printError("Failed to load", e.target._url)
+                deactivate Main
+            end
+        end
+    and Uncaught errors while scripts run
+        Window--)Main: onWindowError(event)
+        activate Main
+        Note right of Main: keeps the first one, error = event.error
+        deactivate Main
+    end
+
+    Window--)Main: onWindowLoad() (all scripts, including plugins, finished)
+    activate Main
+    alt !xhrSucceeded
+        Main->>Main: printError("Error", "Your browser does not allow to read local files.")
+    else isPathRandomized() (macOS Gatekeeper /private/var)
+        Main->>Main: printError("Error", "Please move the Game.app to a different folder.")
+    else error was captured
+        Main->>Main: printError(error.name, error.message)
+    else everything OK
+        Main->>Main: initEffekseerRuntime()
+        activate Main
+        Main->>Effekseer: initRuntime("js/libs/effekseer.wasm", onLoad, onError)
+        deactivate Main
+    end
+    deactivate Main
+
+    alt wasm loaded
+        Effekseer--)Main: onEffekseerLoad()
+        activate Main
+        Main->>Main: eraseLoadingSpinner()
+        Main->>SceneManager: run(Scene_Boot)
+        activate SceneManager
+        Note right of SceneManager: initialize, checkPluginErrors, goto(Scene_Boot),<br/>Graphics.startGameLoop()<br/>see scenemanager-run.mmd
+        deactivate SceneManager
+        deactivate Main
+    else wasm failed
+        Effekseer--)Main: onEffekseerError()
+        activate Main
+        Main->>Main: printError("Failed to load", effekseerWasmUrl)
+        deactivate Main
+    end
+
+    rect rgba(127, 127, 127, 0.1)
+    Note over Main,Document: printError(name, message)
+    Main->>Main: eraseLoadingSpinner()
+    opt no div id "errorPrinter" yet
+        Main->>Main: makeErrorHtml(name, message)
+        Main->>Document: body.appendChild(div id "errorPrinter")
+    end
+    end
