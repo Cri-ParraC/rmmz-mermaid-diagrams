@@ -1,0 +1,146 @@
+sequenceDiagram
+    title RPG Maker MZ — Show Choices / Input Number / Select Item (command102-104 → sub windows of Window_Message)
+
+    actor User as Player
+    participant Interpreter as Game_Interpreter
+    participant GameMessage as $gameMessage
+    participant WindowMessage as Window_Message
+    participant ChoiceList as Window_ChoiceList
+    participant NumberInput as Window_NumberInput
+    participant EventItem as Window_EventItem
+    participant GameVariables as $gameVariables
+
+    Note over WindowMessage,EventItem: Scene_Message.create() builds the 3 windows (closed, inactive) and<br/>associateWindows() calls setChoiceListWindow / setNumberInputWindow / setEventItemWindow<br/>and setMessageWindow() on each sub window
+
+    alt command102 (Show Choices) or 102 right after command101
+        Interpreter->>Interpreter: command102(params)
+        activate Interpreter
+        Interpreter->>GameMessage: isBusy()
+        GameMessage-->>Interpreter: false (otherwise return false and retry next frame)
+        Interpreter->>Interpreter: setupChoices(params)
+        activate Interpreter
+        Note right of Interpreter: choices = params[0].clone()<br/>cancelType = params[1] if below choices.length, else -2 (Branch)<br/>defaultType = params[2], positionType = params[3], background = params[4]
+        Interpreter->>GameMessage: setChoices(choices, defaultType, cancelType)
+        Interpreter->>GameMessage: setChoiceBackground(background)
+        Interpreter->>GameMessage: setChoicePositionType(positionType)
+        Interpreter->>GameMessage: setChoiceCallback(n → _branch[_indent] = n)
+        deactivate Interpreter
+        Interpreter->>Interpreter: setWaitMode("message")
+        deactivate Interpreter
+    else command103 (Input Number)
+        Interpreter->>Interpreter: command103(params) → setupNumInput(params)
+        Interpreter->>GameMessage: setNumberInput(variableId, maxDigits)
+        Interpreter->>Interpreter: setWaitMode("message")
+    else command104 (Select Item)
+        Interpreter->>Interpreter: command104(params) → setupItemChoice(params)
+        Interpreter->>GameMessage: setItemChoice(variableId, itemType or 2)
+        Interpreter->>Interpreter: setWaitMode("message")
+    end
+    Note right of GameMessage: isBusy() is now true (isChoice() / isNumberInput() / isItemChoice())
+
+    loop every frame — Window_Message.update()
+        Note over WindowMessage: if there is text it is shown first, and onEndOfText() calls startInput()<br/>(see show-text-message.mmd)
+        WindowMessage->>WindowMessage: startInput()
+        activate WindowMessage
+        alt $gameMessage.isChoice()
+            WindowMessage->>ChoiceList: start()
+            activate ChoiceList
+            ChoiceList->>ChoiceList: updatePlacement(), updateBackground(), placeCancelButton()
+            Note right of ChoiceList: x from choicePositionType(), y above or below the message window
+            ChoiceList->>ChoiceList: refresh() → makeCommandList()
+            Note right of ChoiceList: addCommand(choice, "choice") for each $gameMessage.choices()
+            ChoiceList->>ChoiceList: selectDefault()
+            Note right of ChoiceList: select($gameMessage.choiceDefaultType())
+            ChoiceList->>ChoiceList: open(), activate()
+            deactivate ChoiceList
+        else $gameMessage.isNumberInput()
+            WindowMessage->>NumberInput: start()
+            activate NumberInput
+            NumberInput->>GameVariables: value(numInputVariableId())
+            Note right of NumberInput: _number clamped to maxDigits, updatePlacement(),<br/>placeButtons(), refresh(), open(), activate(), select(0)
+            deactivate NumberInput
+        else $gameMessage.isItemChoice()
+            WindowMessage->>EventItem: start()
+            activate EventItem
+            EventItem->>EventItem: refresh() → makeItemList()
+            Note right of EventItem: includes(item): isItem && itypeId === itemChoiceItypeId()
+            EventItem->>EventItem: updatePlacement(), placeCancelButton(), forceSelect(0)
+            EventItem->>EventItem: open(), activate()
+            deactivate EventItem
+        end
+        deactivate WindowMessage
+        WindowMessage->>WindowMessage: updateInput()
+        Note right of WindowMessage: isAnySubWindowActive() → true,<br/>the message waits while a sub window is active
+    end
+
+    alt Show Choices
+        Note over ChoiceList: cursor and OK / Cancel handled by Window_Selectable.update()<br/>(see window-selectable-input.mmd)
+        alt OK on a choice
+            User->>ChoiceList: OK / click
+            ChoiceList->>ChoiceList: processOk() → playOkSound(), deactivate()
+            ChoiceList->>ChoiceList: callOkHandler()
+            activate ChoiceList
+            ChoiceList->>GameMessage: onChoice(index())
+        else Cancel (only if choiceCancelType() !== -1)
+            User->>ChoiceList: Cancel / cancel button
+            ChoiceList->>ChoiceList: processCancel() → callCancelHandler()
+            ChoiceList->>GameMessage: onChoice(choiceCancelType())
+            Note right of GameMessage: a choice index, or -2 for the "When Cancel" branch
+        end
+        activate GameMessage
+        GameMessage->>Interpreter: _choiceCallback(n)
+        Note right of Interpreter: _branch[_indent] = n
+        Note right of GameMessage: _choiceCallback = null
+        deactivate GameMessage
+        ChoiceList->>WindowMessage: terminateMessage()
+        WindowMessage->>GameMessage: clear()
+        Note right of GameMessage: _choices = [] → isBusy() false
+        ChoiceList->>ChoiceList: close()
+        deactivate ChoiceList
+    else Input Number
+        loop while active
+            User->>NumberInput: up / down, left / right, or touch buttons
+            NumberInput->>NumberInput: update() → processDigitChange()
+            Note right of NumberInput: changeDigit(up): digit at index() +1 or -1 (mod 10)<br/>left / right moves index() via processCursorMove()
+        end
+        User->>NumberInput: OK (or the OK button)
+        NumberInput->>NumberInput: processOk()
+        activate NumberInput
+        Note right of NumberInput: isCancelEnabled() is false, there is no cancel
+        NumberInput->>GameVariables: setValue(numInputVariableId(), _number)
+        NumberInput->>WindowMessage: terminateMessage()
+        WindowMessage->>GameMessage: clear()
+        NumberInput->>NumberInput: updateInputData(), deactivate(), close()
+        deactivate NumberInput
+    else Select Item
+        alt OK on an item
+            User->>EventItem: OK
+            EventItem->>EventItem: processOk() → callOkHandler() → onOk()
+            EventItem->>GameVariables: setValue(itemChoiceVariableId(), item.id or 0)
+        else Cancel
+            User->>EventItem: Cancel
+            EventItem->>EventItem: processCancel() → callCancelHandler() → onCancel()
+            EventItem->>GameVariables: setValue(itemChoiceVariableId(), 0)
+        end
+        EventItem->>WindowMessage: terminateMessage()
+        WindowMessage->>GameMessage: clear()
+        EventItem->>EventItem: close()
+    end
+
+    Interpreter->>Interpreter: updateWaitMode()
+    activate Interpreter
+    Interpreter->>GameMessage: isBusy()
+    GameMessage-->>Interpreter: false
+    Note right of Interpreter: _waitMode = "" → next command runs
+    deactivate Interpreter
+
+    opt after Show Choices: the branch commands
+        loop each 402 "When [choice]" / 403 "When Cancel"
+            alt command402(params)
+                Note right of Interpreter: _branch[_indent] !== params[0] → skipBranch()
+            else command403()
+                Note right of Interpreter: _branch[_indent] >= 0 → skipBranch()
+            end
+            Note right of Interpreter: skipBranch() skips commands with a deeper indent,<br/>so only the chosen branch runs
+        end
+    end
