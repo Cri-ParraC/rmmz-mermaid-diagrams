@@ -1,0 +1,95 @@
+sequenceDiagram
+    title RPG Maker MZ — Show Text (command101 → Game_Message → Window_Message)
+
+    actor User as Player
+    participant Interpreter as Game_Interpreter
+    participant GameMessage as $gameMessage
+    participant WindowMessage as Window_Message
+    participant NameBox as Window_NameBox
+    participant Input
+
+    Note over Interpreter: executeCommand() → command101(params)<br/>followed by one 401 command per text line
+    Interpreter->>Interpreter: command101(params)
+    activate Interpreter
+    Interpreter->>GameMessage: isBusy()
+    GameMessage-->>Interpreter: false (otherwise return false and retry next frame)
+    Interpreter->>GameMessage: setFaceImage(params[0], params[1])
+    Interpreter->>GameMessage: setBackground(params[2])
+    Interpreter->>GameMessage: setPositionType(params[3])
+    Interpreter->>GameMessage: setSpeakerName(params[4])
+    loop while nextEventCode() === 401
+        Note right of Interpreter: _index++
+        Interpreter->>GameMessage: add(currentCommand().parameters[0])
+        Note right of GameMessage: _texts.push(text)
+    end
+    opt nextEventCode() is 102 / 103 / 104
+        Interpreter->>Interpreter: setupChoices / setupNumInput / setupItemChoice
+    end
+    Interpreter->>Interpreter: setWaitMode("message")
+    deactivate Interpreter
+
+    loop every frame — Window_Message.update() (child of Scene_Message)
+        activate WindowMessage
+        WindowMessage->>WindowMessage: checkToNotClose()
+        Note right of WindowMessage: then while !isOpening() && !isClosing():<br/>updateWait → updateLoading → updateInput →<br/>updateMessage → canStart → startInput
+        alt _textState is null and canStart()
+            WindowMessage->>GameMessage: hasText()
+            GameMessage-->>WindowMessage: true
+            WindowMessage->>WindowMessage: startMessage()
+            activate WindowMessage
+            WindowMessage->>GameMessage: allText()
+            GameMessage-->>WindowMessage: _texts.join("\n")
+            WindowMessage->>WindowMessage: createTextState(text, 0, 0, 0)
+            WindowMessage->>WindowMessage: newPage(textState)
+            Note right of WindowMessage: contents.clear(), updateSpeakerName(),<br/>loadMessageFace()
+            WindowMessage->>WindowMessage: updatePlacement()
+            WindowMessage->>GameMessage: positionType()
+            WindowMessage->>WindowMessage: updateBackground()
+            WindowMessage->>WindowMessage: open()
+            WindowMessage->>NameBox: start()
+            deactivate WindowMessage
+        else _textState exists
+            WindowMessage->>WindowMessage: updateMessage()
+            activate WindowMessage
+            loop until isEndOfText() or shouldBreakHere()
+                WindowMessage->>WindowMessage: processCharacter(textState)
+                Note right of WindowMessage: one character per frame unless _showFast<br/>escape codes like \C[n], \. and \| set waits
+            end
+            WindowMessage->>WindowMessage: flushTextState(textState)
+            opt isEndOfText() && !isWaiting()
+                WindowMessage->>WindowMessage: onEndOfText()
+                activate WindowMessage
+                WindowMessage->>WindowMessage: startInput()
+                Note right of WindowMessage: opens choice / number / item window if needed
+                WindowMessage->>WindowMessage: startPause()
+                Note right of WindowMessage: startWait(10), pause = true<br/>_textState = null
+                deactivate WindowMessage
+            end
+            deactivate WindowMessage
+        else pause
+            WindowMessage->>WindowMessage: updateInput()
+            activate WindowMessage
+            opt player presses OK / Cancel or taps
+                User->>Input: key / touch
+                WindowMessage->>WindowMessage: isTriggered()
+                WindowMessage->>Input: isRepeated("ok") / isRepeated("cancel")
+                Input-->>WindowMessage: true
+                Note right of WindowMessage: pause = false
+                WindowMessage->>WindowMessage: terminateMessage()
+                activate WindowMessage
+                WindowMessage->>WindowMessage: close()
+                WindowMessage->>GameMessage: clear()
+                Note right of GameMessage: _texts = [] → isBusy() = false
+                deactivate WindowMessage
+            end
+            deactivate WindowMessage
+        end
+        deactivate WindowMessage
+    end
+
+    Interpreter->>Interpreter: updateWaitMode()
+    activate Interpreter
+    Interpreter->>GameMessage: isBusy()
+    GameMessage-->>Interpreter: false
+    Note right of Interpreter: _waitMode = "" → next command runs
+    deactivate Interpreter
