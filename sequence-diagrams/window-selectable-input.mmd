@@ -1,0 +1,145 @@
+sequenceDiagram
+    title RPG Maker MZ — Window_Selectable input handling (keyboard / gamepad / touch → handlers)
+
+    actor User as Player
+    participant SceneManager
+    participant Input
+    participant TouchInput
+    participant Scene as Scene (e.g. Scene_Menu)
+    participant WindowLayer
+    participant Window as Window_Selectable (or Window_Command)
+    participant HelpWindow as Window_Help
+
+    Note over Scene,Window: setup in Scene.create()
+    Scene->>Window: <<create>> new Window_xxx(rect)
+    Scene->>Window: setHandler("ok", this.onXxxOk.bind(this))
+    Note right of Window: _handlers[symbol] = method<br/>Window_Command also maps command symbols (e.g. "item", "save")
+    Scene->>Window: setHandler("cancel", this.popScene.bind(this))
+    Scene->>Window: setHelpWindow(_helpWindow) (optional)
+    Scene->>WindowLayer: addWindow(window) → _windowLayer.addChild(window)
+    Scene->>Window: activate()
+    activate Window
+    Note right of Window: Window_Base.activate(): active = true<br/>reselect(): select(_index), ensureCursorVisible(true), cursorVisible = true
+    deactivate Window
+
+    loop every frame — SceneManager.updateMain()
+        User->>Input: keys / gamepad buttons
+        User->>TouchInput: mouse / touch / wheel
+        SceneManager->>SceneManager: updateInputData()
+        SceneManager->>Input: update()
+        Note right of Input: _pollGamepads(), sets _latestButton and _pressedTime<br/>isRepeated(): first frame, then every 6 frames after 24 frames
+        SceneManager->>TouchInput: update()
+        Note right of TouchInput: copies the new state: triggered, clicked,<br/>cancelled, hovered, moved, wheelY
+        SceneManager->>Scene: update() (see scenemanager-gameloop.mmd)
+        Scene->>Scene: updateChildren()
+        Scene->>WindowLayer: update()
+        WindowLayer->>Window: update()
+        activate Window
+
+        Window->>Window: processCursorMove()
+        activate Window
+        opt isCursorMovable()
+            Note right of Window: isOpenAndActive() (isOpen() && visible && active)<br/>&& !_cursorFixed && !_cursorAll && maxItems() > 0
+            Window->>Input: isRepeated("down" / "up" / "right" / "left")
+            Input-->>Window: true
+            Window->>Window: cursorDown / cursorUp / cursorRight / cursorLeft(Input.isTriggered(dir))
+            Note right of Window: wrap only on the first press<br/>→ smoothSelect(newIndex) → select() + ensureCursorVisible(true)
+            opt "pagedown" / "pageup" triggered and not handled by the scene
+                Window->>Window: cursorPagedown() / cursorPageup()
+            end
+            opt index() !== lastIndex
+                Window->>Window: playCursorSound()
+            end
+        end
+        deactivate Window
+
+        Window->>Window: processHandling()
+        activate Window
+        opt isOpenAndActive()
+            alt isOkEnabled() && isOkTriggered()
+                Note right of Window: isOkEnabled(): isHandled("ok") (Window_Command: always true)<br/>isOkTriggered(): _canRepeat ? isRepeated("ok") : isTriggered("ok")
+                Window->>Window: processOk()
+            else isCancelEnabled() && isCancelTriggered()
+                Note right of Window: isHandled("cancel") && Input.isRepeated("cancel")
+                Window->>Window: processCancel()
+            else isHandled("pagedown" / "pageup") && Input.isTriggered(...)
+                Window->>Window: processPagedown() / processPageup()
+                Note right of Window: updateInputData(), deactivate(), callHandler("pagedown" / "pageup")
+            end
+        end
+        deactivate Window
+
+        Window->>Window: processTouch()
+        activate Window
+        opt isOpenAndActive()
+            alt isHoverEnabled() && TouchInput.isHovered()
+                Window->>Window: onTouchSelect(false)
+            else TouchInput.isTriggered()
+                Window->>Window: onTouchSelect(true)
+            end
+            Note right of Window: onTouchSelect(): hitIndex() maps TouchInput.x / y to an item,<br/>same index as before → _doubleTouch = true, then select(hitIndex)
+            alt TouchInput.isClicked()
+                Window->>Window: onTouchOk()
+                Note right of Window: isTouchOkEnabled(): isOkEnabled() &&<br/>(_cursorFixed or _cursorAll or _doubleTouch)<br/>→ processOk() when the click hits an item
+            else TouchInput.isCancelled()
+                Window->>Window: onTouchCancel()
+                Note right of Window: isCancelEnabled() → processCancel()
+            end
+        end
+        deactivate Window
+
+        Window->>Window: Window_Scrollable.update()
+        Note right of Window: processWheelScroll(), processTouchScroll(),<br/>updateSmoothScroll(), updateArrows(), updateOrigin()
+        deactivate Window
+    end
+
+    Note over Window: processOk() (keyboard, gamepad or touch)
+    Window->>Window: processOk()
+    activate Window
+    alt isCurrentItemEnabled()
+        Window->>Window: playOkSound() → SoundManager.playOk()
+        Window->>Window: updateInputData()
+        Note right of Window: Input.update(), TouchInput.update(), clearScrollStatus()<br/>so the same press is not seen again this frame
+        Window->>Window: deactivate()
+        Note right of Window: active = false, reselect()
+        Window->>Window: callOkHandler()
+        activate Window
+        alt Window_Command
+            Note right of Window: symbol = currentSymbol()<br/>isHandled(symbol) → callHandler(symbol)<br/>else isHandled("ok") → callHandler("ok")<br/>else activate() again
+        else Window_Selectable
+            Note right of Window: callHandler("ok")
+        end
+        Window->>Scene: _handlers[symbol]()
+        deactivate Window
+        activate Scene
+        Note right of Scene: the scene decides what is active next,<br/>e.g. otherWindow.activate() or SceneManager.push(...)
+        deactivate Scene
+    else disabled item
+        Window->>Window: playBuzzerSound()
+        Note right of Window: window stays active
+    end
+    deactivate Window
+
+    Note over Window: processCancel()
+    Window->>Window: processCancel()
+    activate Window
+    Window->>Window: SoundManager.playCancel(), updateInputData(), deactivate()
+    Window->>Window: callCancelHandler() → callHandler("cancel")
+    Window->>Scene: _handlers["cancel"]()
+    Note right of Scene: e.g. popScene() or previousWindow.activate()
+    deactivate Window
+
+    Note over Window,HelpWindow: help window update on every select(index)
+    Window->>Window: select(index)
+    activate Window
+    Note right of Window: _index = index, refreshCursor()
+    Window->>Window: callUpdateHelp()
+    opt active && _helpWindow
+        Window->>Window: updateHelp()
+        alt Window_Selectable base
+            Window->>HelpWindow: clear()
+        else subclasses (e.g. Window_ItemList)
+            Window->>HelpWindow: setHelpWindowItem(item()) → setItem(item)
+        end
+    end
+    deactivate Window
