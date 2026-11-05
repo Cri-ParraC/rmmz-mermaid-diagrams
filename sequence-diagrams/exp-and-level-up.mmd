@@ -1,0 +1,122 @@
+sequenceDiagram
+    title RPG Maker MZ — EXP gain and level up (battle rewards, Change EXP / Level, Change Class)
+
+    participant BattleManager
+    participant GameTroop as $gameTroop
+    participant GameParty as $gameParty
+    participant Interpreter as Game_Interpreter
+    participant GameActor as Game_Actor
+    participant DataClass as $dataClasses[_classId]
+    participant GameMessage as $gameMessage
+
+    alt victory in battle
+        Note over BattleManager: checkBattleEnd() → processVictory() (see battle-turn.mmd)
+        BattleManager->>BattleManager: makeRewards()
+        activate BattleManager
+        BattleManager->>GameTroop: expTotal()
+        Note right of GameTroop: sum of enemy.exp() over deadMembers() only<br/>($dataEnemies[id].exp)
+        GameTroop-->>BattleManager: exp
+        Note right of BattleManager: _rewards = { gold, exp, items }
+        deactivate BattleManager
+        BattleManager->>BattleManager: displayVictoryMessage() / displayRewards()
+        BattleManager->>GameMessage: add(TextManager.obtainExp text)
+        BattleManager->>BattleManager: gainRewards()
+        activate BattleManager
+        BattleManager->>BattleManager: gainExp()
+        activate BattleManager
+        BattleManager->>GameParty: allMembers()
+        Note right of GameParty: every party member, reserve included<br/>(there is no Game_Party.gainExp)
+        loop each actor in allMembers()
+            BattleManager->>GameActor: gainExp(exp)
+            activate GameActor
+            GameActor->>GameActor: finalExpRate()
+            Note right of GameActor: exr (sparam 9, EXP Rate trait) ×<br/>(isBattleMember() ? 1 : benchMembersExpRate())<br/>bench rate is 1 if $dataSystem.optExtraExp else 0
+            GameActor->>GameActor: newExp = currentExp() + Math.round(exp * finalExpRate())
+            GameActor->>GameActor: shouldDisplayLevelUp()
+            Note right of GameActor: always true in the base engine
+            GameActor->>GameActor: changeExp(newExp, true)
+            Note right of GameActor: see changeExp() below
+            deactivate GameActor
+        end
+        deactivate BattleManager
+        Note right of BattleManager: then gainGold(), gainDropItems(), endBattle(0)
+        deactivate BattleManager
+    else Change EXP (command315)
+        Interpreter->>Interpreter: command315(params)
+        activate Interpreter
+        Interpreter->>Interpreter: operateValue(params[2], params[3], params[4])
+        Note right of Interpreter: constant or variable, negated for Decrease
+        Interpreter->>Interpreter: iterateActorEx(params[0], params[1], callback)
+        Note right of Interpreter: fixed actor id or variable, actor id 0 means whole party
+        Interpreter->>GameActor: changeExp(actor.currentExp() + value, params[5])
+        Note right of Interpreter: params[5] = Show Level Up checkbox<br/>(no exr multiplier here)
+        deactivate Interpreter
+    else Change Level (command316)
+        Interpreter->>Interpreter: command316(params)
+        activate Interpreter
+        Interpreter->>Interpreter: operateValue(params[2], params[3], params[4])
+        Interpreter->>Interpreter: iterateActorEx(params[0], params[1], callback)
+        Interpreter->>GameActor: changeLevel(actor.level + value, params[5])
+        activate GameActor
+        GameActor->>GameActor: level.clamp(1, maxLevel())
+        Note right of GameActor: maxLevel() is $dataActors[id].maxLevel
+        GameActor->>GameActor: expForLevel(level)
+        GameActor->>GameActor: changeExp(expForLevel(level), show)
+        deactivate GameActor
+        deactivate Interpreter
+    else Change Class (command321)
+        Interpreter->>GameActor: changeClass(classId, keepExp)
+        activate GameActor
+        opt keepExp (Save Level checkbox)
+            GameActor->>GameActor: _exp[classId] = currentExp()
+            Note right of GameActor: EXP is stored per class in _exp[classId],<br/>so the new class starts from the same EXP total
+        end
+        GameActor->>GameActor: _classId = classId, _level = 0
+        GameActor->>GameActor: changeExp(_exp[_classId] || 0, false)
+        Note right of GameActor: level is rebuilt from 0 with the new class EXP curve,<br/>without keepExp a fresh class starts at level 1 (0 EXP)<br/>or at the EXP it had the last time
+        GameActor->>GameActor: refresh()
+        deactivate GameActor
+    end
+
+    Note over GameActor: Game_Actor.changeExp(exp, show)
+    activate GameActor
+    GameActor->>GameActor: _exp[_classId] = Math.max(exp, 0)
+    GameActor->>GameActor: lastLevel = _level, lastSkills = skills()
+    loop while !isMaxLevel() and currentExp() >= nextLevelExp()
+        GameActor->>GameActor: nextLevelExp()
+        activate GameActor
+        GameActor->>GameActor: expForLevel(_level + 1)
+        GameActor->>DataClass: expParams [basis, extra, acc_a, acc_b]
+        Note right of DataClass: round(basis × (L-1)^(0.9 + acc_a/250) × L × (L+1)<br/>/ (6 + L²/50/acc_b) + (L-1) × extra)
+        deactivate GameActor
+        GameActor->>GameActor: levelUp()
+        activate GameActor
+        GameActor->>GameActor: _level++
+        GameActor->>DataClass: learnings
+        loop each learning with learning.level === _level
+            GameActor->>GameActor: learnSkill(learning.skillId)
+            Note right of GameActor: pushed to _skills if not already learned, sorted by id
+        end
+        deactivate GameActor
+    end
+    loop while currentExp() < currentLevelExp()
+        Note right of GameActor: currentLevelExp() = expForLevel(_level)
+        GameActor->>GameActor: levelDown()
+        Note right of GameActor: _level-- only, skills learned earlier are kept
+    end
+    opt show and _level > lastLevel
+        GameActor->>GameActor: findNewSkills(lastSkills)
+        Note right of GameActor: skills() minus lastSkills
+        GameActor->>GameActor: displayLevelUp(newSkills)
+        activate GameActor
+        GameActor->>GameMessage: newPage()
+        GameActor->>GameMessage: add(TextManager.levelUp.format(_name, TextManager.level, _level))
+        loop each new skill
+            GameActor->>GameMessage: add(TextManager.obtainSkill.format(skill.name))
+        end
+        deactivate GameActor
+        Note right of GameMessage: shown by Window_Message after the reward lines<br/>(see show-text-message.mmd)
+    end
+    GameActor->>GameActor: refresh()
+    Note right of GameActor: releaseUnequippableItems(false), then clamp<br/>_hp/_mp/_tp to the new mhp/mmp (see actor-params-and-traits.mmd)
+    deactivate GameActor
